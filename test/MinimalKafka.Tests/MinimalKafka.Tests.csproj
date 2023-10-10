@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\props\tests.props" />
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
+  </ItemGroup>
+  
+</Project>
