@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Attributes;
 
 namespace MinimalKafka;
 
@@ -49,6 +50,14 @@ internal sealed class ConsumerService
 
     private object GetFromResults(ParameterInfo parameterInfo, ConsumeResult<string, string> consumeResult)
     {
+        return parameterInfo switch
+        {
+            parameterInfo.GetCustomAttribute<FromKeyAttribute>() != null => {
+
+            }
+            default
+        }
+
         return string.Empty;
     }
 }

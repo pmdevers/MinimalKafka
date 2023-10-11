@@ -1,10 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace MinimalKafka;
 
-namespace MinimalKafka;
-internal class TopicHandler
+public interface ITopicHandler
 {
+    Delegate GetHandler();
+}
+
+public class TopicHandler : ITopicHandler
+{
+    private readonly Delegate _handler;
+
+    public TopicHandler(Delegate handler)
+    {
+        _handler = handler;
+    }
+
+    public Delegate GetHandler()
+    {
+        return _handler;
+    }
 }
