@@ -1,27 +1,50 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Confluent.Kafka;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using MinimalKafka.Attributes;
 
 namespace MinimalKafka;
 
 internal sealed class TopicConsumerBuilder : ITopicConsumerBuilder
 {
-    public IConsumerService ConsumerService { get; set; }
+    private readonly KafkaOptions _options;
+    private static Delegate Empty = ([FromKey]string _, [FromValue]string _) => { };
 
-    public TopicConsumerBuilder(IConsumerService consumerService)
+    public string Topic { get; private set; } = string.Empty;
+
+    public Delegate Handler { get; private set; } = Empty;
+
+    public TopicConsumerBuilder(KafkaOptions options)
     {
-        ConsumerService = consumerService;
+        _options = options;
     }
 
     public ITopicConsumerBuilder MapTopic(string topic, Delegate handler)
     {
-        ConsumerService.AddTopic(topic, handler);
+        Topic = topic;
+        Handler = handler;
         return this;
     }
-}
 
-internal interface IConsumerService
-{
-    void AddTopic(string topic, Delegate handler);
+    public IConsumer<string, string> Build()
+    {
+        var config = new ClientConfig
+        {
+            BootstrapServers = _options.BoostrapServers,
+        };
+
+        var consumerConfig = new ConsumerConfig(config)
+        {
+            GroupId = _options.ConsumerGroupId,
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+        };
+
+        var consumerBuilder = new ConsumerBuilder<string, string>(consumerConfig);
+
+        return consumerBuilder.Build();
+    }
 }
 
 public interface ITopicConsumerBuilder
@@ -33,10 +56,11 @@ public static class MinmalKafkaExtensions
 {
     public static ITopicConsumerBuilder MapTopic(this WebApplication app, string topic, Delegate handler)
     {
-        var consumerService = app.Services.GetRequiredService<IConsumerService>();
-        return new TopicConsumerBuilder(consumerService).MapTopic(topic, handler);
+        var kafka = app.Services.GetRequiredService<TopicConsumerBuilder>();
+        var logger = app.Services.GetRequiredService<ILoggerFactory>();
+        var builder = kafka.MapTopic(topic, handler);
+        var s = new ConsumerService(logger.CreateLogger<ConsumerService>(), kafka);
+        s.StartConsuming(CancellationToken.None);
+        return builder;
     }
-
-    public static IServiceCollection AddMinimalKafka(this IServiceCollection services)
-        => services.AddSingleton<IConsumerService, ConsumerService>();
 }

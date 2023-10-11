@@ -17,5 +17,7 @@ public class Tests
         {
             Debug.WriteLine(key + ":" + value);
         });
+
+        app.Run();
     }
 }

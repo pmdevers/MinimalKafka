@@ -3,6 +3,8 @@
   <Import Project="..\..\props\lib.props" />
 
   <ItemGroup>
+    <Content Remove="C:\Users\p.evers\.nuget\packages\librdkafka.redist\2.2.0\build\..\runtimes\win-x64\native\**" />
+    <Content Remove="C:\Users\p.evers\.nuget\packages\librdkafka.redist\2.2.0\build\..\runtimes\win-x86\native\**" />
     <Content Remove="C:\Users\pmdev\.nuget\packages\librdkafka.redist\2.2.0\build\..\runtimes\win-x64\native\**" />
     <Content Remove="C:\Users\pmdev\.nuget\packages\librdkafka.redist\2.2.0\build\..\runtimes\win-x86\native\**" />
   </ItemGroup>
@@ -12,6 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="librdkafka.redist" Version="2.2.0" />
+    <PackageReference Include="Confluent.Kafka" Version="2.2.0" />
   </ItemGroup>
 </Project>
