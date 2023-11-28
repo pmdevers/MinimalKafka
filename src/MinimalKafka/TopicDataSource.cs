@@ -1,4 +1,7 @@
-﻿namespace MinimalKafka;
+﻿using Confluent.Kafka;
+using System.Runtime.InteropServices;
+
+namespace MinimalKafka;
 
 public sealed class TopicDataSource
 {
@@ -53,5 +56,14 @@ public sealed class TopicDataSource
         });
 
         return new TopicHandlerBuilder(conventions, finnalyConventions);
+    }
+
+    public IEnumerable<Topic> GetTopics()
+    {
+        return _topicEntries.Select(x => new Topic()
+        {
+            TopicName = x.TopicName,
+            TopicHandler = x.TopicHandler,
+        });
     }
 }

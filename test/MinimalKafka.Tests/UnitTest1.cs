@@ -6,7 +6,7 @@ namespace MinimalKafka.Tests;
 public class Tests
 {
     [Test]
-    public void Test1()
+    public async Task Test1()
     {
         var builder = WebApplication.CreateBuilder();
 
@@ -14,11 +14,20 @@ public class Tests
 
         var app = builder.Build();
 
-        app.MapTopic("test", (string key, string value) =>
+        app.MapTopic("order.snapshot", (IServiceProvider provider, string key, string value) =>
         {
             Debug.WriteLine(key + ":" + value);
         });
 
-        app.Run();
+        app.MapTopic("order.events", (string key, string value) =>
+        {
+            Debug.WriteLine(key + ":" + value);
+        });
+
+        //var topics = app.Services.GetRequiredService<TopicConsumer>();
+
+        await app.RunAsync();
+
+
     }
 }

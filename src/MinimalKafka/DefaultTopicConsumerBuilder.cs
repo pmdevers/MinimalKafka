@@ -15,8 +15,8 @@ internal sealed class DefaultTopicConsumerBuilder : ITopicConsumerBuilder
 
     public List<object> Metadata { get; } = new List<object>();
 
-    public TopicConsumer Build()
-    {
-        return new();
-    }
+    //public TopicConsumer Build()
+    //{
+    //    return new();
+    //}
 }

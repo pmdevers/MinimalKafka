@@ -38,6 +38,4 @@ public static class TopicConsumerBuilderExtensions
 
         return builder.DataSource;
     }
-
-
 }
