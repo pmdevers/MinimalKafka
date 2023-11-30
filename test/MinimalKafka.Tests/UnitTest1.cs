@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Attributes;
 
 namespace MinimalKafka.Tests;
 
@@ -19,9 +20,9 @@ public class Tests
             Debug.WriteLine(key + ":" + value);
         });
 
-        app.MapTopic("order.events", (string key, string value) =>
+        app.MapTopic("order.events", ([FromKey] string bla, string value) =>
         {
-            Debug.WriteLine(key + ":" + value);
+            Debug.WriteLine(bla + ":" + value);
         });
 
         //var topics = app.Services.GetRequiredService<TopicConsumer>();
