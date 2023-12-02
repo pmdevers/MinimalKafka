@@ -7,21 +7,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MinimalKafka.Factory;
 
-public class TopicDelegateFactory
+public static class TopicDelegateFactory
 {
-
     private static readonly MethodInfo GetRequiredServiceMethod = typeof(ServiceProviderServiceExtensions).GetMethod(nameof(ServiceProviderServiceExtensions.GetRequiredService), BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(IServiceProvider) })!;
-    //private static readonly MethodInfo GetRequiredServiceMethod = typeof(ServiceProviderServiceExtensions).GetMethod(nameof(ServiceProviderServiceExtensions.GetRequiredService), BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(IServiceProvider) })!;
+    private static readonly PropertyInfo KeyProperty = typeof(KafkaContext).GetProperty(nameof(KafkaContext.Key))!;
+    private static readonly PropertyInfo ValueProperty = typeof(KafkaContext).GetProperty(nameof(KafkaContext.Value))!;
 
     private static readonly ParameterExpression KafkaContextExpr = ParameterBindingMethodCache.KafkaContextExpr;
     private static readonly MemberExpression RequestServicesExpr = Expression.Property(KafkaContextExpr, typeof(KafkaContext).GetProperty(nameof(KafkaContext.RequestServices))!);
-    private static readonly MemberExpression KeyExpr = Expression.Property(KafkaContextExpr, typeof(KafkaContext).GetProperty(nameof(KafkaContext.Key))!);
-
 
     private static readonly ParameterExpression TargetExpr = Expression.Parameter(typeof(object), "target");
 
@@ -35,7 +34,9 @@ public class TopicDelegateFactory
 
         return new TopicDelegateMetadataResult
         {
-            //TopicMetadata = AsReadOnlyList(factoryContext.TopicBuilder.Metadata),
+            TopicKeyType = factoryContext.KeyType,
+            TopicValueType = factoryContext.ValueType,
+            TopicMetadata = AsReadOnlyList(factoryContext.TopicBuilder.Metadata),
         };
     }
 
@@ -62,12 +63,12 @@ public class TopicDelegateFactory
             _ => kafkaContext => targetableTopicDelegate(handler.Target, kafkaContext),
         };
 
-        return CreateTopicDelegateResult(finalTopicDelegate);
+        return CreateTopicDelegateResult(finalTopicDelegate, factoryContext);
     }
 
-    private static TopicDelegateResult CreateTopicDelegateResult(TopicDelegate finalTopicDelegate)
+    private static TopicDelegateResult CreateTopicDelegateResult(TopicDelegate finalTopicDelegate, TopicDelegateFactoryContext factoryContext)
     {
-        return new TopicDelegateResult(finalTopicDelegate, null);
+        return new TopicDelegateResult(finalTopicDelegate, null, factoryContext.KeyType, factoryContext.ValueType);
     }
 
     private static Func<object?, KafkaContext, Task>? CreateTargetableTopicDelegate(
@@ -109,7 +110,7 @@ public class TopicDelegateFactory
     }
 
     private static Expression[] CreateArguments(
-        ParameterInfo[]? parameters, 
+        ParameterInfo[]? parameters,
         TopicDelegateFactoryContext factoryContext)
     {
         if (parameters is null || parameters.Length == 0)
@@ -143,11 +144,30 @@ public class TopicDelegateFactory
 
         var parameterCustomAttributes = parameter.GetCustomAttributes();
 
-        if (parameterCustomAttributes.OfType<IFromKeyMetadata>().FirstOrDefault() is { } keyAttribute)
+        if (parameterCustomAttributes.OfType<IFromKeyMetadata>().FirstOrDefault() is { } keyAttribute || 
+            parameter.Name.Equals(nameof(KafkaContext.Key), StringComparison.CurrentCultureIgnoreCase))
         {
             factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.KeyAttribute);
 
             return BindParameterFromKey(parameter, false, factoryContext);
+        }
+        if (parameterCustomAttributes.OfType<IFromValueMetadata>().FirstOrDefault() is { } valueAttribute ||
+            parameter.Name.Equals(nameof(KafkaContext.Value), StringComparison.CurrentCultureIgnoreCase))
+        {
+            factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.ValueAttribute);
+
+            return BindParameterFromValue(parameter, false, factoryContext);
+        }
+        else if (parameterCustomAttributes.OfType<IFromHeaderMetadata>().FirstOrDefault() is { } headerAttribute)
+        {
+            factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.HeaderAttribute);
+
+            return Expression.Empty();
+        }
+        else if (parameterCustomAttributes.OfType<IFromServiceMetadata>().FirstOrDefault() is { } serviceAttribute)
+        {
+            factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.ServiceAttribute);
+            return Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(parameter.ParameterType), RequestServicesExpr);
         }
         else if (parameter.ParameterType == typeof(KafkaContext))
         {
@@ -155,13 +175,11 @@ public class TopicDelegateFactory
         }
         else
         {
-            if (factoryContext.ServiceProviderIsService is IServiceProviderIsService serviceProviderIsService)
+            if (factoryContext.ServiceProviderIsService is IServiceProviderIsService serviceProviderIsService &&
+                serviceProviderIsService.IsService(parameter.ParameterType))
             {
-                if (serviceProviderIsService.IsService(parameter.ParameterType))
-                {
-                    factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.ServiceParameter);
-                    return Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(parameter.ParameterType), RequestServicesExpr);
-                }
+                factoryContext.TrackedParameters.Add(parameter.Name, TopicDelegateFactoryConstants.ServiceParameter);
+                return Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(parameter.ParameterType), RequestServicesExpr);
             }
 
             return Expression.Empty();
@@ -170,8 +188,19 @@ public class TopicDelegateFactory
 
     private static Expression BindParameterFromKey(ParameterInfo parameter, bool allowEmpty, TopicDelegateFactoryContext factoryContext)
     {
-        return Expression.Convert(Expression.Property(KafkaContextExpr, "Key"), parameter.ParameterType);
+        factoryContext.KeyType = parameter.ParameterType;
+        return Expression.Convert(Expression.Property(KafkaContextExpr, KeyProperty), parameter.ParameterType);
     }
+
+    private static Expression BindParameterFromValue(ParameterInfo parameter, bool allowEmpty, TopicDelegateFactoryContext factoryContext)
+    {
+        factoryContext.ValueType = parameter.ParameterType;
+        return Expression.Convert(Expression.Property(KafkaContextExpr, ValueProperty), parameter.ParameterType);
+    }
+
+    //private static Expression BindParameterFromProperty(ParameterInfo parameter, MemberExpression property, PropertyInfo itemProperty, string key, RequestDelegateFactoryContext factoryContext, string source) =>
+    //    BindParameterFromValue(parameter, GetValueFromProperty(property, itemProperty, key, GetExpressionType(parameter.ParameterType)), factoryContext, source);
+
 
     private static IReadOnlyList<object> AsReadOnlyList(IList<object> metadata)
     {
@@ -203,19 +232,22 @@ public class TopicDelegateFactory
         return factoryContext;
     }
 
-    internal class TopicDelegateFactoryConstants
+    internal static class TopicDelegateFactoryConstants
     {
         public const string KeyAttribute = "Key (Attribute)";
+        public const string ValueAttribute = "Value (Attribute)";
+        public const string HeaderAttribute = "Header (Attribute)";
+        public const string ServiceAttribute = "Service (Attribute)";
 
         public const string ServiceParameter = "Services (Inferred)";
     }
 }
 
-
-
 public class TopicDelegateMetadataResult
 {
     public IReadOnlyList<object> TopicMetadata { get; set; }
+    public Type TopicKeyType { get; internal set; }
+    public Type TopicValueType { get; internal set; }
 }
 
 public class TopicDelegateFactoryOptions
@@ -237,4 +269,6 @@ public class TopicDelegateFactoryContext
     public List<ParameterInfo> Parameters { get; set; }
     public Dictionary<string, string> TrackedParameters { get; set; } = new Dictionary<string, string>();
     public Expression MethodCall { get; internal set; }
+    public Type KeyType { get; internal set; }
+    public Type ValueType { get; internal set; }
 }

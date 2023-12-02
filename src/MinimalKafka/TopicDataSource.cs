@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using MinimalKafka.Factory;
 using System.Runtime.InteropServices;
 
 namespace MinimalKafka;
@@ -60,10 +61,18 @@ public sealed class TopicDataSource
 
     public IEnumerable<Topic> GetTopics()
     {
-        return _topicEntries.Select(x => new Topic()
+        foreach (var item in _topicEntries)
         {
-            TopicName = x.TopicName,
-            TopicHandler = x.TopicHandler,
-        });
+            var results = TopicDelegateFactory.Create(item.TopicHandler, new TopicDelegateFactoryOptions()
+            {
+                ServiceProvider = ServiceProvider,
+            });
+
+            yield return new Topic()
+            {
+                TopicHandler = results.TopicDelegate,
+                TopicName = item.TopicName,
+            };
+        }
     }
 }

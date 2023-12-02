@@ -15,15 +15,12 @@ public class Tests
 
         var app = builder.Build();
 
-        app.MapTopic("order.snapshot", (IServiceProvider provider, string key, string value) =>
-        {
-            Debug.WriteLine(key + ":" + value);
-        });
+        app.MapTopic("order.snapshot",Handle);
 
-        app.MapTopic("order.events", ([FromKey] string bla, string value) =>
-        {
-            Debug.WriteLine(bla + ":" + value);
-        });
+        //app.MapTopic("order.events", ([FromKey] string bla, string value) =>
+        //{
+        //    Debug.WriteLine(bla + ":" + value);
+        //});
 
         //var topics = app.Services.GetRequiredService<TopicConsumer>();
 
@@ -31,4 +28,10 @@ public class Tests
 
 
     }
+
+    public async Task Handle(IServiceProvider provider, string key, string value)
+    {
+        Debug.WriteLine(key + ":" + value);
+    }
+
 }

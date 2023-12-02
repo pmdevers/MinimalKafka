@@ -1,14 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Attributes;
 using MinimalKafka.Factory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MinimalKafka.Tests;
+
 internal class FactoryTests
 {
     [Test]
@@ -18,32 +14,29 @@ internal class FactoryTests
 
         serviceCollection.AddTransient<Dummy>();
 
-        var del = (KafkaContext context) => { };
-
-        //var result = TopicDelegateFactory.InferMetaData(del.Method, new()
-        //{
-        //    ServiceProvider = serviceCollection.BuildServiceProvider(),
-        //});
-
         var result = TopicDelegateFactory.Create(Handle, new()
         {
             ServiceProvider = serviceCollection.BuildServiceProvider(),
         });
 
-        var message = new Confluent.Kafka.Message<string, string>()
+        var consumeResult = new Confluent.Kafka.ConsumeResult<string, string>()
         {
-            Key = "hello",
-            Value = "hello",
+            Message = new()
+            {
+                Key = "hello",
+                Value = "hello from Value",
+            },
         };
 
-        var context = new KafkaContext<string, string>(message, serviceCollection.BuildServiceProvider());
+        var context = KafkaContext.Create(consumeResult, serviceCollection.BuildServiceProvider());
 
         result.TopicDelegate.Invoke(context);
     }
 
-    public Task Handle(KafkaContext context, Dummy dummy, [FromKey] string key)
+    public Task Handle(KafkaContext context, [FromServices] Dummy dummy, string key, [FromValue] string value)
     {
         return Task.CompletedTask;
+
     }
 }
 

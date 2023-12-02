@@ -18,7 +18,7 @@ public sealed class TopicConsumerService : IHostedService
     {
         foreach (var item in _builder.DataSource.GetTopics())
         {
-            Task.Run(() => new TopicConsumer(item, _serviceProvider).StartAsync(cancellationToken));
+            Task.Run(() => new TopicConsumer(item, _serviceProvider).StartAsync(cancellationToken), cancellationToken);
         }
 
         return Task.CompletedTask;

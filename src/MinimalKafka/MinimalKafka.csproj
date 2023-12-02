@@ -1,4 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
 
   <Import Project="..\..\props\lib.props" />
 
@@ -14,6 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="2.2.0" />
+    <ProjectReference Include="..\..\confluent-kafka-dotnet\src\Confluent.Kafka\Confluent.Kafka.csproj" />
   </ItemGroup>
 </Project>
