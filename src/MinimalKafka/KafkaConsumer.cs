@@ -92,12 +92,12 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
         builder.MetaData().Set<IKeyDeserializerMetadata>(options, (x, builder) =>
         {
-            var deserializer = (IDeserializer<TKey>)x.KeyDeserializer.Invoke(options.ServiceProvider, typeof(TKey));
+            var deserializer = (IDeserializer<TKey>)x.KeyDeserializer(options.ServiceProvider, typeof(TKey));
             builder.SetKeyDeserializer(deserializer);
         });
         builder.MetaData().Set<IValueDeserializerMetadata>(options, (x, builder) =>
         {
-            var deserializer = (IDeserializer<TValue>)x.ValueDeserializer.Invoke(options.ServiceProvider, typeof(TValue));
+            var deserializer = (IDeserializer<TValue>)x.ValueDeserializer(options.ServiceProvider, typeof(TValue));
             builder.SetValueDeserializer(deserializer);
         });
 
