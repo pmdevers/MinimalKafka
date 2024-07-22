@@ -1,6 +1,5 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using Pmdevers.MinimalKafka;
 using Pmdevers.MinimalKafka.Builders;
 using Pmdevers.MinimalKafka.Metadata;
 

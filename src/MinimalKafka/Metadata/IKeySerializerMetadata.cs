@@ -1,5 +1,4 @@
-﻿using Confluent.Kafka;
-using Pmdevers.MinimalKafka.Helpers;
+﻿using Pmdevers.MinimalKafka.Helpers;
 
 namespace Pmdevers.MinimalKafka.Metadata;
 public interface IKeyDeserializerMetadata

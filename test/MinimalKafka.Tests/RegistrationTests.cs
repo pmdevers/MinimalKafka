@@ -12,15 +12,16 @@ public class ServiceCollectionTests
     {
         var services = new ServiceCollection();
 
-        services.AddMinimalKafka(config => { 
-            
+        services.AddMinimalKafka(config =>
+        {
+
         });
 
         var provider = services.BuildServiceProvider();
 
         var getBuilder = () => provider.GetRequiredService<IKafkaBuilder>();
         var getService = () => provider.GetService<IHostedService>() as KafkaService;
-        
+
         getBuilder.Should().NotThrow();
         getService.Should().NotThrow();
     }

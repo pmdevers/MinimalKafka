@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Threading;
 
 namespace Pmdevers.MinimalKafka;
 public interface IKafkaProcess
@@ -51,7 +50,7 @@ public class KafkaProcess : IKafkaProcess
 
             }
             _consumer.Logger.LogInformation("Dropping out of consume loop");
-        });
+        }, cancellationToken);
     }
 
     public void Stop()

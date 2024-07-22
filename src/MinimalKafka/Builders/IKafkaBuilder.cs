@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Pmdevers.MinimalKafka.Builders;
+﻿namespace Pmdevers.MinimalKafka.Builders;
 
 public interface IKafkaBuilder
 {

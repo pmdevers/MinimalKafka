@@ -10,8 +10,8 @@ public class KafkaProcessTests
         var consumer = Substitute.For<KafkaConsumer>();
         var testMessage = new ConsumeResult<string, string>()
         {
-            Message = new() 
-            { 
+            Message = new()
+            {
                 Key = "key",
                 Value = "value"
             }
@@ -25,10 +25,11 @@ public class KafkaProcessTests
         var kafkaprocess = KafkaProcess.Create(new()
         {
             Consumer = consumer,
-            Delegate = (context) => {
+            Delegate = (context) =>
+            {
 
                 token.Cancel();
-                return Task.CompletedTask; 
+                return Task.CompletedTask;
 
             }
         });

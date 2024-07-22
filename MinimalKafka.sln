@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka", "src\Minimal
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka.Tests", "test\MinimalKafka.Tests\MinimalKafka.Tests.csproj", "{C58EB934-4DB2-4572-AEAE-9329057A94A7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{FF927BA2-E4C3-4D02-ACD4-251E68C149E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examples", "examples\Examples\Examples.csproj", "{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +29,10 @@ Global
 		{C58EB934-4DB2-4572-AEAE-9329057A94A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C58EB934-4DB2-4572-AEAE-9329057A94A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C58EB934-4DB2-4572-AEAE-9329057A94A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +40,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{AD3D9E12-10F9-463D-A918-DDCF6286409E} = {A09FD86F-4832-467D-96BD-74DDD5066B2E}
 		{C58EB934-4DB2-4572-AEAE-9329057A94A7} = {1C8F1D9A-608B-4F46-8A59-3CF48AA4AF9D}
+		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96} = {FF927BA2-E4C3-4D02-ACD4-251E68C149E4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3EFB6EF-B785-4560-A9DB-E5BB7DADBFF4}
