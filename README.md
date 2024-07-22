@@ -33,7 +33,7 @@ var builder = WebApplication.CreateBuilder(args);
           .WithOffsetReset(AutoOffsetReset.Earliest); 
 });
 
-var app = builder.BuildWithFeatures();
+var app = builder.Build();
 
 app.MapTopic("topic.name", (string key, string value) => {
     
