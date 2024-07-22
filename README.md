@@ -2,6 +2,8 @@
 
 MinimalKafka is a Kafka consumer library designed to consume messages similarly to a Minimal API. This repository provides a streamlined and efficient way to work with Kafka consumers in .NET 8.0.
 
+![Alt text](/assets/logo_256.png "Minimal Kafka logo")
+
 ## Features
 
 - Simple and minimalistic Kafka consumer setup
