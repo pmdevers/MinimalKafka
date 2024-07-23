@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 public abstract class KafkaContext
 {
     public abstract object? Key { get; }
@@ -14,7 +14,7 @@ public abstract class KafkaContext
     public static KafkaContext Create(object result, IServiceProvider serviceProvider)
     {
         var resultType = result.GetType();
-        if(!resultType.IsGenericType)
+        if (!resultType.IsGenericType)
         {
             return Empty;
         }

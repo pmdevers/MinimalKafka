@@ -1,14 +1,14 @@
 ﻿using Confluent.Kafka;
-using Pmdevers.MinimalKafka.Metadata;
+using MinimalKafka.Metadata;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 
 internal class MetadataConsumerBuilder<TKey, TValue>
 {
     private readonly KafkaConsumerOptions _options;
     private readonly ConsumerBuilder<TKey, TValue> _consumerBuilder;
-    
+
     public MetadataConsumerBuilder(KafkaConsumerOptions options)
     {
         _options = options;
@@ -45,7 +45,7 @@ internal class MetadataConsumerBuilder<TKey, TValue>
 
     private void SetDeserializers(ConsumerBuilder<TKey, TValue> builder)
     {
-        if(GetMetaData<IKeyDeserializerMetadata>(out var key))
+        if (GetMetaData<IKeyDeserializerMetadata>(out var key))
         {
             var keyDeserializer = (IDeserializer<TKey>)key.KeyDeserializer(_options.ServiceProvider, typeof(TKey));
             builder.SetKeyDeserializer(keyDeserializer);

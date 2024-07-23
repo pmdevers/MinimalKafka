@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
-using Pmdevers.MinimalKafka.Helpers;
+using MinimalKafka.Helpers;
 
-namespace Pmdevers.MinimalKafka.Metadata;
+namespace MinimalKafka.Metadata;
 public interface IConsumerConfigMetadata
 {
     public void Set(ConsumerConfig config);

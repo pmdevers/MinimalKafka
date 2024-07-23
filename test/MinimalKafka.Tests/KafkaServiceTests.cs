@@ -2,9 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MinimalKafka.Builders;
 using NSubstitute;
-using Pmdevers.MinimalKafka;
-using Pmdevers.MinimalKafka.Builders;
 using Xunit;
 
 namespace MinimalKafka.Tests;

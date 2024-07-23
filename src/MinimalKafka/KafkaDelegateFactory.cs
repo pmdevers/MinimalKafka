@@ -1,11 +1,11 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using Pmdevers.MinimalKafka.Builders;
-using Pmdevers.MinimalKafka.Metadata;
+using MinimalKafka.Builders;
+using MinimalKafka.Metadata;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 
 public static class KafkaDelegateFactory
 {

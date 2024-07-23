@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
-using Pmdevers.MinimalKafka.Serializers;
+using MinimalKafka.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

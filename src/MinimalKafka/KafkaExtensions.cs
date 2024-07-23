@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Pmdevers.MinimalKafka.Builders;
-using Pmdevers.MinimalKafka.Extension;
-using Pmdevers.MinimalKafka.Serializers;
+using MinimalKafka.Builders;
+using MinimalKafka.Extension;
+using MinimalKafka.Serializers;
 using System.Text.Json;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 
 public static class KafkaExtensions
 {

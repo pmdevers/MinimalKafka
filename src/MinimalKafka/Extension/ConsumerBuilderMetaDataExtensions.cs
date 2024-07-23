@@ -1,9 +1,9 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using Pmdevers.MinimalKafka.Builders;
-using Pmdevers.MinimalKafka.Metadata;
+using MinimalKafka.Builders;
+using MinimalKafka.Metadata;
 
-namespace Pmdevers.MinimalKafka.Extension;
+namespace MinimalKafka.Extension;
 public static class ConsumerBuilderMetaDataExtensions
 {
     public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Func<IServiceProvider, Type, object> serializer)

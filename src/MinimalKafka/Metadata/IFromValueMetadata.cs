@@ -1,4 +1,4 @@
-﻿namespace Pmdevers.MinimalKafka.Metadata;
+﻿namespace MinimalKafka.Metadata;
 
 [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = true)]
 public sealed class FromValueAttribute : Attribute, IFromValueMetadata

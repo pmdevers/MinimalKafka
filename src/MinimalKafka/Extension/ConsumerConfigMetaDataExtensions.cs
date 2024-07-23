@@ -1,8 +1,8 @@
 ﻿using Confluent.Kafka;
-using Pmdevers.MinimalKafka.Builders;
-using Pmdevers.MinimalKafka.Metadata;
+using MinimalKafka.Builders;
+using MinimalKafka.Metadata;
 
-namespace Pmdevers.MinimalKafka.Extension;
+namespace MinimalKafka.Extension;
 public static class ConsumerConfigMetaDataExtensions
 {
     public static TBuilder WithGroupId<TBuilder>(this TBuilder builder, string groupId)

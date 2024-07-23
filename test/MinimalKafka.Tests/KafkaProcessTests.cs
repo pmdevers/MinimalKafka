@@ -1,6 +1,5 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
-using Pmdevers.MinimalKafka;
 
 namespace MinimalKafka.Tests;
 public class KafkaProcessTests

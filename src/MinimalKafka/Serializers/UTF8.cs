@@ -1,4 +1,4 @@
-﻿namespace Pmdevers.MinimalKafka.Serializers;
+﻿namespace MinimalKafka.Serializers;
 
 #pragma warning disable S101 // Types should be named in PascalCase
 internal static class UTF8

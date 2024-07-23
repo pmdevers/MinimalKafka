@@ -1,12 +1,12 @@
 using Confluent.Kafka;
-using Pmdevers.MinimalKafka;
-using Pmdevers.MinimalKafka.Extension;
+using MinimalKafka;
+using MinimalKafka.Extension;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMinimalKafka(config =>
  {
-     config.WithBootstrapServers("localhost:9092")
+     config.WithBootstrapServers("nas.home.lab:9092")
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithKeySerializer(Deserializers.Utf8)

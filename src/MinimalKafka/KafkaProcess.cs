@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 public interface IKafkaProcess
 {
     void Start(CancellationToken cancellationToken);

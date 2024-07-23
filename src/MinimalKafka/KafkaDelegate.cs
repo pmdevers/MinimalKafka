@@ -1,3 +1,3 @@
-﻿namespace Pmdevers.MinimalKafka;
+﻿namespace MinimalKafka;
 
 public delegate Task KafkaDelegate(KafkaContext context);

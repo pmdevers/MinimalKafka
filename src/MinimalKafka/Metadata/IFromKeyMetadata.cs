@@ -1,4 +1,4 @@
-﻿namespace Pmdevers.MinimalKafka.Metadata;
+﻿namespace MinimalKafka.Metadata;
 public interface IFromKeyMetadata
 {
 }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.Contracts;
 using System.Text.Json;
 
-namespace Pmdevers.MinimalKafka.Serializers;
+namespace MinimalKafka.Serializers;
 
 /// <summary>Initializes a new instance of the <see cref="KafkaJsonSerializer{T}"/> class.</summary>
 public class JsonTextSerializer<T>(

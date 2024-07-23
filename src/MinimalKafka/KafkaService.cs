@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Pmdevers.MinimalKafka.Builders;
+using MinimalKafka.Builders;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 internal class KafkaService(IKafkaBuilder builder) : IHostedService
 {
     public IEnumerable<IKafkaProcess> Processes

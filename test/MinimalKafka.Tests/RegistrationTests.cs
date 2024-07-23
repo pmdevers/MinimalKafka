@@ -1,8 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Pmdevers.MinimalKafka;
-using Pmdevers.MinimalKafka.Builders;
-using Pmdevers.MinimalKafka.Serializers;
+using MinimalKafka.Builders;
+using MinimalKafka.Serializers;
 
 namespace MinimalKafka.Tests;
 

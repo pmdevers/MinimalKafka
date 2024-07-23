@@ -1,9 +1,9 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Pmdevers.MinimalKafka.Metadata;
+using MinimalKafka.Metadata;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 
 public abstract class KafkaConsumer
 {
@@ -46,7 +46,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
     private readonly IServiceProvider _serviceProvider = options.ServiceProvider;
     private readonly string _topicName = options.TopicName;
 
-    private readonly IConsumer<TKey, TValue> _consumer = 
+    private readonly IConsumer<TKey, TValue> _consumer =
         new MetadataConsumerBuilder<TKey, TValue>(options).Build();
 
     private long _recordsConsumed;

@@ -1,4 +1,4 @@
-﻿namespace Pmdevers.MinimalKafka.Builders;
+﻿namespace MinimalKafka.Builders;
 
 public class KafkaBuilder(IServiceProvider serviceProvider) : IKafkaBuilder
 {

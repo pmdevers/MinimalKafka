@@ -1,5 +1,4 @@
 ﻿using Confluent.Kafka;
-using Pmdevers.MinimalKafka;
 
 namespace MinimalKafka.Tests;
 

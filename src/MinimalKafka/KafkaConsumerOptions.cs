@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Pmdevers.MinimalKafka;
+namespace MinimalKafka;
 
 public class KafkaConsumerOptions
 {

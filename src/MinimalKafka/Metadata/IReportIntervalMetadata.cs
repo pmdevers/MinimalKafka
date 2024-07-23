@@ -1,6 +1,6 @@
-﻿using Pmdevers.MinimalKafka.Helpers;
+﻿using MinimalKafka.Helpers;
 
-namespace Pmdevers.MinimalKafka.Metadata;
+namespace MinimalKafka.Metadata;
 public interface IReportIntervalMetadata
 {
     int ReportInterval { get; }

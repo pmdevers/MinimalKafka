@@ -10,7 +10,7 @@
     <ProjectName>MinimalKafka</ProjectName>
     <!-- Redefine MSBuild Properties -->
     <Company>$(CompanyName)</Company>
-    <RootNamespace>$(CompanyName).$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+    <RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageProjectUrl>https://github.com/pmdevers/MinimalKafka</PackageProjectUrl>
