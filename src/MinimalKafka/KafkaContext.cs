@@ -6,12 +6,12 @@ public abstract class KafkaContext
     public abstract object? Key { get; }
     public abstract object? Value { get; }
     public abstract Headers Headers { get; }
-
+    public abstract IReadOnlyList<object> MetaData { get; }
     public abstract IServiceProvider RequestServices { get; }
 
     public static KafkaContext Empty { get; } = new EmptyKafkaContext();
 
-    public static KafkaContext Create(object result, IServiceProvider serviceProvider)
+    public static KafkaContext Create(object result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata)
     {
         var resultType = result.GetType();
         if (!resultType.IsGenericType)
@@ -29,10 +29,10 @@ public abstract class KafkaContext
 
 
         var creator = typeof(KafkaContext<,>).MakeGenericType(keyType, valueType)
-            .GetConstructor([resultType, typeof(IServiceProvider)]);
+            .GetConstructor([resultType, typeof(IServiceProvider), typeof(IReadOnlyList<object>)]);
 
         return (KafkaContext)(
-            creator?.Invoke([result, serviceProvider]) ??
+            creator?.Invoke([result, serviceProvider, metadata]) ??
             Empty
         );
     }
@@ -47,9 +47,11 @@ internal class EmptyKafkaContext : KafkaContext
     public override Headers Headers => [];
 
     public override IServiceProvider RequestServices => EmptyServiceProvider.Instance;
+
+    public override IReadOnlyList<object> MetaData => [];
 }
 
-internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider) : KafkaContext
+internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata) : KafkaContext
 {
     public override object? Key => result.Message.Key;
 
@@ -58,4 +60,6 @@ internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IS
     public override Headers Headers => result.Message.Headers;
 
     public override IServiceProvider RequestServices => serviceProvider;
+
+    public override IReadOnlyList<object> MetaData => metadata;
 }

@@ -26,7 +26,7 @@ public class KafkaContextTests
         var serviceProvider = Substitute.For<IServiceProvider>();
 
         // Act
-        var context = KafkaContext.Create(invalidResult, serviceProvider);
+        var context = KafkaContext.Create(invalidResult, serviceProvider, []);
 
         // Assert
         context.Should().BeSameAs(KafkaContext.Empty);
@@ -52,7 +52,7 @@ public class KafkaContextTests
         var serviceProvider = Substitute.For<IServiceProvider>();
 
         // Act
-        var context = KafkaContext.Create(consumeResult, serviceProvider);
+        var context = KafkaContext.Create(consumeResult, serviceProvider, []);
 
         // Assert
         context.Should().BeOfType<KafkaContext<string, string>>();
@@ -111,7 +111,7 @@ public class KafkaContextTests
         };
 
         var serviceProvider = Substitute.For<IServiceProvider>();
-        var context = new KafkaContext<string, string>(consumeResult, serviceProvider);
+        var context = new KafkaContext<string, string>(consumeResult, serviceProvider, []);
 
         // Act & Assert
         context.Key.Should().Be(key);

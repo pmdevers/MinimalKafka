@@ -11,9 +11,9 @@ public class GroupIdMetadata(string name) : IGroupIdMetadata, IConsumerConfigMet
 {
     public string GroupId { get; } = name;
 
-    public void Set(ConsumerConfig config)
+    public void Set(ClientConfig config)
     {
-        config.GroupId = GroupId;
+        ((ConsumerConfig)config).GroupId = GroupId;
     }
 
     /// <inheritdoc/>

@@ -2,9 +2,18 @@
 using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Metadata;
-public interface IConsumerConfigMetadata
+
+public interface IClientConfigMetadata
 {
-    public void Set(ConsumerConfig config);
+    public void Set(ClientConfig config);
+}
+
+public interface IConsumerConfigMetadata : IClientConfigMetadata
+{
+}
+
+public interface IProducerConfigMetadata : IClientConfigMetadata
+{
 }
 
 public interface IAutoOffsetResetMetadata
@@ -16,9 +25,9 @@ public class AutoOffsetResetMetadata(AutoOffsetReset autoOffsetReset) : IAutoOff
 {
     public AutoOffsetReset AutoOffsetReset => autoOffsetReset;
 
-    public void Set(ConsumerConfig config)
+    public void Set(ClientConfig config)
     {
-        config.AutoOffsetReset = AutoOffsetReset;
+        ((ConsumerConfig)config).AutoOffsetReset = AutoOffsetReset;
     }
 
     public override string ToString()

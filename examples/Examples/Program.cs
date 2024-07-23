@@ -9,17 +9,19 @@ builder.Services.AddMinimalKafka(config =>
      config.WithBootstrapServers("nas.home.lab:9092")
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
-           .WithKeySerializer(Deserializers.Utf8)
-           .WithValueSerializer(Deserializers.Utf8);
+           .WithKeyDeserializer(Deserializers.Utf8)
+           .WithValueDeserializer(Deserializers.Utf8);
  });
 
 var app = builder.Build();
 
-app.MapTopic("topic.name", (string key, string value) =>
+app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
 {
-
     Console.WriteLine($"{key} - {value}");
-    return Task.CompletedTask;
+
+    var result =  await context.ProduceAsync("test2", key, value);
+
+    Console.WriteLine($"Produced {result.Status}");
 
 });
 

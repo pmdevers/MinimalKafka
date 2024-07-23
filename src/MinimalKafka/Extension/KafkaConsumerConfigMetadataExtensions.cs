@@ -3,7 +3,7 @@ using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Extension;
-public static class ConsumerConfigMetaDataExtensions
+public static class KafkaConsumerConfigMetadataExtensions
 {
     public static TBuilder WithGroupId<TBuilder>(this TBuilder builder, string groupId)
         where TBuilder : IKafkaConventionBuilder
@@ -29,7 +29,7 @@ public static class ConsumerConfigMetaDataExtensions
     public static TBuilder WithReportInterval<TBuilder>(this TBuilder builder, int reportInterval)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithSingle(new ReportIntervalMetaData(reportInterval));
+        builder.WithSingle(new ReportIntervalMetadata(reportInterval));
         return builder;
     }
 

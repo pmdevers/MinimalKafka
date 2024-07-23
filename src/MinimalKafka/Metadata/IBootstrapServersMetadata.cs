@@ -7,11 +7,11 @@ public interface IBootstrapServersMetadata
     public string BootstrapServers { get; }
 }
 
-public class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServersMetadata, IConsumerConfigMetadata
+public class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServersMetadata, IConsumerConfigMetadata, IProducerConfigMetadata
 {
     public string BootstrapServers => bootstrapServers;
 
-    public void Set(ConsumerConfig config)
+    public void Set(ClientConfig config)
     {
         config.BootstrapServers = BootstrapServers;
     }

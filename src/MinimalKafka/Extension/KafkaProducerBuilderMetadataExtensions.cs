@@ -4,59 +4,60 @@ using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Extension;
-public static class ConsumerBuilderMetaDataExtensions
+
+public static class KafkaProducerBuilderMetadataExtensions
 {
-    public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Func<IServiceProvider, Type, object> serializer)
+    public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Func<IKafkaProducerBuilder, object> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithSingle(new KeyDeserializerMetaData(serializer));
+        builder.WithSingle(new KeySerializerMetadata(serializer));
         return builder;
     }
 
     public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Type serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        if (!serializer.IsTheGenericType(typeof(IDeserializer<>)))
+        if (!serializer.IsTheGenericType(typeof(ISerializer<>)))
         {
-            throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(IDeserializer<>)}'");
+            throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(ISerializer<>)}'");
         }
-        builder.WithKeySerializer((s, t) => s.GetRequiredService(serializer.MakeGenericType(t)));
+        builder.WithKeySerializer((s) => s.ServiceProvider.GetRequiredService(serializer.MakeGenericType(s.KeyType)));
         return builder;
     }
 
     public static TBuilder WithKeySerializer<TBuilder, T>(this TBuilder builder, IDeserializer<T> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithKeySerializer((s, t) => serializer);
+        builder.WithKeySerializer((s) => serializer);
         return builder;
     }
 
-    public static TBuilder WithValueSerializer<TBuilder>(this TBuilder builder, Func<IServiceProvider, Type, object> serializer)
+    public static TBuilder WithValueSerializer<TBuilder>(this TBuilder builder, Func<IKafkaProducerBuilder, object> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithSingle(new ValueDeserializerMetaData(serializer));
+        builder.WithSingle(new ValueSerializerMetadata(serializer));
         return builder;
     }
 
     public static TBuilder WithValueSerializer<TBuilder>(this TBuilder builder, Type serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        if (!serializer.IsTheGenericType(typeof(IDeserializer<>)))
+        if (!serializer.IsTheGenericType(typeof(ISerializer<>)))
         {
-            throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(IDeserializer<>)}'");
+            throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(ISerializer<>)}'");
         }
-        builder.WithValueSerializer((s, t) => s.GetRequiredService(serializer.MakeGenericType(t)));
+        builder.WithValueSerializer((s) => s.ServiceProvider.GetRequiredService(serializer.MakeGenericType(s.ValueType)));
         return builder;
     }
 
-    public static TBuilder WithValueSerializer<TBuilder, T>(this TBuilder builder, IDeserializer<T> serializer)
+    public static TBuilder WithValueSerializer<TBuilder, T>(this TBuilder builder, ISerializer<T> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithValueSerializer((s, t) => serializer);
+        builder.WithValueSerializer((s) => serializer);
         return builder;
     }
 
-    public static bool IsTheGenericType(this Type candidateType, Type genericType)
+    private static bool IsTheGenericType(this Type candidateType, Type genericType)
     {
         return
             candidateType != null && genericType != null &&

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Confluent.Kafka;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
@@ -15,8 +16,8 @@ public static class KafkaExtensions
         var conventions = new List<Action<IKafkaBuilder>>();
         var configBuilder = new KafkaConventionBuilder(conventions, []);
 
-        configBuilder.WithKeySerializer(typeof(JsonTextSerializer<>));
-        configBuilder.WithValueSerializer(typeof(JsonTextSerializer<>));
+        configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
+        configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
 
         config(configBuilder);
 
@@ -59,7 +60,6 @@ public static class KafkaExtensions
 
         return builder;
     }
-
     public static TBuilder WithSingle<TBuilder>(this TBuilder builder, object metadata)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -67,8 +67,6 @@ public static class KafkaExtensions
         builder.WithMetaData(metadata);
         return builder;
     }
-
-
     public static TBuilder RemoveMetaData<TBuilder>(this TBuilder builder, object item)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -79,10 +77,20 @@ public static class KafkaExtensions
 
         return builder;
     }
-
     private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;
+    }
+
+
+    public static Task<DeliveryResult<TKey, TValue>> ProduceAsync<TKey, TValue>(this KafkaContext context, string topic, TKey key, TValue value)
+        => Produce(context, topic, new Message<TKey, TValue>() {  Key = key, Value = value });
+
+    public static async Task<DeliveryResult<TKey, TValue>> Produce<TKey, TValue>(this KafkaContext context, string topic, Message<TKey, TValue> message)
+    {
+        var producer = new KafkaProducerBuilder<TKey, TValue>(context.MetaData, context.RequestServices)
+            .Build();
+        return await producer.ProduceAsync(topic, message);   
     }
 }

@@ -47,11 +47,11 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
     private readonly string _topicName = options.TopicName;
 
     private readonly IConsumer<TKey, TValue> _consumer =
-        new MetadataConsumerBuilder<TKey, TValue>(options.Metadata, options.ServiceProvider).Build();
+        new KafkaConsumerBuilder<TKey, TValue>(options.Metadata, options.ServiceProvider).Build();
 
     private long _recordsConsumed;
     private readonly int _consumeReportInterval =
-        options.Metadata.OfType<ReportIntervalMetaData>().FirstOrDefault()?.ReportInterval
+        options.Metadata.OfType<ReportIntervalMetadata>().FirstOrDefault()?.ReportInterval
         ?? 5;
 
     public override ILogger Logger => options.KafkaLogger;
@@ -66,7 +66,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
             Logger.LogInformation("{Records} records consumed so far", _recordsConsumed);
         }
 
-        return KafkaContext.Create(result, scope.ServiceProvider);
+        return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
     }
 
     public override void Close()

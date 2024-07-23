@@ -119,5 +119,7 @@ public class KafkaProcessTests
         public override Headers Headers => [];
 
         public override IServiceProvider RequestServices => EmptyServiceProvider.Instance;
+
+        public override IReadOnlyList<object> MetaData => [];
     }
 }

@@ -4,16 +4,28 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MinimalKafka;
 
-internal class MetadataConsumerBuilder<TKey, TValue>
+public interface IKafkaConsumerBuilder
+{
+    IServiceProvider ServiceProvider { get; }
+    Type KeyType { get; }
+    Type ValueType { get; }
+    IReadOnlyList<object> Metadata { get; }
+}
+
+internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
 {
     private readonly ConsumerBuilder<TKey, TValue> _consumerBuilder;
-    private readonly IReadOnlyList<object> _metadata;
-    private readonly IServiceProvider _serviceProvider;
+    public IServiceProvider ServiceProvider {get; }
+    public Type KeyType { get; } = typeof(TKey);
 
-    public MetadataConsumerBuilder(IReadOnlyList<object> metadata, IServiceProvider serviceProvider)
+    public Type ValueType { get; } = typeof(TValue);
+
+    public IReadOnlyList<object> Metadata { get; }
+
+    public KafkaConsumerBuilder(IReadOnlyList<object> metadata, IServiceProvider serviceProvider)
     {
-        _metadata = metadata;
-        _serviceProvider = serviceProvider;
+        Metadata = metadata;
+        ServiceProvider = serviceProvider;
 
         var config = BuildConfig();
         _consumerBuilder = new ConsumerBuilder<TKey, TValue>(config);
@@ -22,7 +34,7 @@ internal class MetadataConsumerBuilder<TKey, TValue>
     private ConsumerConfig BuildConfig()
     {
         var config = new ConsumerConfig();
-        foreach (var item in _metadata.OfType<IConsumerConfigMetadata>())
+        foreach (var item in Metadata.OfType<IConsumerConfigMetadata>())
         {
             item.Set(config);
         }
@@ -31,7 +43,7 @@ internal class MetadataConsumerBuilder<TKey, TValue>
     private bool GetMetaData<T>([NotNullWhen(true)] out T? metadata)
     {
         metadata = default;
-        var m = _metadata.OfType<T>().FirstOrDefault();
+        var m = Metadata.OfType<T>().FirstOrDefault();
         if (m is not null)
         {
             metadata = m;
@@ -48,15 +60,15 @@ internal class MetadataConsumerBuilder<TKey, TValue>
 
     private void SetDeserializers(ConsumerBuilder<TKey, TValue> builder)
     {
-        if (GetMetaData<IKeyDeserializerMetadata>(out var key))
+        if (GetMetaData<KeyDeserializerMetadata>(out var key))
         {
-            var keyDeserializer = (IDeserializer<TKey>)key.KeyDeserializer(_serviceProvider, typeof(TKey));
+            var keyDeserializer = (IDeserializer<TKey>)key.Deserializer(this);
             builder.SetKeyDeserializer(keyDeserializer);
         }
 
-        if (GetMetaData<IValueDeserializerMetadata>(out var value))
+        if (GetMetaData<ValueDeserializerMetadata>(out var value))
         {
-            var valueDeserializer = (IDeserializer<TValue>)value.ValueDeserializer(_serviceProvider, typeof(TValue));
+            var valueDeserializer = (IDeserializer<TValue>)value.Deserializer(this);
             builder.SetValueDeserializer(valueDeserializer);
         }
     }
