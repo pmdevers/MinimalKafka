@@ -3,6 +3,6 @@
 public interface IKafkaBuilder
 {
     IServiceProvider ServiceProvider { get; }
-    KafkaDataSource? DataSource { get; set; }
+    IKafkaDataSource DataSource { get; set; }
     List<object> MetaData { get; }
 }

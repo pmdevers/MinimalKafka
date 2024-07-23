@@ -1,6 +1,13 @@
 ﻿namespace Pmdevers.MinimalKafka.Builders;
 
-public sealed class KafkaDataSource(IServiceProvider serviceProvider)
+public interface IKafkaDataSource
+{
+    IServiceProvider ServiceProvider { get; }
+    KafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler);
+    IEnumerable<IKafkaProcess> GetProceses();
+}
+
+public sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSource
 {
     private readonly List<KafkaProcessEntry> _entries = [];
 

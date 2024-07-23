@@ -13,17 +13,23 @@ public abstract class KafkaContext
 
     public static KafkaContext Create(object result, IServiceProvider serviceProvider)
     {
-        if (result.GetType().GetGenericTypeDefinition() != typeof(ConsumeResult<,>).GetGenericTypeDefinition())
+        var resultType = result.GetType();
+        if(!resultType.IsGenericType)
         {
             return Empty;
         }
 
-        var keyType = result.GetType().GenericTypeArguments[0];
-        var valueType = result.GetType().GenericTypeArguments[1];
+        if (resultType.GetGenericTypeDefinition() != typeof(ConsumeResult<,>).GetGenericTypeDefinition())
+        {
+            return Empty;
+        }
+
+        var keyType = resultType.GenericTypeArguments[0];
+        var valueType = resultType.GenericTypeArguments[1];
 
 
         var creator = typeof(KafkaContext<,>).MakeGenericType(keyType, valueType)
-            .GetConstructor([result.GetType(), typeof(IServiceProvider)]);
+            .GetConstructor([resultType, typeof(IServiceProvider)]);
 
         return (KafkaContext)(
             creator?.Invoke([result, serviceProvider]) ??

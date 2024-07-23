@@ -45,7 +45,9 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 {
     private readonly IServiceProvider _serviceProvider = options.ServiceProvider;
     private readonly string _topicName = options.TopicName;
-    private readonly IConsumer<TKey, TValue> _consumer = CreateConsumer(options);
+
+    private readonly IConsumer<TKey, TValue> _consumer = 
+        new MetadataConsumerBuilder<TKey, TValue>(options).Build();
 
     private long _recordsConsumed;
     private readonly int _consumeReportInterval =
@@ -79,53 +81,4 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
         _consumer.Subscribe(_topicName);
         Logger.LogInformation("Subscribed to topic: '{Topic}'", _topicName);
     }
-
-    private static IConsumer<TKey, TValue> CreateConsumer(KafkaConsumerOptions options)
-    {
-        var config = new ConsumerConfig();
-        foreach (var item in options.Metadata.OfType<IConsumerConfigMetadata>())
-        {
-            item.Set(config);
-        }
-
-        var builder = new ConsumerBuilder<TKey, TValue>(config);
-
-        builder.MetaData().Set<IKeyDeserializerMetadata>(options, (x, builder) =>
-        {
-            var deserializer = (IDeserializer<TKey>)x.KeyDeserializer(options.ServiceProvider, typeof(TKey));
-            builder.SetKeyDeserializer(deserializer);
-        });
-        builder.MetaData().Set<IValueDeserializerMetadata>(options, (x, builder) =>
-        {
-            var deserializer = (IDeserializer<TValue>)x.ValueDeserializer(options.ServiceProvider, typeof(TValue));
-            builder.SetValueDeserializer(deserializer);
-        });
-
-        return builder.Build();
-    }
-}
-
-internal class MetadataConsumerBuilder<TKey, TValue>(ConsumerBuilder<TKey, TValue> builder)
-{
-    private readonly ConsumerBuilder<TKey, TValue> _builder = builder;
-
-    public MetadataConsumerBuilder<TKey, TValue> Set<TMetadata>(
-        KafkaConsumerOptions options,
-        Action<TMetadata, ConsumerBuilder<TKey, TValue>> action)
-    {
-        var metadata = options.Metadata.OfType<TMetadata>().FirstOrDefault();
-        if (metadata is not null)
-        {
-            action.Invoke(metadata, _builder);
-        }
-
-        return this;
-    }
-}
-
-public static class ConsumerBuilderExtensions
-{
-    internal static MetadataConsumerBuilder<TKey, TValue> MetaData<TKey, TValue>(this ConsumerBuilder<TKey, TValue> builder)
-        => new(builder);
-
 }

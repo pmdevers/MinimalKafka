@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Pmdevers.MinimalKafka.Builders;
 using Pmdevers.MinimalKafka.Extension;
 using Pmdevers.MinimalKafka.Serializers;
+using System.Text.Json;
 
 namespace Pmdevers.MinimalKafka;
 
@@ -18,6 +20,7 @@ public static class KafkaExtensions
 
         config(configBuilder);
 
+        services.TryAddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.Web));
         services.AddTransient(typeof(JsonTextSerializer<>));
 
         services.AddSingleton<IKafkaBuilder>(s =>
@@ -77,7 +80,7 @@ public static class KafkaExtensions
         return builder;
     }
 
-    private static KafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
+    private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;

@@ -6,8 +6,6 @@ using Pmdevers.MinimalKafka.Metadata;
 namespace Pmdevers.MinimalKafka.Extension;
 public static class ConsumerBuilderMetaDataExtensions
 {
-
-
     public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Func<IServiceProvider, Type, object> serializer)
         where TBuilder : IKafkaConventionBuilder
     {

@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.Contracts;
 using System.Text.Json;
 
@@ -8,11 +9,11 @@ namespace Pmdevers.MinimalKafka.Serializers;
 /// <summary>Initializes a new instance of the <see cref="KafkaJsonSerializer{T}"/> class.</summary>
 public class JsonTextSerializer<T>(
     JsonSerializerOptions? jsonOptions,
-    ILogger<JsonTextSerializer<T>> logger) : ISerializer<T>, IDeserializer<T>
+    ILogger<JsonTextSerializer<T>>? logger = null) : ISerializer<T>, IDeserializer<T>
 {
     private readonly JsonSerializerOptions _jsonOptions = jsonOptions
             ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
-    private readonly ILogger _logger = logger;
+    private readonly ILogger _logger = logger ?? NullLogger<JsonTextSerializer<T>>.Instance;
 
     /// <inheritdoc />
     [Pure]
