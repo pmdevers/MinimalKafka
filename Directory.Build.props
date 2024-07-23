@@ -29,6 +29,7 @@
     <RepositoryUrl>https://github.com/pmdevers/MinimalKafka</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<GenerateDocumentationFile>false</GenerateDocumentationFile>
+ 
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,5 +37,6 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+	  <InternalsVisibleTo Include="MinimalKafka.Tests"/>
   </ItemGroup>
 </Project>

@@ -6,12 +6,15 @@ namespace MinimalKafka;
 
 internal class MetadataConsumerBuilder<TKey, TValue>
 {
-    private readonly KafkaConsumerOptions _options;
     private readonly ConsumerBuilder<TKey, TValue> _consumerBuilder;
+    private readonly IReadOnlyList<object> _metadata;
+    private readonly IServiceProvider _serviceProvider;
 
-    public MetadataConsumerBuilder(KafkaConsumerOptions options)
+    public MetadataConsumerBuilder(IReadOnlyList<object> metadata, IServiceProvider serviceProvider)
     {
-        _options = options;
+        _metadata = metadata;
+        _serviceProvider = serviceProvider;
+
         var config = BuildConfig();
         _consumerBuilder = new ConsumerBuilder<TKey, TValue>(config);
     }
@@ -19,7 +22,7 @@ internal class MetadataConsumerBuilder<TKey, TValue>
     private ConsumerConfig BuildConfig()
     {
         var config = new ConsumerConfig();
-        foreach (var item in _options.Metadata.OfType<IConsumerConfigMetadata>())
+        foreach (var item in _metadata.OfType<IConsumerConfigMetadata>())
         {
             item.Set(config);
         }
@@ -28,7 +31,7 @@ internal class MetadataConsumerBuilder<TKey, TValue>
     private bool GetMetaData<T>([NotNullWhen(true)] out T? metadata)
     {
         metadata = default;
-        var m = _options.Metadata.OfType<T>().FirstOrDefault();
+        var m = _metadata.OfType<T>().FirstOrDefault();
         if (m is not null)
         {
             metadata = m;
@@ -47,13 +50,13 @@ internal class MetadataConsumerBuilder<TKey, TValue>
     {
         if (GetMetaData<IKeyDeserializerMetadata>(out var key))
         {
-            var keyDeserializer = (IDeserializer<TKey>)key.KeyDeserializer(_options.ServiceProvider, typeof(TKey));
+            var keyDeserializer = (IDeserializer<TKey>)key.KeyDeserializer(_serviceProvider, typeof(TKey));
             builder.SetKeyDeserializer(keyDeserializer);
         }
 
         if (GetMetaData<IValueDeserializerMetadata>(out var value))
         {
-            var valueDeserializer = (IDeserializer<TValue>)value.ValueDeserializer(_options.ServiceProvider, typeof(TKey));
+            var valueDeserializer = (IDeserializer<TValue>)value.ValueDeserializer(_serviceProvider, typeof(TValue));
             builder.SetValueDeserializer(valueDeserializer);
         }
     }

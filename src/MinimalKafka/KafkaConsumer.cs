@@ -47,7 +47,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
     private readonly string _topicName = options.TopicName;
 
     private readonly IConsumer<TKey, TValue> _consumer =
-        new MetadataConsumerBuilder<TKey, TValue>(options).Build();
+        new MetadataConsumerBuilder<TKey, TValue>(options.Metadata, options.ServiceProvider).Build();
 
     private long _recordsConsumed;
     private readonly int _consumeReportInterval =
