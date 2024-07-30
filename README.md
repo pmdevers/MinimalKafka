@@ -1,5 +1,14 @@
 # MinimalKafka
 
+![Github Release](https://img.shields.io/github/v/release/pmdevers/MinimalKafka) 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/pmdevers/MinimalKafka/.github%2Fworkflows%2Fbuild-publish.yml) 
+![GitHub License](https://img.shields.io/github/license/pmdevers/MinimalKafka) 
+![Github Issues Open](https://img.shields.io/github/issues/pmdevers/MinimalKafka) 
+![Github Pull Request Open](https://img.shields.io/github/issues-pr/pmdevers/MinimalKafka) 
+[![Scheduled Code Security Testing](https://github.com/pmdevers/MinimalKafka/actions/workflows/security-analysis.yml/badge.svg?event=schedule)](https://github.com/pmdevers/MinimalKafka/actions/workflows/security-analysis.yml)
+
+
+
 MinimalKafka is a Kafka consumer library designed to consume messages similarly to a Minimal API. This repository provides a streamlined and efficient way to work with Kafka consumers in .NET 8.0.
 
 ![Alt text](/assets/logo_256_background.png "Minimal Kafka logo")
