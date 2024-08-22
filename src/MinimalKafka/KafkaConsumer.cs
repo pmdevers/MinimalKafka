@@ -63,7 +63,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
         if (++_recordsConsumed % _consumeReportInterval == 0)
         {
-            Logger.LogInformation("{Records} records consumed so far", _recordsConsumed);
+            Logger.LogInformation("Consumed '{Records}' records from topic '{Topic}' so far.", _recordsConsumed, result.Topic);
         }
 
         return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
@@ -71,7 +71,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override void Close()
     {
-        Logger.LogInformation("Close() on cunsumer called.");
+        Logger.LogInformation("Close() on consumer called.");
         _consumer.Close();
         _consumer.Dispose();
     }
