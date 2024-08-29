@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
 using MinimalKafka.Serializers;
+using System.Diagnostics;
 
 namespace MinimalKafka.Tests;
 
@@ -12,7 +13,10 @@ public class ServiceCollectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        static void config(IKafkaConventionBuilder builder) { }
+        static void config(IKafkaConventionBuilder builder) 
+        {
+            Debug.Write("config called");
+        }
 
         // Act
         services.AddMinimalKafka(config);
@@ -44,7 +48,10 @@ public class ServiceCollectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        static void config(IKafkaConventionBuilder builder) { }
+        static void config(IKafkaConventionBuilder builder)
+        {
+            Debug.Write("config called");
+        }
 
         // Act
         services.AddMinimalKafka(config);
@@ -59,9 +66,7 @@ public class ServiceCollectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var conventions = new List<Action<IKafkaBuilder>>();
-        var configBuilder = new KafkaConventionBuilder(conventions, []);
-
+                
         static void config(IKafkaConventionBuilder builder) => 
             builder.Should().BeOfType<KafkaConventionBuilder>();
 

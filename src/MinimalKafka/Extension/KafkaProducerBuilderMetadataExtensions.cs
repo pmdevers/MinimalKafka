@@ -25,7 +25,7 @@ public static class KafkaProducerBuilderMetadataExtensions
         return builder;
     }
 
-    public static TBuilder WithKeySerializer<TBuilder, T>(this TBuilder builder, IDeserializer<T> serializer)
+    public static TBuilder WithKeySerializer<TBuilder, T>(this TBuilder builder, ISerializer<T> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
         builder.WithKeySerializer((s) => serializer);
