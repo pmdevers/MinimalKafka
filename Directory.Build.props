@@ -1,42 +1,48 @@
 ﻿<!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
 <Project>
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
-    <CompanyName>Pmdevers</CompanyName>
-    <ProjectName>MinimalKafka</ProjectName>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<CompanyName>Pmdevers</CompanyName>
+		<ProjectName>MinimalKafka</ProjectName>
 
-	<Description>
-		MinimalKafka is a simple and efficient Kafka consumer library designed to work seamlessly with .NET 8.0. 
-	    It allows for minimalistic and straightforward message consumption similar to minimal APIs. 
-    </Description>
-	<Authors>Patrick Evers</Authors>
-	<Owners>$(CompanyName)</Owners>
-	<PackageTags>kafka kafka-consumer dotnet library minimal-api</PackageTags>
-	  
-	<!-- Redefine MSBuild Properties -->
-    <Company>$(CompanyName)</Company>
-    <RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<Description>
+			MinimalKafka is a simple and efficient Kafka consumer library designed to work seamlessly with .NET 8.0.
+			It allows for minimalistic and straightforward message consumption similar to minimal APIs.
+		</Description>
+		<Authors>Patrick Evers</Authors>
+		<Owners>$(CompanyName)</Owners>
+		<PackageTags>kafka kafka-consumer dotnet library minimal-api</PackageTags>
 
-    <PackageIcon>logo_128.png</PackageIcon>
-	<PackageTitle></PackageTitle>
-	<PackageProjectUrl>https://github.com/pmdevers/MinimalKafka</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/pmdevers/MinimalKafka</RepositoryUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<GenerateDocumentationFile>false</GenerateDocumentationFile>
- 
-  </PropertyGroup>
+		<!-- Redefine MSBuild Properties -->
+		<Company>$(CompanyName)</Company>
+		<RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 
-  <ItemGroup>
-    <None Include="..\..\assets\logo_128.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-	  <InternalsVisibleTo Include="MinimalKafka.Tests"/>
-  </ItemGroup>
+		<PackageIcon>logo_128.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/pmdevers/MinimalKafka</PackageProjectUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/pmdevers/MinimalKafka</RepositoryUrl>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\assets\logo_128.png">
+			<Pack>True</Pack>
+			<Visible>False</Visible>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<Visible>False</Visible>
+			<PackagePath>\</PackagePath>
+		</None>
+		<InternalsVisibleTo Include="MinimalKafka.Tests"/>
+	</ItemGroup>
 </Project>
