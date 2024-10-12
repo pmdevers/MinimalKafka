@@ -51,7 +51,7 @@ internal class EmptyKafkaContext : KafkaContext
 
     public override IReadOnlyList<object> MetaData => [];
 
-    public override DateTime Timestamp => DateTime.Now;
+    public override DateTime Timestamp => TimeProvider.System.GetUtcNow().DateTime;
 }
 
 internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata) : KafkaContext
