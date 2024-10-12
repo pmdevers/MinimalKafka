@@ -121,5 +121,7 @@ public class KafkaProcessTests
         public override IServiceProvider RequestServices => EmptyServiceProvider.Instance;
 
         public override IReadOnlyList<object> MetaData => [];
+
+        public override DateTime Timestamp => TimeProvider.System.GetUtcNow().DateTime;
     }
 }
