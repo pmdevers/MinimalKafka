@@ -8,6 +8,7 @@ public abstract class KafkaContext
     public abstract Headers Headers { get; }
     public abstract IReadOnlyList<object> MetaData { get; }
     public abstract IServiceProvider RequestServices { get; }
+    public abstract DateTime Timestamp { get; }
 
     public static KafkaContext Empty { get; } = new EmptyKafkaContext();
 
@@ -49,6 +50,8 @@ internal class EmptyKafkaContext : KafkaContext
     public override IServiceProvider RequestServices => EmptyServiceProvider.Instance;
 
     public override IReadOnlyList<object> MetaData => [];
+
+    public override DateTime Timestamp => DateTime.Now;
 }
 
 internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata) : KafkaContext
@@ -62,4 +65,6 @@ internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IS
     public override IServiceProvider RequestServices => serviceProvider;
 
     public override IReadOnlyList<object> MetaData => metadata;
+
+    public override DateTime Timestamp => result.Message.Timestamp.UtcDateTime;
 }
