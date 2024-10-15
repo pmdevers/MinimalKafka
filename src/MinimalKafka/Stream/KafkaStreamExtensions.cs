@@ -1,42 +1,22 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Builders;
+using MinimalKafka.Stream.Internals;
 
 namespace MinimalKafka.Stream;
 public static class KafkaStreamExtensions
 {
-    public static KafkaStreamBuilder MapStream<TKey, TLeft, TRight>(this IApplicationBuilder builder,
-        Func<KafkaContext, Tuple<TKey, TLeft, TRight>, Task> handler
-        )
-        where TKey : IEquatable<TKey>
+    public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IApplicationBuilder builder, string topic)
     {
-        var process = new KafkaStream<TKey, TLeft, TRight>(
-            TimeSpan.FromSeconds(5), handler
-        );
-        return new KafkaStreamBuilder(builder, process);
-    }
-}
+        var sb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
 
-public class KafkaStreamBuilder
-{
-    private readonly IApplicationBuilder _builder;
-    private readonly IKafkaStream _stream;
-
-    public KafkaStreamBuilder(IApplicationBuilder builder, IKafkaStream stream)
-    {
-        _builder = builder;
-        _stream = stream;
+        return sb.MapStream<TKey, TValue>(topic);
     }
 
-    public KafkaStreamBuilder WithLeft(string left) 
+    public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IKafkaBuilder builder, string topic)
     {
-        _builder.MapTopic(left, _stream.GetLeft());
-        return this;
-    }
-
-    public KafkaStreamBuilder WithRight(string right)
-    {
-        _builder.MapTopic(right, _stream.GetRight());
-        return this;
+        var sb = new KafkaStreamBuilder<TKey, TValue>(builder, topic);
+        return sb;
     }
 }
 

@@ -12,18 +12,31 @@ builder.Services.AddMinimalKafka(config =>
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithKeyDeserializer(typeof(JsonTextSerializer<>))
-           .WithValueDeserializer(typeof(JsonTextSerializer<>));
+           .WithValueDeserializer(typeof(JsonTextSerializer<>))
+           .WithKeySerializer(typeof(JsonTextSerializer<>))
+           .WithValueSerializer(typeof(JsonTextSerializer<>));
  });
 
 var app = builder.Build();
 
-app.MapStream<Guid, Left, Right>((c, v) => 
-    { 
-     Console.WriteLine($"{v.Item1} - {v.Item2.value}, {v.Item3.value}");
-    return Task.CompletedTask;
-})
-    .WithLeft("left")
-    .WithRight("right");
+ 
+var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
+
+app.MapStream<Guid, string>("left")
+    .Join<Guid, string>("right").On(store, (k1, v1) => k1, (k2, v2) => k2)
+    .Into(async (c, k, v) =>
+    {
+        if(v.Item1 is null || v.Item2 is null)
+        {
+            return;
+        }
+
+        Console.WriteLine(v.Item1 + v.Item2);
+
+        var result = await c.ProduceAsync("result", k, v.Item1 + v.Item2);
+
+        Console.WriteLine(result.Message);
+    });
 
 app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
 {
@@ -36,10 +49,3 @@ app.MapTopic("topic.name", async (KafkaContext context, string key, string value
 });
 
 await app.RunAsync();
-
-#pragma warning disable S3903 // Types should be defined in named namespaces
-public record Left(Guid id, string value);
-
-public record Right(Guid id, string value);
-
-#pragma warning restore S3903 // Types should be defined in named namespaces
