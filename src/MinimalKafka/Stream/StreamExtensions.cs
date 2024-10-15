@@ -4,7 +4,7 @@ using MinimalKafka.Builders;
 using MinimalKafka.Stream.Internals;
 
 namespace MinimalKafka.Stream;
-public static class KafkaStreamExtensions
+public static class StreamExtensions
 {
     public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IApplicationBuilder builder, string topic)
     {
@@ -15,7 +15,7 @@ public static class KafkaStreamExtensions
 
     public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IKafkaBuilder builder, string topic)
     {
-        var sb = new KafkaStreamBuilder<TKey, TValue>(builder, topic);
+        var sb = new StreamBuilder<TKey, TValue>(builder, topic);
         return sb;
     }
 }

@@ -17,10 +17,11 @@ builder.Services.AddMinimalKafka(config =>
            .WithValueSerializer(typeof(JsonTextSerializer<>));
  });
 
-var app = builder.Build();
-
- 
 var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
+
+builder.Services.AddHostedService(x => store);
+
+var app = builder.Build();
 
 app.MapStream<Guid, string>("left")
     .Join<Guid, string>("right").On(store, (k1, v1) => k1, (k2, v2) => k2)

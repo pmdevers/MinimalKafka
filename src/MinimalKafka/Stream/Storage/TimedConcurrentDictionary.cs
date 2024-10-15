@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 
-namespace MinimalKafka.Stream;
+namespace MinimalKafka.Stream.Storage;
 
 /// <summary>
 /// A thread-safe dictionary that stores key-value pairs with an associated expiration time.
@@ -24,11 +26,11 @@ public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime)
     /// <param name="create">A function to create a new value if the key is not present in the dictionary.</param>
     /// <param name="update">A function to update the existing value if the key is present in the dictionary.</param>
     /// <returns>The newly added or updated value.</returns>
-    public TValue AddOrUpdate(TKey key, TValue value)
+    public TValue AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
         var result = _dictionary.AddOrUpdate(key,
-            new Tuple<TValue, DateTimeOffset>(value, TimeProvider.System.GetUtcNow()),
-            (k, v) => Tuple.Create(value, TimeProvider.System.GetUtcNow()));
+            (k) => new Tuple<TValue, DateTimeOffset>(create(k), TimeProvider.System.GetUtcNow()),
+            (k, v) => Tuple.Create(update(k, v.Item1), TimeProvider.System.GetUtcNow()));
 
         return result.Item1;
     }
