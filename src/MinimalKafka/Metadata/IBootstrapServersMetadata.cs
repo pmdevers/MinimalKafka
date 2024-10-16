@@ -13,7 +13,7 @@ public class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServe
 
     public void Set(ClientConfig config)
     {
-        config.BootstrapServers = BootstrapServers;
+        ((ConsumerConfig)config).BootstrapServers = BootstrapServers;
     }
 
     public override string ToString()

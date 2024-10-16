@@ -8,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMinimalKafka(config =>
  {
-     config.WithBootstrapServers("nas:9092")
+     config
+           .WithConfiguration(builder.Configuration.GetSection("MinimalKafka"))
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithKeyDeserializer(typeof(JsonTextSerializer<>))

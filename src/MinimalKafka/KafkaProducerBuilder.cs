@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
 using MinimalKafka.Metadata;
 using System.Diagnostics.CodeAnalysis;
 
@@ -30,9 +31,12 @@ public class KafkaProducerBuilder<TKey, TValue> : IKafkaProducerBuilder
         var config = BuildConfig();
         _producerContext = new(config);
     }
-    private ProducerConfig BuildConfig()
+    private ClientConfig BuildConfig()
     {
-        var config = new ProducerConfig();
+        var c = _metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
+
+        var config = new ProducerConfig(c);
+              
         foreach (var item in _metadata.OfType<IProducerConfigMetadata>())
         {
             item.Set(config);

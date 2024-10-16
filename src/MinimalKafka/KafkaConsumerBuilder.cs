@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
 using MinimalKafka.Metadata;
 using System.Diagnostics.CodeAnalysis;
 
@@ -31,9 +32,12 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
         _consumerBuilder = new ConsumerBuilder<TKey, TValue>(config);
     }
 
-    private ConsumerConfig BuildConfig()
+    private ClientConfig BuildConfig()
     {
-        var config = new ConsumerConfig();
+        var c = Metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
+        
+        var config = new ConsumerConfig(c);
+
         foreach (var item in Metadata.OfType<IConsumerConfigMetadata>())
         {
             item.Set(config);
