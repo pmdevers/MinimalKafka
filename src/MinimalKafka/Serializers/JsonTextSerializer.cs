@@ -1,6 +1,4 @@
 ﻿using Confluent.Kafka;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.Contracts;
 using System.Text.Json;
 
