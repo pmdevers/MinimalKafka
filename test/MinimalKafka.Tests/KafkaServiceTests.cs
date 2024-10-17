@@ -1,10 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
-using MinimalKafka.Builders;
-using NSubstitute;
-using Xunit;
+﻿using MinimalKafka.Builders;
 
 namespace MinimalKafka.Tests;
 

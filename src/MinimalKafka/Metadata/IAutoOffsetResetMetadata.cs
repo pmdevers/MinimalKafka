@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using MinimalKafka.Helpers;
+using System.Collections.Generic;
 
 namespace MinimalKafka.Metadata;
 
@@ -27,7 +28,7 @@ public class AutoOffsetResetMetadata(AutoOffsetReset autoOffsetReset) : IAutoOff
 
     public void Set(ClientConfig config)
     {
-        ((ConsumerConfig)config).AutoOffsetReset = AutoOffsetReset;
+        ((ConsumerConfig)config).AutoOffsetReset = autoOffsetReset;
     }
 
     public override string ToString()
