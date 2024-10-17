@@ -35,8 +35,8 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
     private ClientConfig BuildConfig()
     {
         var c = Metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
-        
-        var config = new ConsumerConfig(c);
+
+        ConsumerConfig config = c is null ? new() : new(c);
 
         foreach (var item in Metadata.OfType<IConsumerConfigMetadata>())
         {

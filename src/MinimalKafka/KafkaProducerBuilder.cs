@@ -35,8 +35,8 @@ public class KafkaProducerBuilder<TKey, TValue> : IKafkaProducerBuilder
     {
         var c = _metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
 
-        var config = new ProducerConfig(c);
-              
+        ProducerConfig config = c is null ? new() : new(c);
+
         foreach (var item in _metadata.OfType<IProducerConfigMetadata>())
         {
             item.Set(config);
