@@ -31,7 +31,7 @@ public class KafkaProducerBuilder<TKey, TValue> : IKafkaProducerBuilder
         var config = BuildConfig();
         _producerContext = new(config);
     }
-    private ClientConfig BuildConfig()
+    private ProducerConfig BuildConfig()
     {
         var c = _metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
 

@@ -3,17 +3,12 @@ using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class JoinBuilder<K1, V1, K2, V2> : IJoinBuilder<K1, V1, K2, V2>
+internal class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder,
+    ISourceBlock<Tuple<KafkaContext, K1, V1>> left, string topic) : IJoinBuilder<K1, V1, K2, V2>
 {
-    private readonly ISourceBlock<Tuple<KafkaContext, K1, V1>> _left;
-    private readonly ISourceBlock<Tuple<KafkaContext, K2, V2>> _right;
+    private readonly ISourceBlock<Tuple<KafkaContext, K1, V1>> _left = left;
+    private readonly ISourceBlock<Tuple<KafkaContext, K2, V2>> _right = new ConsumeBlock<K2, V2>(builder, topic);
 
-    public JoinBuilder(IKafkaBuilder builder,
-        ISourceBlock<Tuple<KafkaContext, K1, V1>> left, string topic)
-    {
-        _left = left;
-        _right = new ConsumeBlock<K2, V2>(builder, topic);
-    }
     public IIntoBuilder<TKey, Tuple<V1?, V2?>> On<TKey>(IStreamStore<TKey, Tuple<V1?, V2?>> store, Func<K1, V1, TKey> leftKey, Func<K2, V2, TKey> rightKey)
     {
         var leftKeyTransform = new KeyBlock<K1, V1, TKey>(leftKey);
@@ -38,24 +33,18 @@ internal class JoinBuilder<K1, V1, K2, V2> : IJoinBuilder<K1, V1, K2, V2>
 
 }
 
-public class StoreBlock<TKey, TIn, TOut>
+public class StoreBlock<TKey, TIn, TOut>(IStreamStore<TKey, TOut> store, Func<TIn, TOut> create, Func<TOut, TIn, TOut> update)
     : IPropagatorBlock<
         Tuple<KafkaContext, TKey, TIn>,
         Tuple<KafkaContext, TKey, TOut>>
 {
     private readonly IPropagatorBlock<
         Tuple<KafkaContext, TKey, TIn>,
-        Tuple<KafkaContext, TKey, TOut>> _transform;
-
-    public StoreBlock(IStreamStore<TKey, TOut> store, Func<TIn, TOut> create, Func<TOut, TIn, TOut> update)
-    {
-        
-        _transform = new TransformBlock<Tuple<KafkaContext, TKey, TIn>, Tuple<KafkaContext, TKey, TOut>>(data =>
+        Tuple<KafkaContext, TKey, TOut>> _transform = new TransformBlock<Tuple<KafkaContext, TKey, TIn>, Tuple<KafkaContext, TKey, TOut>>(data =>
         {
             var result = store.AddOrUpdate(data.Item2, _ => create(data.Item3), (_, v) => update(v, data.Item3));
             return Tuple.Create(data.Item1, data.Item2, result);
         });
-    }
 
     public Task Completion => _transform.Completion;
 
@@ -95,18 +84,14 @@ public class StoreBlock<TKey, TIn, TOut>
     }
 }
 
-public class KeyBlock<TKey, TValue, TResult> :
+public class KeyBlock<TKey, TValue, TResult>(Func<TKey, TValue, TResult> keySelector) :
     IPropagatorBlock<
         Tuple<KafkaContext, TKey, TValue>,
         Tuple<KafkaContext, TResult, TValue>>
 {
     private readonly IPropagatorBlock<
         Tuple<KafkaContext, TKey, TValue>, 
-        Tuple<KafkaContext, TResult, TValue>> _target;
-
-    public KeyBlock(Func<TKey, TValue, TResult> keySelector)
-    {
-        _target = new TransformBlock<
+        Tuple<KafkaContext, TResult, TValue>> _target = new TransformBlock<
             Tuple<KafkaContext, TKey, TValue>,
             Tuple<KafkaContext, TResult, TValue>>
         (dat =>
@@ -114,7 +99,6 @@ public class KeyBlock<TKey, TValue, TResult> :
             var result = keySelector(dat.Item2, dat.Item3);
             return Tuple.Create(dat.Item1, result, dat.Item3);
         });
-    }
 
     public Task Completion => _target.Completion;
 

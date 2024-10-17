@@ -32,7 +32,7 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
         _consumerBuilder = new ConsumerBuilder<TKey, TValue>(config);
     }
 
-    private ClientConfig BuildConfig()
+    private ConsumerConfig BuildConfig()
     {
         var c = Metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
 

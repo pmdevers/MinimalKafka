@@ -99,8 +99,7 @@ public class JsonTextSerializerTests
     {
         // Arrange
         var invalidJson = new byte[] { 0x01, 0x02, 0x03 };
-        var logger = Substitute.For<ILogger<JsonTextSerializer<string>>>();
-        var serializer = new JsonTextSerializer<string>(null, logger);
+        var serializer = new JsonTextSerializer<string>(null);
         var context = new SerializationContext();
 
         // Act
@@ -111,6 +110,5 @@ public class JsonTextSerializerTests
 
         // Assert
         act.Should().Throw<JsonException>();
-        logger.Received(1);
     }
 }
