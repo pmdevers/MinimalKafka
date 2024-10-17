@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Hosting;
 using MinimalKafka.Stream.Storage;
-using System.Collections.Concurrent;
 
 namespace MinimalKafka.Stream;
 
 public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
 {
-    private readonly ConcurrentDictionary<TKey, TValue> _dictionary = new();
+    private readonly TimedConcurrentDictionary<TKey, TValue> _dictionary = new(TimeSpan.FromMinutes(3600));
     public TValue AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
         return _dictionary.AddOrUpdate(key, create, update);
@@ -17,9 +16,8 @@ public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKe
     {
         while(!stoppingToken.IsCancellationRequested)
         {
-
-            await Task.Delay(3000, stoppingToken);
-            Console.WriteLine("Clean up.");
+            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+            _dictionary.CleanUp();
         }
     }
 }
