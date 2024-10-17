@@ -11,10 +11,7 @@ public class IntoBuilder<TKey, TValue>(
 
     public void Into(Func<KafkaContext, TKey, TValue, Task> handler)
     {
-        var action = new ActionBlock<Tuple<KafkaContext, TKey, TValue>>(async data =>
-        {
-            await handler.Invoke(data.Item1, data.Item2, data.Item3);
-        });
+        var action = new IntoBlock<TKey, TValue>(handler);
 
         _left.LinkTo(action);
         _right.LinkTo(action);
