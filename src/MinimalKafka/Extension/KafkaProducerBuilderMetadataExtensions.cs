@@ -7,13 +7,6 @@ namespace MinimalKafka.Extension;
 
 public static class KafkaProducerBuilderMetadataExtensions
 {
-    public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Func<IKafkaProducerBuilder, object> serializer)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.WithSingle(new KeySerializerMetadata(serializer));
-        return builder;
-    }
-
     public static TBuilder WithKeySerializer<TBuilder>(this TBuilder builder, Type serializer)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -21,21 +14,14 @@ public static class KafkaProducerBuilderMetadataExtensions
         {
             throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(ISerializer<>)}'");
         }
-        builder.WithKeySerializer((s) => s.ServiceProvider.GetRequiredService(serializer.MakeGenericType(s.KeyType)));
+        builder.WithSingle(new KeySerializerMetadata(serializer));
         return builder;
     }
 
     public static TBuilder WithKeySerializer<TBuilder, T>(this TBuilder builder, ISerializer<T> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithKeySerializer((s) => serializer);
-        return builder;
-    }
-
-    public static TBuilder WithValueSerializer<TBuilder>(this TBuilder builder, Func<IKafkaProducerBuilder, object> serializer)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.WithSingle(new ValueSerializerMetadata(serializer));
+        builder.WithKeySerializer(serializer.GetType());
         return builder;
     }
 
@@ -46,14 +32,14 @@ public static class KafkaProducerBuilderMetadataExtensions
         {
             throw new InvalidOperationException($"Type '{serializer}' should of type '{typeof(ISerializer<>)}'");
         }
-        builder.WithValueSerializer((s) => s.ServiceProvider.GetRequiredService(serializer.MakeGenericType(s.ValueType)));
+        builder.WithSingle(new ValueSerializerMetadata(serializer));
         return builder;
     }
 
     public static TBuilder WithValueSerializer<TBuilder, T>(this TBuilder builder, ISerializer<T> serializer)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.WithValueSerializer((s) => serializer);
+        builder.WithValueSerializer(serializer.GetType());
         return builder;
     }
 

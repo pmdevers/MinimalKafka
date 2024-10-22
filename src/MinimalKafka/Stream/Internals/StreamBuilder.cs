@@ -1,4 +1,5 @@
 ﻿using MinimalKafka.Builders;
+using MinimalKafka.Extension;
 using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
@@ -6,24 +7,31 @@ namespace MinimalKafka.Stream.Internals;
 public class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) : IStreamBuilder<TKey, TValue>
 {
     private readonly IKafkaBuilder _builder = builder;
-    private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _source
-        = new ConsumeBlock<TKey, TValue>(builder, topic);
+    private readonly ConsumeBlock<TKey, TValue> _source = new(builder, topic);
 
-    public void Into(string topic)
+    public IWithMetadataBuilder Into(string topic)
     {
         var action = new IntoBlock<TKey, TValue>(topic);
         _source.LinkTo(action);
+        return this;
     }
 
-    public void Into(Func<KafkaContext, TKey, TValue, Task> handler)
+    public IWithMetadataBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
     {
         var action = new IntoBlock<TKey, TValue>(handler);
         _source.LinkTo(action);
+        return this;
     }
 
     public IJoinBuilder<TKey, TValue, K2, V2> Join<K2, V2>(string topic)
     {
-        return new JoinBuilder<TKey, TValue, K2, V2>(_builder, _source, topic);
+        return new JoinBuilder<TKey, TValue, K2, V2>(this, _builder, _source, topic);
+    }
+
+    public IWithMetadataBuilder WithGroupId(string groupId)
+    {
+        _source.WithGroupId(groupId);
+        return this;
     }
 }
 
@@ -31,18 +39,25 @@ public class ConsumeBlock<TKey, TValue> :
     ISourceBlock<Tuple<KafkaContext, TKey, TValue>>
 {
     private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _target;
+    private readonly IKafkaConventionBuilder _builder;
 
     public ConsumeBlock(IKafkaBuilder builder, string topic)
     {
         var buffer = new BufferBlock<Tuple<KafkaContext, TKey, TValue>>();
 
-        builder.MapTopic(topic, async (KafkaContext context, TKey key, TValue value) =>
+        _builder = builder.MapTopic(topic, async (KafkaContext context, TKey key, TValue value) =>
         {
             await buffer.SendAsync(Tuple.Create(context, key, value));
             await buffer.Completion;
         });
 
         _target = buffer;
+    }
+
+    public ISourceBlock<Tuple<KafkaContext, TKey, TValue>> WithGroupId(string groupId)
+    {
+        _builder.WithGroupId(groupId);
+        return this;
     }
 
     public Task Completion => _target.Completion;
