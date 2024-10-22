@@ -33,6 +33,8 @@ public static class KafkaExtensions
         });
         services.AddHostedService<KafkaService>();
 
+        services.AddSingleton(typeof(IProducer<,>), typeof(KafkaProducerFactory<,>));
+
         return services;
     }
 
@@ -90,8 +92,7 @@ public static class KafkaExtensions
 
     public static async Task<DeliveryResult<TKey, TValue>> Produce<TKey, TValue>(this KafkaContext context, string topic, Message<TKey, TValue> message)
     {
-        var producer = new KafkaProducerBuilder<TKey, TValue>(context.MetaData, context.RequestServices)
-            .Build();
+        var producer = context.RequestServices.GetRequiredService<IProducer<TKey, TValue>>();
         return await producer.ProduceAsync(topic, message);   
     }
 }

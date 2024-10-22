@@ -20,20 +20,4 @@ public class ConsumerBuilderTest
         builder.Should().NotBeNull();
     }
 
-
-    [Fact]
-    public void CreateProducerFromMetaData()
-    {
-        List<object> metadata = [
-          new GroupIdMetadata("test"),
-          new BootstrapServersMetadata("nas.home.lab:9092"),
-          new KeySerializerMetadata((s) => Substitute.For<ISerializer<string>>()),
-          new ValueSerializerMetadata((s) => Substitute.For<ISerializer<int>>())
-        ];
-
-        var builder = new KafkaProducerBuilder<string, int>(metadata, EmptyServiceProvider.Instance)
-            .Build();
-
-        builder.Should().NotBeNull();
-    }
 }
