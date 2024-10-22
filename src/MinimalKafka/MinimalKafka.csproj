@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" />
   </ItemGroup>
 
 </Project>

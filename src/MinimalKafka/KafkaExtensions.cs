@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
+using MinimalKafka.Stream;
 using System.Text.Json;
 
 namespace MinimalKafka;

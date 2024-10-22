@@ -1,10 +1,19 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using System.Text.RegularExpressions;
 
 namespace MinimalKafka.Extension;
 public static class KafkaConsumerConfigMetadataExtensions
 {
+    public static TBuilder WithConfiguration<TBuilder>(this TBuilder builder, IConfiguration configuration)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(ConfigurationMetadata.FromConfig(configuration));
+        return builder;
+    }
+
     public static TBuilder WithGroupId<TBuilder>(this TBuilder builder, string groupId)
         where TBuilder : IKafkaConventionBuilder
     {
