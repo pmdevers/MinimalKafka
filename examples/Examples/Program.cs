@@ -38,7 +38,7 @@ app.MapStream<Guid, string>("left")
         var result = await c.ProduceAsync("result", k, v.Item1 + v.Item2);
 
         Console.WriteLine(result.Message);
-    });
+    }).WithClientId("MapStream");
 
 app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
 {
@@ -48,6 +48,6 @@ app.MapTopic("topic.name", async (KafkaContext context, string key, string value
 
     Console.WriteLine($"Produced {result.Status}");
 
-});
+}).WithClientId("MapTopic");
 
 await app.RunAsync();

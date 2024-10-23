@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
-using System.Text.RegularExpressions;
 
 namespace MinimalKafka.Extension;
 public static class KafkaConsumerConfigMetadataExtensions
@@ -18,6 +17,13 @@ public static class KafkaConsumerConfigMetadataExtensions
         where TBuilder : IKafkaConventionBuilder
     {
         builder.WithSingle(new GroupIdMetadata(groupId));
+        return builder;
+    }
+
+    public static TBuilder WithClientId<TBuilder>(this TBuilder builder, string clientId)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new ClientIdMetadataAttribute(clientId));
         return builder;
     }
 

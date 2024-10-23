@@ -8,5 +8,6 @@ public interface IStreamBuilder<K1, V1> : IIntoBuilder<K1, V1>, IWithMetadataBui
 public interface IWithMetadataBuilder
 {
     IWithMetadataBuilder WithGroupId(string groupId);
+    IWithMetadataBuilder WithClientId(string clientId);
 }
 
