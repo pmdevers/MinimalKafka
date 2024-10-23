@@ -1,113 +1,105 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using System.Collections.Concurrent;
 
 namespace MinimalKafka;
 
-public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
+public class KafkaProducerFactory(IServiceProvider serviceProvider, IReadOnlyList<object> metadata)
 {
-    public IProducer<TKey, TValue> Producer { get; set; }
+    private static ConcurrentDictionary<int, object> _producers { get; } = [];
 
-    public Handle Handle => Producer.Handle;
-
-    public string Name => Producer.Name;
-
-    public KafkaProducerFactory(IKafkaBuilder builder)
+    public IReadOnlyList<object> MetaData => metadata;
+    public IServiceProvider RequestServices => serviceProvider;
+    
+    public IProducer<TKey, TValue> Create<TKey, TValue>()
     {
-        var config = builder.MetaData.OfType<ConfigurationMetadata>().First();
-        var keySerializer = builder.MetaData.OfType<KeySerializerMetadata>().First(); 
-        var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
-        var producerConfig = new ProducerConfig(config.Configuration);
+        var config = BuildConfig();
 
-        var serializerKey = ActivatorUtilities.CreateInstance(builder.ServiceProvider, keySerializer.GetSerializerType<TKey>());
-        var serializerValue = ActivatorUtilities.CreateInstance(builder.ServiceProvider, valueSerializer.GetSerializerType<TValue>());
+        var keySerializer = MetaData.OfType<KeySerializerMetadata>().First();
+        var valueSerializer = MetaData.OfType<ValueSerializerMetadata>().First();
 
-        Producer = new ProducerBuilder<TKey, TValue>(producerConfig)
+        var serializerKey = ActivatorUtilities.CreateInstance(RequestServices, keySerializer.GetSerializerType<TKey>());
+        var serializerValue = ActivatorUtilities.CreateInstance(RequestServices, valueSerializer.GetSerializerType<TValue>());
+
+        var producerKey = typeof(TKey).GetHashCode() + typeof(TValue).GetHashCode();
+
+        if(_producers.TryGetValue(producerKey, out var producer))
+        {
+            return (IProducer<TKey, TValue>)producer;
+        }
+                
+        var kp = new ProducerBuilder<TKey, TValue>(config)
             .SetKeySerializer((ISerializer<TKey>)serializerKey)
             .SetValueSerializer((ISerializer<TValue>)serializerValue)
             .Build();
+
+        _producers.TryAdd(producerKey, kp);
+        
+        return kp;
     }
 
-    public Task<DeliveryResult<TKey, TValue>> ProduceAsync(string topic, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
+    private ProducerConfig BuildConfig()
     {
-        return Producer.ProduceAsync(topic, message, cancellationToken);
+        var c = MetaData.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
+
+        ProducerConfig config = c is null ? new() : new(c);
+
+        foreach (var item in MetaData.OfType<IProducerConfigMetadata>())
+        {
+            item.Set(config);
+        }
+        return config;
+    }
+}
+
+public class KafkaProducer<TKey, TValue> : IProducer<TKey, TValue>
+{
+    private readonly IProducer<TKey, TValue> _producer;
+
+    public KafkaProducer(KafkaProducerFactory factory) : this(factory.Create<TKey, TValue>())
+    {
     }
 
-    public Task<DeliveryResult<TKey, TValue>> ProduceAsync(TopicPartition topicPartition, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
+    private KafkaProducer(IProducer<TKey, TValue> producer)
     {
-        return Producer.ProduceAsync(topicPartition, message, cancellationToken);
+        _producer = producer;
     }
 
-    public void Produce(string topic, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
-    {
-        Producer.Produce(topic, message, deliveryHandler);
-    }
+    public Handle Handle => _producer.Handle;
 
-    public void Produce(TopicPartition topicPartition, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
-    {
-        Producer.Produce(topicPartition, message, deliveryHandler);
-    }
-
-    public int Poll(TimeSpan timeout)
-    {
-        return Producer.Poll(timeout);
-    }
-
-    public int Flush(TimeSpan timeout)
-    {
-        return Producer.Flush(timeout);
-    }
-
-    public void Flush(CancellationToken cancellationToken = default)
-    {
-        Producer.Flush(cancellationToken);
-    }
-
-    public void InitTransactions(TimeSpan timeout)
-    {
-        Producer.InitTransactions(timeout);
-    }
-
-    public void BeginTransaction()
-    {
-        Producer.BeginTransaction();
-    }
-
-    public void CommitTransaction(TimeSpan timeout)
-    {
-        Producer.CommitTransaction(timeout);
-    }
-
-    public void CommitTransaction()
-    {
-        Producer.CommitTransaction();
-    }
+    public string Name => _producer.Name;
 
     public void AbortTransaction(TimeSpan timeout)
     {
-        Producer.AbortTransaction(timeout);
+        _producer.AbortTransaction(timeout);
     }
 
     public void AbortTransaction()
     {
-        Producer.AbortTransaction();
-    }
-
-    public void SendOffsetsToTransaction(IEnumerable<TopicPartitionOffset> offsets, IConsumerGroupMetadata groupMetadata, TimeSpan timeout)
-    {
-        Producer.SendOffsetsToTransaction(offsets, groupMetadata, timeout);
+        _producer?.AbortTransaction();
     }
 
     public int AddBrokers(string brokers)
     {
-        return Producer.AddBrokers(brokers);
+        return _producer.AddBrokers(brokers);
     }
 
-    public void SetSaslCredentials(string username, string password)
+    public void BeginTransaction()
     {
-        Producer.SetSaslCredentials(username, password);
+        _producer.BeginTransaction();
     }
+
+    public void CommitTransaction(TimeSpan timeout)
+    {
+        _producer.CommitTransaction(timeout);
+    }
+
+    public void CommitTransaction()
+    {
+        _producer.CommitTransaction();
+    }
+
 
     public void Dispose()
     {
@@ -115,13 +107,69 @@ public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
         GC.SuppressFinalize(this);
     }
 
+    private bool _disposed;
+
     protected virtual void Dispose(bool disposing)
     {
-        Producer?.Dispose();
+        if(!_disposed && disposing)
+        {
+            _producer.Dispose();
+            _disposed = true;
+        }
     }
 
-    ~KafkaProducerFactory()
+    ~KafkaProducer()
     {
         Dispose(false);
+    }
+
+    public int Flush(TimeSpan timeout)
+    {
+        return _producer.Flush(timeout);   
+    }
+
+    public void Flush(CancellationToken cancellationToken = default)
+    {
+        _producer.Flush(cancellationToken);
+    }
+
+    public void InitTransactions(TimeSpan timeout)
+    {
+        _producer.InitTransactions(timeout);
+    }
+
+    public int Poll(TimeSpan timeout)
+    {
+        return _producer.Poll(timeout);
+    }
+
+    public void Produce(string topic, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
+    {
+        _producer.Produce(topic, message, deliveryHandler);
+    }
+
+    public void Produce(TopicPartition topicPartition, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
+    {
+        _producer.Produce(topicPartition, message, deliveryHandler);
+    }
+
+    public Task<DeliveryResult<TKey, TValue>> ProduceAsync(string topic, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
+    {
+        return _producer.ProduceAsync(topic, message, cancellationToken);  
+    }
+
+    public Task<DeliveryResult<TKey, TValue>> ProduceAsync(TopicPartition topicPartition, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
+    {
+        return _producer.ProduceAsync(topicPartition, message, cancellationToken);
+    }
+
+    public void SendOffsetsToTransaction(IEnumerable<TopicPartitionOffset> offsets, IConsumerGroupMetadata groupMetadata, TimeSpan timeout)
+    {
+        _producer.SendOffsetsToTransaction(offsets, groupMetadata, timeout);
+    }
+
+    public void SetSaslCredentials(string username, string password)
+    {
+        _producer.SetSaslCredentials(username, password);
     }
 }

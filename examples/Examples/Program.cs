@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMinimalKafka(config =>
  {
      config
-           .WithConfiguration(builder.Configuration.GetSection("MinimalKafka"))
+           .WithConfiguration(builder.Configuration.GetSection("kafka"))
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithKeyDeserializer(typeof(JsonTextSerializer<>))
@@ -23,6 +23,17 @@ var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
 builder.Services.AddHostedService(x => store);
 
 var app = builder.Build();
+
+
+app.MapGet("/test", (IProducer<Guid, string> producer) =>
+{
+    producer.ProduceAsync("test", new Message<Guid, string>()
+    {
+        Key = Guid.NewGuid(),
+        Value = "test"
+    });
+});
+
 
 app.MapStream<Guid, string>("left")
     .Join<Guid, string>("right").On(store, (k1, v1) => k1, (k2, v2) => k2)
@@ -40,6 +51,17 @@ app.MapStream<Guid, string>("left")
         Console.WriteLine(result.Message);
     }).WithClientId("MapStream");
 
+
+
+
+
+
+
+
+
+
+
+
 app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
 {
     Console.WriteLine($"{key} - {value}");
@@ -49,5 +71,19 @@ app.MapTopic("topic.name", async (KafkaContext context, string key, string value
     Console.WriteLine($"Produced {result.Status}");
 
 }).WithClientId("MapTopic");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 await app.RunAsync();

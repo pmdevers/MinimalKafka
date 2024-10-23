@@ -3,7 +3,9 @@ using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class JoinBuilder<K1, V1, K2, V2>(IWithMetadataBuilder metaDataBuilder, IKafkaBuilder builder,
+internal class JoinBuilder<K1, V1, K2, V2>(
+    IWithMetadataBuilder metaDataBuilder, 
+    IKafkaBuilder builder,
     ISourceBlock<Tuple<KafkaContext, K1, V1>> left, string topic) : IJoinBuilder<K1, V1, K2, V2>
 {
     private readonly IWithMetadataBuilder _metaDataBuilder = metaDataBuilder;
