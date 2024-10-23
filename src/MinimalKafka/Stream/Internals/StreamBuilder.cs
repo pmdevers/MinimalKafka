@@ -28,6 +28,12 @@ public class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) : 
         return new JoinBuilder<TKey, TValue, K2, V2>(this, _builder, _source, topic);
     }
 
+    public IWithMetadataBuilder WithClientId(string clientId)
+    {
+        _source.WithClientId(clientId);
+        return this;
+    }
+
     public IWithMetadataBuilder WithGroupId(string groupId)
     {
         _source.WithGroupId(groupId);
@@ -57,6 +63,12 @@ public class ConsumeBlock<TKey, TValue> :
     public ISourceBlock<Tuple<KafkaContext, TKey, TValue>> WithGroupId(string groupId)
     {
         _builder.WithGroupId(groupId);
+        return this;
+    }
+
+    public ISourceBlock<Tuple<KafkaContext, TKey, TValue>> WithClientId(string clientId)
+    {
+        _builder.WithClientId(clientId);
         return this;
     }
 
