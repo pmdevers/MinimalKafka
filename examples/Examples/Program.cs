@@ -15,7 +15,8 @@ builder.Services.AddMinimalKafka(config =>
            .WithKeyDeserializer(typeof(JsonTextSerializer<>))
            .WithValueDeserializer(typeof(JsonTextSerializer<>))
            .WithKeySerializer(typeof(JsonTextSerializer<>))
-           .WithValueSerializer(typeof(JsonTextSerializer<>));
+           .WithValueSerializer(typeof(JsonTextSerializer<>))
+           .WithInMemoryStore();
  });
 
 var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
@@ -25,7 +26,7 @@ builder.Services.AddHostedService(x => store);
 var app = builder.Build();
 
 app.MapStream<Guid, string>("left")
-    .Join<Guid, string>("right").On(store, (k1, v1) => k1, (k2, v2) => k2)
+    .Join<Guid, string>("right").On((k1, v1) => k1, (k2, v2) => k2)
     .Into(async (c, k, v) =>
     {
         if(v.Item1 is null || v.Item2 is null)
