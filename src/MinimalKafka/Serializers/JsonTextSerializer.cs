@@ -1,8 +1,29 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using MinimalKafka.Extension;
 using System.Diagnostics.Contracts;
 using System.Text.Json;
 
 namespace MinimalKafka.Serializers;
+
+
+public static class AddKafkaBuilderExtensions
+{
+    public static IAddKafkaBuilder WithJsonSerializers(this IAddKafkaBuilder builder, Action<JsonSerializerOptions>? options = null)
+    {
+        var defaults = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options?.Invoke(defaults);
+        builder.Services.TryAddSingleton(defaults);
+
+        builder
+           .WithKeyDeserializer(typeof(JsonTextSerializer<>))
+           .WithValueDeserializer(typeof(JsonTextSerializer<>))
+           .WithKeySerializer(typeof(JsonTextSerializer<>))
+           .WithValueSerializer(typeof(JsonTextSerializer<>));
+
+        return builder;
+    }
+}
 
 /// <summary>Initializes a new instance of the <see cref="KafkaJsonSerializer{T}"/> class.</summary>
 public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerializer<T>, IDeserializer<T>

@@ -13,6 +13,7 @@ namespace MinimalKafka;
 
 public interface IAddKafkaBuilder : IKafkaConventionBuilder
 {
+    IServiceCollection Services { get; }
     IAddKafkaBuilder WithStreamStore(Type streamStoreType);
 }
 

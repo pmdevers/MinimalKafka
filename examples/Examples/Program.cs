@@ -12,10 +12,7 @@ builder.Services.AddMinimalKafka(config =>
            .WithConfiguration(builder.Configuration.GetSection("MinimalKafka"))
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
-           .WithKeyDeserializer(typeof(JsonTextSerializer<>))
-           .WithValueDeserializer(typeof(JsonTextSerializer<>))
-           .WithKeySerializer(typeof(JsonTextSerializer<>))
-           .WithValueSerializer(typeof(JsonTextSerializer<>))
+           .WithJsonSerializers()
            .WithInMemoryStore();
  });
 
