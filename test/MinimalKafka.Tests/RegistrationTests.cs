@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
 using MinimalKafka.Serializers;
+using MinimalKafka.Stream;
 using System.Diagnostics;
 
 namespace MinimalKafka.Tests;
@@ -67,13 +68,31 @@ public class ServiceCollectionTests
         // Arrange
         var services = new ServiceCollection();
                 
-        static void config(IKafkaConventionBuilder builder) => 
-            builder.Should().BeOfType<KafkaConventionBuilder>();
+        static void config(IAddKafkaBuilder builder) => 
+            builder.Should().BeOfType<AddKafkaBuilder>();
 
         // Act
         services.AddMinimalKafka(config);
         var serviceProvider = services.BuildServiceProvider();
         var kafkaBuilder = serviceProvider.GetService<IKafkaBuilder>();
+
+        // Assert
+        kafkaBuilder.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void AddMinimalKafka_WithStreamStore_Should_Register()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        static void config(IAddKafkaBuilder builder) =>
+            builder.WithStreamStore(typeof(InMemoryStore<,>));
+
+        // Act
+        services.AddMinimalKafka(config);
+        var serviceProvider = services.BuildServiceProvider();
+        var kafkaBuilder = serviceProvider.GetService<IStreamStore<Guid, string>>();
 
         // Assert
         kafkaBuilder.Should().NotBeNull();

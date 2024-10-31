@@ -10,12 +10,41 @@ using System.Text.Json;
 
 namespace MinimalKafka;
 
+
+public interface IAddKafkaBuilder : IKafkaConventionBuilder
+{
+    IAddKafkaBuilder WithStreamStore(Type streamStoreType);
+}
+
+
+public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
+    : KafkaConventionBuilder(conventions, []), IAddKafkaBuilder
+{
+    public IServiceCollection Services { get; } = services;
+
+    public IAddKafkaBuilder WithStreamStore(Type streamStoreType)
+    {
+        if (!Array.Exists(streamStoreType.GetInterfaces(),
+            x => x.IsGenericType &&
+                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
+        ))
+        {
+            throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
+        }
+
+        Services.AddSingleton(typeof(IStreamStore<,>), streamStoreType);
+
+        return this;
+    }
+}
+
+
 public static class KafkaExtensions
 {
-    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IKafkaConventionBuilder> config)
+    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IAddKafkaBuilder> config)
     {
         var conventions = new List<Action<IKafkaBuilder>>();
-        var configBuilder = new KafkaConventionBuilder(conventions, []);
+        var configBuilder = new AddKafkaBuilder(services, conventions);
 
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
