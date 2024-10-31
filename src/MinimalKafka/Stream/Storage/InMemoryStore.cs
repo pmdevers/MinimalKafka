@@ -3,6 +3,15 @@ using MinimalKafka.Stream.Storage;
 
 namespace MinimalKafka.Stream;
 
+public static class AddKakfkaBuilderExtensions
+{
+    public static IAddKafkaBuilder WithInMemoryStore(this IAddKafkaBuilder builder)
+    {
+        return builder.WithStreamStore(typeof(InMemoryStore<,>));
+    }
+} 
+
+
 public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
 {

@@ -1,4 +1,5 @@
-﻿using MinimalKafka.Builders;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Builders;
 using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
@@ -10,8 +11,10 @@ internal class JoinBuilder<K1, V1, K2, V2>(IWithMetadataBuilder metaDataBuilder,
     private readonly ISourceBlock<Tuple<KafkaContext, K1, V1>> _left = left;
     private readonly ISourceBlock<Tuple<KafkaContext, K2, V2>> _right = new ConsumeBlock<K2, V2>(builder, topic);
 
-    public IIntoBuilder<TKey, Tuple<V1?, V2?>> On<TKey>(IStreamStore<TKey, Tuple<V1?, V2?>> store, Func<K1, V1, TKey> leftKey, Func<K2, V2, TKey> rightKey)
+    public IIntoBuilder<TKey, Tuple<V1?, V2?>> On<TKey>(Func<K1, V1, TKey> leftKey, Func<K2, V2, TKey> rightKey)
     {
+        var store = builder.ServiceProvider.GetRequiredService<IStreamStore<TKey, Tuple<V1?, V2?>>>();
+
         var leftKeyTransform = new KeyBlock<K1, V1, TKey>(leftKey);
         var rightKeyTransform = new KeyBlock<K2, V2, TKey>(rightKey);
 
