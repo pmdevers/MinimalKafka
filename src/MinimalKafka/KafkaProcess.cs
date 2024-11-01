@@ -3,7 +3,7 @@
 namespace MinimalKafka;
 public interface IKafkaProcess
 {
-    void Start(CancellationToken cancellationToken);
+    Task Start(CancellationToken cancellationToken);
     void Stop();
 }
 
@@ -29,9 +29,9 @@ public class KafkaProcess : IKafkaProcess
     public static KafkaProcess Create(KafkaProcessOptions options)
         => new(options.Consumer, options.Delegate);
 
-    public void Start(CancellationToken cancellationToken)
+    public Task Start(CancellationToken cancellationToken)
     {
-        Task.Factory.StartNew(() =>
+        return Task.Factory.StartNew(() =>
         {
             _consumer.Subscribe();
 
@@ -47,7 +47,6 @@ public class KafkaProcess : IKafkaProcess
                 }
 
                 _handler.Invoke(context);
-
             }
             _consumer.Logger.LogInformation("Dropping out of consume loop");
         }, cancellationToken);
