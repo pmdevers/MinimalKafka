@@ -9,13 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMinimalKafka(config =>
  {
      config
-           .WithConfiguration(builder.Configuration.GetSection("MinimalKafka"))
+           .WithConfiguration(builder.Configuration.GetSection("Kafka"))
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
-           .WithKeyDeserializer(typeof(JsonTextSerializer<>))
-           .WithValueDeserializer(typeof(JsonTextSerializer<>))
-           .WithKeySerializer(typeof(JsonTextSerializer<>))
-           .WithValueSerializer(typeof(JsonTextSerializer<>))
+           .WithJsonSerializers()
            .WithInMemoryStore();
  });
 
@@ -26,7 +23,7 @@ builder.Services.AddHostedService(x => store);
 var app = builder.Build();
 
 app.MapStream<Guid, string>("left")
-    .Join<Guid, string>("right").On((k1, v1) => k1, (k2, v2) => k2)
+    .Join<Guid, string>("right").OnKey()
     .Into(async (c, k, v) =>
     {
         if(v.Item1 is null || v.Item2 is null)
