@@ -58,15 +58,26 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override KafkaContext Consume(CancellationToken cancellationToken)
     {
-        var scope = _serviceProvider.CreateScope();
-        var result = _consumer.Consume(cancellationToken);
-
-        if (++_recordsConsumed % _consumeReportInterval == 0)
+        try
         {
-            Logger.LogInformation("Consumed '{Records}' records from topic '{Topic}' so far.", _recordsConsumed, result.Topic);
-        }
+            var scope = _serviceProvider.CreateScope();
+            var result = _consumer.Consume(cancellationToken);
 
-        return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+            if (++_recordsConsumed % _consumeReportInterval == 0)
+            {
+                Logger.LogInformation("Consumed '{Records}' records from topic '{Topic}' so far.", _recordsConsumed, result.Topic);
+            }
+
+            return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+        }
+        catch (OperationCanceledException ex) 
+        when (ex.CancellationToken == cancellationToken)
+        {
+            Logger.LogInformation(ex, "Operation cancelled return Empty Context");
+            _consumer.Close();
+            _consumer.Dispose();
+            return KafkaContext.Empty;
+        }
     }
 
     public override void Close()

@@ -6,7 +6,6 @@ namespace MinimalKafka.Tests;
 public class KafkaServiceTests
 {
     private readonly IKafkaBuilder _builder;
-    private readonly KafkaService _service;
     private readonly List<IKafkaProcess> _processes;
 
     public KafkaServiceTests()
@@ -20,15 +19,13 @@ public class KafkaServiceTests
         _datasource.GetProceses().Returns(_processes);
         
         _builder.DataSource.Returns(_datasource);
-        
-        _service = new KafkaService(_builder);
     }
 
     [Fact]
     public void KafkaService_Processes_ShouldReturnProcessesFromBuilder()
     {
         // Act
-        var processes = _service.Processes;
+        var processes = new KafkaService(_builder).Processes;
 
         // Assert
         processes.Should().BeEquivalentTo(_processes);
@@ -39,14 +36,15 @@ public class KafkaServiceTests
     {
         // Arrange
         var cancellationToken = new CancellationToken();
+        var service = new KafkaService(_builder);
 
         // Act
-        await _service.StartAsync(cancellationToken);
+        await service.StartAsync(cancellationToken);
 
         // Assert
         foreach (var process in _processes)
         {
-            process.Received(1).Start(cancellationToken);
+            await process.Received(1).Start(Arg.Any<CancellationToken>());
         }
     }
 
@@ -55,9 +53,10 @@ public class KafkaServiceTests
     {
         // Arrange
         var cancellationToken = new CancellationToken();
+        var service = new KafkaService(_builder);
 
         // Act
-        await _service.StopAsync(cancellationToken);
+        await service.StopAsync(cancellationToken);
 
         // Assert
         foreach (var process in _processes)
@@ -70,10 +69,11 @@ public class KafkaServiceTests
     public void KafkaService_Processes_ShouldReturnEmptyListIfGetProcessesReturnsNull()
     {
         // Arrange
-        _builder.DataSource.GetProceses().Returns([]);
+        var builder = Substitute.For<IKafkaBuilder>();
+        builder.DataSource.GetProceses().Returns([]);
 
         // Act
-        var processes = _service.Processes;
+        var processes =  new KafkaService(builder).Processes;
 
         // Assert
         processes.Should().BeEmpty();
