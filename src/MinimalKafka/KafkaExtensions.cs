@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
+using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 using System.Text.Json;
@@ -48,11 +49,17 @@ public static class KafkaExtensions
 
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
+        configBuilder.WithDefaultTopicOptions();
+        configBuilder.WithTopicOptions<ClientIdMetadataAttribute>();
 
         config(configBuilder);
 
         services.TryAddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.Web));
         services.AddTransient(typeof(JsonTextSerializer<>));
+
+        services.AddSingleton<IAdminClient>(provider
+            => new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers })
+                .Build());
 
         services.AddSingleton<IKafkaBuilder>(s =>
         {
