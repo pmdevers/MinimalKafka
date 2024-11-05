@@ -47,7 +47,7 @@ public class AddKafkaBuilderTests
 
     public class TestStore : IStreamStore<string, string>
     {
-        public string AddOrUpdate(string key, Func<string, string> create, Func<string, string, string> update)
+        public ValueTask<string> AddOrUpdate(string key, Func<string, string> create, Func<string, string, string> update)
         {
             throw new NotImplementedException();
         }

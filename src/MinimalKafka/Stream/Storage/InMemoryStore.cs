@@ -16,9 +16,10 @@ public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKe
     where TKey : IEquatable<TKey>
 {
     private readonly TimedConcurrentDictionary<TKey, TValue> _dictionary = new(TimeSpan.FromMinutes(3600));
-    public TValue AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
+
+    public ValueTask<TValue> AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
-        return _dictionary.AddOrUpdate(key, create, update);
+        return ValueTask.FromResult(_dictionary.AddOrUpdate(key, create, update));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
