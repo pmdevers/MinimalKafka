@@ -44,9 +44,9 @@ public class StoreBlock<TKey, TIn, TOut>(IStreamStore<TKey, TOut> store, Func<TI
 {
     private readonly IPropagatorBlock<
         Tuple<KafkaContext, TKey, TIn>,
-        Tuple<KafkaContext, TKey, TOut>> _transform = new TransformBlock<Tuple<KafkaContext, TKey, TIn>, Tuple<KafkaContext, TKey, TOut>>(data =>
+        Tuple<KafkaContext, TKey, TOut>> _transform = new TransformBlock<Tuple<KafkaContext, TKey, TIn>, Tuple<KafkaContext, TKey, TOut>>(async data =>
         {
-            var result = store.AddOrUpdate(data.Item2, _ => create(data.Item3), (_, v) => update(v, data.Item3));
+            var result = await store.AddOrUpdate(data.Item2, _ => create(data.Item3), (_, v) => update(v, data.Item3));
             return Tuple.Create(data.Item1, data.Item2, result);
         });
 
