@@ -8,6 +8,7 @@ using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 using System.Text.Json;
+using TopicMetadata = MinimalKafka.Metadata.TopicMetadata;
 
 namespace MinimalKafka;
 
@@ -15,12 +16,24 @@ namespace MinimalKafka;
 public interface IAddKafkaBuilder : IKafkaConventionBuilder
 {
     IAddKafkaBuilder WithStreamStore(Type streamStoreType);
+    
+    IAddKafkaBuilder WithDefaultTopicOptions();
+    
+    IAddKafkaBuilder WithTopicOptions<TMessage>(Func<Type, string>? namingConvention, TimeSpan? retentionPeriod);
 }
 
 
 public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
     : KafkaConventionBuilder(conventions, []), IAddKafkaBuilder
 {
+    private static readonly Func<Type, string> DefaultNamingConvention = type => type
+        .FQN()
+        .Replace('<', '-')
+        .Replace('<', '-')
+        .ToLowerInvariant();
+
+    private readonly ICollection<Action<IKafkaBuilder>> _conventions = conventions;
+
     public IServiceCollection Services { get; } = services;
 
     public IAddKafkaBuilder WithStreamStore(Type streamStoreType)
@@ -37,6 +50,33 @@ public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKa
 
         return this;
     }
+
+    public IAddKafkaBuilder WithDefaultTopicOptions()
+    {
+        _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata(
+            DefaultNamingConvention,
+            null)));
+        
+        return this;
+    }
+
+    public IAddKafkaBuilder WithTopicOptions<TMessage>(Func<Type, string>? namingConvention, TimeSpan? retentionPeriod)
+    {
+        _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata<TMessage>(
+            namingConvention ?? DefaultNamingConvention,
+            retentionPeriod)));
+        
+        return this;
+    }
+
+    public IAddKafkaBuilder WithTopicOptions<TMessage>(string topicName, TimeSpan? retentionPeriod)
+    {
+        _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata<TMessage>(
+            _ => topicName,
+            retentionPeriod)));
+        
+        return this;
+    }
 }
 
 
@@ -50,7 +90,6 @@ public static class KafkaExtensions
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithDefaultTopicOptions();
-        configBuilder.WithTopicOptions<ClientIdMetadataAttribute>();
 
         config(configBuilder);
 
