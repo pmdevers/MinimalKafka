@@ -12,18 +12,16 @@ using TopicMetadata = MinimalKafka.Metadata.TopicMetadata;
 
 namespace MinimalKafka;
 
-
 public interface IAddKafkaBuilder : IKafkaConventionBuilder
 {
     IAddKafkaBuilder WithStreamStore(Type streamStoreType);
-    
+
     IAddKafkaBuilder WithDefaultTopicOptions();
-    
+
     IAddKafkaBuilder WithTopicOptions<TMessage>(Func<Type, string>? namingConvention, TimeSpan? retentionPeriod);
 }
 
-
-public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
+public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions)
     : KafkaConventionBuilder(conventions, []), IAddKafkaBuilder
 {
     private static readonly Func<Type, string> DefaultNamingConvention = type => type
@@ -39,9 +37,9 @@ public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKa
     public IAddKafkaBuilder WithStreamStore(Type streamStoreType)
     {
         if (!Array.Exists(streamStoreType.GetInterfaces(),
-            x => x.IsGenericType &&
-                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
-        ))
+                x => x.IsGenericType &&
+                     x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
+            ))
         {
             throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
         }
@@ -56,7 +54,7 @@ public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKa
         _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata(
             DefaultNamingConvention,
             null)));
-        
+
         return this;
     }
 
@@ -65,7 +63,7 @@ public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKa
         _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata<TMessage>(
             namingConvention ?? DefaultNamingConvention,
             retentionPeriod)));
-        
+
         return this;
     }
 
@@ -74,11 +72,10 @@ public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKa
         _conventions.Add(builder => builder.MetaData.Add(new TopicMetadata<TMessage>(
             _ => topicName,
             retentionPeriod)));
-        
+
         return this;
     }
 }
-
 
 public static class KafkaExtensions
 {
@@ -97,7 +94,11 @@ public static class KafkaExtensions
         services.AddTransient(typeof(JsonTextSerializer<>));
 
         services.AddSingleton<IAdminClient>(provider
-            => new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers })
+            => new AdminClientBuilder(new AdminClientConfig
+                {
+                    BootstrapServers = provider.GetRequiredService<IKafkaBuilder>().MetaData
+                        .OfType<IBootstrapServersMetadata>().First().BootstrapServers
+                })
                 .Build());
 
         services.AddSingleton<IKafkaBuilder>(s =>
@@ -118,6 +119,7 @@ public static class KafkaExtensions
         var tb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
         return tb.MapTopic(topic, handler);
     }
+
     public static IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
     {
         return builder
@@ -125,6 +127,7 @@ public static class KafkaExtensions
             .AddTopicDelegate(topic, handler)
             .WithMetaData([.. builder.MetaData]);
     }
+
     public static TBuilder WithMetaData<TBuilder>(this TBuilder builder, params object[] items)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -138,6 +141,7 @@ public static class KafkaExtensions
 
         return builder;
     }
+
     public static TBuilder WithSingle<TBuilder>(this TBuilder builder, object metadata)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -145,6 +149,7 @@ public static class KafkaExtensions
         builder.WithMetaData(metadata);
         return builder;
     }
+
     public static TBuilder RemoveMetaData<TBuilder>(this TBuilder builder, object item)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -155,6 +160,7 @@ public static class KafkaExtensions
 
         return builder;
     }
+
     private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
@@ -162,12 +168,14 @@ public static class KafkaExtensions
     }
 
 
-    public static Task<DeliveryResult<TKey, TValue>> ProduceAsync<TKey, TValue>(this KafkaContext context, string topic, TKey key, TValue value)
-        => Produce(context, topic, new Message<TKey, TValue>() {  Key = key, Value = value });
+    public static Task<DeliveryResult<TKey, TValue>> ProduceAsync<TKey, TValue>(this KafkaContext context, string topic,
+        TKey key, TValue value)
+        => Produce(context, topic, new Message<TKey, TValue>() {Key = key, Value = value});
 
-    public static async Task<DeliveryResult<TKey, TValue>> Produce<TKey, TValue>(this KafkaContext context, string topic, Message<TKey, TValue> message)
+    public static async Task<DeliveryResult<TKey, TValue>> Produce<TKey, TValue>(this KafkaContext context,
+        string topic, Message<TKey, TValue> message)
     {
         var producer = context.RequestServices.GetRequiredService<IProducer<TKey, TValue>>();
-        return await producer.ProduceAsync(topic, message);   
+        return await producer.ProduceAsync(topic, message);
     }
 }
