@@ -19,7 +19,17 @@ public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKe
 
     public ValueTask<TValue> AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
-        return ValueTask.FromResult(_dictionary.AddOrUpdate(key, create, update));
+        return _dictionary.AddOrUpdate(key, create, update);
+    }
+
+    public IAsyncEnumerable<TValue> FindAsync(Func<TValue, bool> predicate)
+    {
+        return _dictionary.FindAsync(predicate);
+    }
+
+    public ValueTask<TValue?> FindByIdAsync(TKey key)
+    {
+        return _dictionary.FindByIdAsync(key);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

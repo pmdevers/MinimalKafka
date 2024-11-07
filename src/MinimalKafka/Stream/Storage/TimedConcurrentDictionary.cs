@@ -13,7 +13,7 @@ namespace MinimalKafka.Stream.Storage;
 /// This dictionary automatically removes entries that have exceeded the specified expiration time.
 /// </remarks>
 /// <param name="expirationTime">The time duration after which items in the dictionary expire and are removed.</param>
-public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime)
+public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime) : IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
 {
     private readonly ConcurrentDictionary<TKey, Tuple<TValue, DateTimeOffset>> _dictionary = [];
@@ -26,13 +26,13 @@ public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime)
     /// <param name="create">A function to create a new value if the key is not present in the dictionary.</param>
     /// <param name="update">A function to update the existing value if the key is present in the dictionary.</param>
     /// <returns>The newly added or updated value.</returns>
-    public TValue AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
+    public ValueTask<TValue> AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
         var result = _dictionary.AddOrUpdate(key,
             (k) => new Tuple<TValue, DateTimeOffset>(create(k), TimeProvider.System.GetUtcNow()),
             (k, v) => Tuple.Create(update(k, v.Item1), TimeProvider.System.GetUtcNow()));
 
-        return result.Item1;
+        return ValueTask.FromResult(result.Item1);
     }
 
     /// <summary>
@@ -50,6 +50,23 @@ public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime)
                 _dictionary.TryRemove(key, out _);
             }
         }
+    }
+
+    public IAsyncEnumerable<TValue> FindAsync(Func<TValue, bool> predicate)
+    {
+        return _dictionary
+            .Where(x => predicate(x.Value.Item1))
+            .Select(x => x.Value.Item1).ToAsyncEnumerable();
+    }
+
+    public ValueTask<TValue?> FindByIdAsync(TKey key)
+    {
+        if(!_dictionary.TryGetValue(key, out var result))
+        {
+            return ValueTask.FromResult(default(TValue));
+        }
+
+        return ValueTask.FromResult<TValue?>(result.Item1);
     }
 
     /// <summary>

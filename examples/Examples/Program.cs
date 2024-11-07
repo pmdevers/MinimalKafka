@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Examples;
 using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
@@ -22,30 +23,8 @@ builder.Services.AddHostedService(x => store);
 
 var app = builder.Build();
 
-app.MapStream<Guid, string>("left")
-    .Join<Guid, string>("right").OnKey()
-    .Into(async (c, k, v) =>
-    {
-        if(v.Item1 is null || v.Item2 is null)
-        {
-            return;
-        }
 
-        Console.WriteLine(v.Item1 + v.Item2);
+app.MapStream();
 
-        var result = await c.ProduceAsync("result", k, v.Item1 + v.Item2);
-
-        Console.WriteLine(result.Message);
-    }).WithClientId("MapStream");
-
-app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
-{
-    Console.WriteLine($"{key} - {value}");
-
-    var result =  await context.ProduceAsync("test2", key, value);
-
-    Console.WriteLine($"Produced {result.Status}");
-
-}).WithClientId("MapTopic");
 
 await app.RunAsync();
