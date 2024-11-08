@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="InnerJoin.cs" />
+    <Compile Remove="LeftJoin.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Linq.Async" />
   </ItemGroup>
 

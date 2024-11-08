@@ -1,25 +1,50 @@
-﻿using System.Threading.Tasks.Dataflow;
+﻿using MinimalKafka.Builders;
+using MinimalKafka.Stream.Blocks;
+using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-public class IntoBuilder<TKey, TValue>(
-    IWithMetadataBuilder streamBuilder,
-    ISourceBlock<Tuple<KafkaContext, TKey, TValue>> left,
-    ISourceBlock<Tuple<KafkaContext, TKey, TValue>> right) : IIntoBuilder<TKey, TValue>
+public class IntoBuilder<K1, V1, K2, V2> : IIntoBuilder<(V1, V2)>
 {
-    private readonly IWithMetadataBuilder _streamBuilder = streamBuilder;
-    private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _left = left;
-    private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _right = right;
+    private readonly IKafkaConventionBuilder _conventionBuilder;
+    private readonly JoinBlock<K1, V1, K2, V2> _source;
 
-    public IWithMetadataBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
+    public IntoBuilder(
+        IKafkaConventionBuilder conventionBuilder,
+        JoinBlock<K1, V1, K2, V2> source)
     {
-        var action = new IntoBlock<TKey, TValue>(handler);
+        _conventionBuilder = conventionBuilder;
+        _source = source;
+    }
 
-        _left.LinkTo(action);
-        _right.LinkTo(action);
+    public IKafkaConventionBuilder Into(Func<KafkaContext, (V1, V2), Task> handler)
+    {
+        var action = new IntoBlock<(V1, V2)>(handler);
 
-        return _streamBuilder;
+        _source.LinkTo(action, new DataflowLinkOptions { PropagateCompletion = true });
+
+        return _conventionBuilder;
     }
 }
 
+public class IntoBuilder<K1, V1> : IIntoBuilder<K1,V1>
+{
+    private readonly ConsumeBlock<K1, V1> _consumeBlock;
 
+    public IntoBuilder(ConsumeBlock<K1, V1> consumeBlock)
+    {
+        _consumeBlock = consumeBlock;
+    }
+    public IKafkaConventionBuilder Into(Func<KafkaContext, K1, V1, Task> handler)
+    {
+        var action = new ActionBlock<(KafkaContext, K1, V1)>(async data =>
+        {
+            var (context, key, value) = data;
+            await handler(context, key, value);
+        });
+
+        _consumeBlock.LinkTo(action, new DataflowLinkOptions { PropagateCompletion = true });
+
+        return _consumeBlock.Builder;
+    }
+}

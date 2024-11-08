@@ -38,13 +38,9 @@ public static class LeftJoin
         if (value.Item2 == null && _innerJoin)
             return;
 
-        var result = new Result()
-        {
-            Id = value.Item1.Id,
-            Right = value.Item2,
-        };
+        var result = new ResultObject(value.Item1.Id, value.Item2);
 
-        await context.Produce<Guid, Result>("result", new()
+        await context.Produce<Guid, ResultObject>("result", new()
         {
             Key = value.Item1.Id,
             Value = result
@@ -54,23 +50,5 @@ public static class LeftJoin
 
 
 
-public record LeftObject
-{
-    public Guid Id { get; set; }
 
-    public Guid RightObjectId { get; set; }
-}
-
-public record RightObject
-{
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-}
-
-
-public record Result
-{
-    public Guid Id { get; set; }
-    public RightObject? Right { get; set; }
-}
 

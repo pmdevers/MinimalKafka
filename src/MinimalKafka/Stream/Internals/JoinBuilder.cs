@@ -1,143 +1,56 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using MinimalKafka.Stream.Blocks;
 using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class JoinBuilder<K1, V1, K2, V2>(IWithMetadataBuilder metaDataBuilder, IKafkaBuilder builder,
-    ISourceBlock<Tuple<KafkaContext, K1, V1>> left, string topic) : IJoinBuilder<K1, V1, K2, V2>
+internal class JoinConventionBuilder(
+    IKafkaConventionBuilder left, 
+    IKafkaConventionBuilder right) : IKafkaConventionBuilder
 {
-    private readonly IWithMetadataBuilder _metaDataBuilder = metaDataBuilder;
-    private readonly ISourceBlock<Tuple<KafkaContext, K1, V1>> _left = left;
-    private readonly ISourceBlock<Tuple<KafkaContext, K2, V2>> _right = new ConsumeBlock<K2, V2>(builder, topic);
-
-    public IIntoBuilder<TKey, Tuple<V1?, V2?>> On<TKey>(Func<K1, V1, TKey> leftKey, Func<K2, V2, TKey> rightKey)
+    public void Add(Action<IKafkaBuilder> convention)
     {
-        var store = builder.ServiceProvider.GetRequiredService<IStreamStore<TKey, Tuple<V1?, V2?>>>();
-
-        var leftKeyTransform = new KeyBlock<K1, V1, TKey>(leftKey);
-        var rightKeyTransform = new KeyBlock<K2, V2, TKey>(rightKey);
-
-        var storeLeft = new StoreBlock<TKey, V1, Tuple<V1?, V2?>>(store, 
-            v => Tuple.Create<V1?, V2?>(v, default), 
-            (o, v) => Tuple.Create<V1?, V2?>(v, o.Item2));
-
-        var storeRight = new StoreBlock<TKey, V2, Tuple<V1?, V2?>>(store,
-            v => Tuple.Create<V1?, V2?>(default, v),
-            (o, v) => Tuple.Create<V1?, V2?>(o.Item1, v));
-
-        _left.LinkTo(leftKeyTransform);
-        _right.LinkTo(rightKeyTransform);
-
-        leftKeyTransform.LinkTo(storeLeft);
-        rightKeyTransform.LinkTo(storeRight);
-
-        return new IntoBuilder<TKey, Tuple<V1?, V2?>>(_metaDataBuilder, storeLeft, storeRight);
+        left.Add(convention);
+        right.Add(convention);
     }
 
-}
-
-public class StoreBlock<TKey, TIn, TOut>(IStreamStore<TKey, TOut> store, Func<TIn, TOut> create, Func<TOut, TIn, TOut> update)
-    : IPropagatorBlock<
-        Tuple<KafkaContext, TKey, TIn>,
-        Tuple<KafkaContext, TKey, TOut>>
-{
-    private readonly IPropagatorBlock<
-        Tuple<KafkaContext, TKey, TIn>,
-        Tuple<KafkaContext, TKey, TOut>> _transform = new TransformBlock<Tuple<KafkaContext, TKey, TIn>, Tuple<KafkaContext, TKey, TOut>>(async data =>
-        {
-            var result = await store.AddOrUpdate(data.Item2, _ => create(data.Item3), (_, v) => update(v, data.Item3));
-            return Tuple.Create(data.Item1, data.Item2, result);
-        });
-
-    public Task Completion => _transform.Completion;
-
-    public void Complete()
+    public void Finally(Action<IKafkaBuilder> finalConvention)
     {
-        _transform.Complete();
-    }
-
-    public Tuple<KafkaContext, TKey, TOut>? ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TKey, TOut>> target, out bool messageConsumed)
-    {
-        return _transform.ConsumeMessage(messageHeader, target, out messageConsumed);
-    }
-
-    public void Fault(Exception exception)
-    {
-        _transform.Fault(exception);
-    }
-
-    public IDisposable LinkTo(ITargetBlock<Tuple<KafkaContext, TKey, TOut>> target, DataflowLinkOptions linkOptions)
-    {
-        return _transform.LinkTo(target, linkOptions);
-    }
-
-    public DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, Tuple<KafkaContext, TKey, TIn> messageValue, ISourceBlock<Tuple<KafkaContext, TKey, TIn>>? source, bool consumeToAccept)
-    {
-        return _transform.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
-    }
-
-    public void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TKey, TOut>> target)
-    {
-        _transform.ReleaseReservation(messageHeader, target);
-    }
-
-    public bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TKey, TOut>> target)
-    {
-        return _transform.ReserveMessage(messageHeader, target);
+        left.Finally(finalConvention);
+        right.Finally(finalConvention);
     }
 }
 
-public class KeyBlock<TKey, TValue, TResult>(Func<TKey, TValue, TResult> keySelector) :
-    IPropagatorBlock<
-        Tuple<KafkaContext, TKey, TValue>,
-        Tuple<KafkaContext, TResult, TValue>>
+
+internal class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder,
+    ConsumeBlock<K1, V1> left, string topic) : IJoinBuilder<V1, V2>
 {
-    private readonly IPropagatorBlock<
-        Tuple<KafkaContext, TKey, TValue>, 
-        Tuple<KafkaContext, TResult, TValue>> _target = new TransformBlock<
-            Tuple<KafkaContext, TKey, TValue>,
-            Tuple<KafkaContext, TResult, TValue>>
-        (dat =>
-        {
-            var result = keySelector(dat.Item2, dat.Item3);
-            return Tuple.Create(dat.Item1, result, dat.Item3);
-        });
+    private readonly ConsumeBlock<K1, V1> _left = left;
+    private readonly ConsumeBlock<K2, V2> _right = new(builder, topic);
 
-    public Task Completion => _target.Completion;
-
-    public void Complete()
+    public void Add(Action<IKafkaBuilder> convention)
     {
-        _target.Complete();
+        _right.Builder.Add(convention);
     }
 
-    public Tuple<KafkaContext, TResult, TValue>? ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TResult, TValue>> target, out bool messageConsumed)
+    public void Finally(Action<IKafkaBuilder> finalConvention)
     {
-        return _target.ConsumeMessage(messageHeader, target, out messageConsumed);
+        _right.Builder.Finally(finalConvention);
     }
 
-    public void Fault(Exception exception)
+    public IIntoBuilder<(V1, V2)> On(Func<V1, V2, bool> on)
     {
-        _target?.Fault(exception);
-    }
+        var leftStore = builder.ServiceProvider.GetRequiredService<IStreamStore<K1, V1>>();
+        var rightStore = builder.ServiceProvider.GetRequiredService<IStreamStore<K2, V2>>();
 
-    public IDisposable LinkTo(ITargetBlock<Tuple<KafkaContext, TResult, TValue>> target, DataflowLinkOptions linkOptions)
-    {
-        return _target.LinkTo(target, linkOptions);
-    }
+        var join = new JoinBlock<K1, V1, K2, V2>(leftStore, rightStore, on);
 
-    public DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, Tuple<KafkaContext, TKey, TValue> messageValue, ISourceBlock<Tuple<KafkaContext, TKey, TValue>>? source, bool consumeToAccept)
-    {
-        return _target.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
-    }
+        _left.LinkTo(join.Left);
+        _right.LinkTo(join.Right);
 
-    public void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TResult, TValue>> target)
-    {
-        _target.ReleaseReservation(messageHeader, target);
-    }
+        var joinBuilder = new JoinConventionBuilder(_left.Builder, _right.Builder);
 
-    public bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<Tuple<KafkaContext, TResult, TValue>> target)
-    {
-        return _target.ReserveMessage(messageHeader, target);
+        return new IntoBuilder<K1, V1, K2, V2>(joinBuilder, join);
     }
 }

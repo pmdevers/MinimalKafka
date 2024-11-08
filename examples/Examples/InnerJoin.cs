@@ -44,13 +44,9 @@ public static class InnerJoin
         if (value.Item2 == null && _innerJoin)
             return;
 
-        var result = new Result()
-        {
-            Id = value.Item1.Id,
-            Right = value.Item2,
-        };
+        var result = new ResultObject(value.Item1.Id, value.Item2);
 
-        await context.Produce<Guid, Result>("result", new()
+        await context.Produce<Guid, ResultObject>("result", new()
         {
             Key = value.Item1.Id,
             Value = result

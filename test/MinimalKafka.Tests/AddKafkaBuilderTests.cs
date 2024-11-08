@@ -51,5 +51,15 @@ public class AddKafkaBuilderTests
         {
             throw new NotImplementedException();
         }
+
+        public IAsyncEnumerable<string> FindAsync(Func<string, bool> predicate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ValueTask<string?> FindByIdAsync(string key)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
