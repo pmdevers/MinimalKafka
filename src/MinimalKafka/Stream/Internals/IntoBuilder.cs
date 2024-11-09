@@ -10,7 +10,7 @@ public interface ILinkTo<out TOutput>
 }
 
 
-public class IntoBuilder<TValue>(
+internal class IntoBuilder<TValue>(
     IKafkaConventionBuilder conventionBuilder,
     ILinkTo<(KafkaContext, TValue)> source) : IIntoBuilder<TValue>
 {
@@ -24,7 +24,7 @@ public class IntoBuilder<TValue>(
     }
 }
 
-public class IntoBuilder<TKey, TValue>(
+internal class IntoBuilder<TKey, TValue>(
     IKafkaConventionBuilder conventionBuilder, 
     ILinkTo<(KafkaContext, TKey, TValue)> consumeBlock) : IIntoBuilder<TKey, TValue>
 {

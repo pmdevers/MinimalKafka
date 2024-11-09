@@ -3,7 +3,7 @@ using MinimalKafka.Stream.Blocks;
 
 namespace MinimalKafka.Stream.Internals;
 
-public class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) : IStreamBuilder<TKey, TValue>
+internal class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) : IStreamBuilder<TKey, TValue>
 {
     private readonly IKafkaBuilder _builder = builder;
     private readonly ConsumeBlock<TKey, TValue> _source = new(builder, topic);
