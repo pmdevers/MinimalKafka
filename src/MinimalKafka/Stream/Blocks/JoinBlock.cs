@@ -1,8 +1,9 @@
-﻿using System.Threading.Tasks.Dataflow;
+﻿using MinimalKafka.Stream.Internals;
+using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Blocks;
 
-public class JoinBlock<K1, V1, K2, V2>
+public class JoinBlock<K1, V1, K2, V2> : ILinkTo<(KafkaContext, (V1, V2))>
 {
     private readonly IStreamStore<K1, V1> _leftStore;
     private readonly IStreamStore<K2, V2> _rightStore;
@@ -26,10 +27,10 @@ public class JoinBlock<K1, V1, K2, V2>
     public ITargetBlock<(KafkaContext, K1, V1)> Left => _leftTransform;
     public ITargetBlock<(KafkaContext, K2, V2)> Right => _rightTransform;
 
-    public void LinkTo(ITargetBlock<(KafkaContext, (V1, V2))> target, DataflowLinkOptions linkOptions)
+    public void LinkTo(ITargetBlock<(KafkaContext, (V1, V2))> target, DataflowLinkOptions options)
     {
-        _leftTransform.LinkTo(target, linkOptions);
-        _rightTransform.LinkTo(target, linkOptions);
+        _leftTransform.LinkTo(target, options);
+        _rightTransform.LinkTo(target, options);
     }
 
     private async IAsyncEnumerable<(KafkaContext, (V1, V2))> TransformLeft((KafkaContext, K1, V1) data)

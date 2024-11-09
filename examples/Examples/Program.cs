@@ -28,15 +28,19 @@ app.MapStream<Guid, LeftObject>("left")
     .Into(async (c, value) =>
     {
         var (left, right) = value;
-
         var new_value = new ResultObject(left.Id, right);
-
         Console.WriteLine($"multi into - {left.Id} - {new_value}");
-
         await c.ProduceAsync("result", left.Id, new ResultObject(left.Id, right));
     })
     .WithGroupId($"multi-{Guid.NewGuid()}")
     .WithClientId("multi");
+
+app.MapStream<Guid,LeftObject>("left")
+    .Join<Guid, RightObject>("right")
+    .OnKey()
+    .Into("string");
+    
+
 
 app.MapStream<Guid, LeftObject>("left")
    .Into((c, k, v) =>

@@ -18,13 +18,13 @@ public class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) : 
         _source.Builder.Finally(finalConvention);
     }
 
-    public IJoinBuilder<TValue, V2> Join<K2, V2>(string topic)
+    public IJoinBuilder<TKey, TValue, K2, V2> Join<K2, V2>(string topic)
     {
         return new JoinBuilder<TKey, TValue, K2, V2>(_builder, _source, topic);
     }
 
     public IKafkaConventionBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
     {
-        return new IntoBuilder<TKey, TValue>(_source).Into(handler);
+        return new IntoBuilder<TKey, TValue>(_source.Builder, _source).Into(handler);
     }
 }
