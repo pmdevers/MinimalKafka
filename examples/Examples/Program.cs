@@ -1,9 +1,13 @@
 using Confluent.Kafka;
 using Examples;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +27,8 @@ builder.Services.AddHostedService(x => store);
 
 var app = builder.Build();
 
+app.MapAggregate();
+
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
     .Into(async (c, value) =>
@@ -35,12 +41,6 @@ app.MapStream<Guid, LeftObject>("left")
     .WithGroupId($"multi-{Guid.NewGuid()}")
     .WithClientId("multi");
 
-app.MapStream<Guid,LeftObject>("left")
-    .Join<Guid, RightObject>("right")
-    .OnKey()
-    .Into("string");
-    
-
 
 app.MapStream<Guid, LeftObject>("left")
    .Into((c, k, v) =>
@@ -50,6 +50,8 @@ app.MapStream<Guid, LeftObject>("left")
    })
    .WithGroupId($"single-{Guid.NewGuid()}")
    .WithClientId("single");
+
+
 
 
 

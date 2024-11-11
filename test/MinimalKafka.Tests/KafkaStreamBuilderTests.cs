@@ -9,9 +9,9 @@ public class KafkaStreamBuilderTests
     public class ApiTest
     {
         [Fact]
-        public Task MapStream_Should_Call_MapTopic()
+        public void MapStream_Should_Call_MapTopic()
         {
-            var builder = Substitute.For<IKafkaBuilder>();
+            var builder = new KafkaBuilder(EmptyServiceProvider.Instance);
 
             builder.MapStream<Guid, string>("string");
 
