@@ -18,14 +18,5 @@ public static class StreamExtensions
         var sb = new StreamBuilder<TKey, TValue>(builder, topic);
         return sb;
     }
-
-    public static IIntoBuilder<TKey, (V1?, V2?)> OnKey<TKey, V1, V2>(this IJoinBuilder<TKey, V1, TKey, V2> builder)
-        => builder.On((k, _) => k, (k, _) => k);
-
-    public static IKafkaConventionBuilder Into<TKey, V1, V2>(this IIntoBuilder<TKey, (V1?, V2?)> builder, string topic) 
-        => builder.Into(async (c, k, v) =>
-        {
-            await c.ProduceAsync(topic, k, v);
-        });
 }
 
