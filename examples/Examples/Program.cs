@@ -17,10 +17,6 @@ builder.Services.AddMinimalKafka(config =>
            .WithInMemoryStore();
  });
 
-var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
-
-builder.Services.AddHostedService(x => store);
-
 var app = builder.Build();
 
 app.MapStream<Guid, LeftObject>("left")
@@ -39,7 +35,6 @@ app.MapStream<Guid,LeftObject>("left")
     .Join<Guid, RightObject>("right")
     .OnKey()
     .Into("string");
-    
 
 
 app.MapStream<Guid, LeftObject>("left")
@@ -50,7 +45,5 @@ app.MapStream<Guid, LeftObject>("left")
    })
    .WithGroupId($"single-{Guid.NewGuid()}")
    .WithClientId("single");
-
-
 
 await app.RunAsync();
