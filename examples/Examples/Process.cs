@@ -6,6 +6,7 @@ using MinimalKafka;
 using System.Text.Json;
 using System.Text;
 using MinimalKafka.Extension;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace Examples;
 
@@ -35,15 +36,24 @@ public static class Process
     public static void MapAggregate(this WebApplication app)
     {
         app.MapStream<Guid, AggregateEvent<Guid>>("eventstream")
-            .Aggregate<Guid, Aggregate<Guid>>("aggregate", builder =>
+            .Aggregate<Guid, MyAggregate>("aggregate", builder =>
             {
                 builder.AddEvent<ChangeName>((v, e) => v with { Name = e.Name });
                 builder.AddEvent<ChangeSurName>((v, e) => v with { SurName = e.Surname });
-
             })
             .WithGroupId("Aggregate")
-            .WithClientId("Aggregate");
+        .WithClientId("Aggregate");
     }
+}
+
+public record MyAggregate(Guid Id) : Aggregate<Guid>(Id), IAggregate<Guid, MyAggregate>
+{
+    public static MyAggregate Create(KafkaContext context, Guid key)
+    {
+        return new MyAggregate(key);
+    }
+    public string Name { get; set; } = string.Empty;
+    public string SurName { get; set; } = string.Empty;
 }
 
 public record ChangeName(string Name);

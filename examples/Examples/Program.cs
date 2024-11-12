@@ -27,7 +27,14 @@ builder.Services.AddHostedService(x => store);
 
 var app = builder.Build();
 
-app.MapAggregate();
+app.MapStream<Guid, AggregateEvent<Guid>>("eventstream")
+    .Aggregate<Guid, Aggregate<Guid>>("aggregate", builder =>
+    {
+        builder.AddEvent<ChangeName>((v, e) => v with { Name = e.Name });
+        builder.AddEvent<ChangeSurName>((v, e) => v with { SurName = e.Surname });
+    })
+    .WithGroupId("Aggregate")
+    .WithClientId("Aggregate");
 
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
@@ -50,9 +57,6 @@ app.MapStream<Guid, LeftObject>("left")
    })
    .WithGroupId($"single-{Guid.NewGuid()}")
    .WithClientId("single");
-
-
-
 
 
 await app.RunAsync();
