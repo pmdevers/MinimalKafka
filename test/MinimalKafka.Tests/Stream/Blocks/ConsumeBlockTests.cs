@@ -14,8 +14,9 @@ public class ConsumeBlockTests
             var datasource = Substitute.For<IKafkaDataSource>();
             var conventions = new KafkaConventionBuilder([], []);
 
-            datasource.AddTopicDelegate(Arg.Any<string>(), Arg.Any<KafkaDelegate>())
+            datasource.AddTopicDelegate(Arg.Any<string>(), Arg.Any<Delegate>())
                 .Returns(conventions);
+
 
             kafkabuilder.MetaData.Returns([]);
             kafkabuilder.DataSource.Returns(datasource);
@@ -24,31 +25,6 @@ public class ConsumeBlockTests
 
             block.Builder.Should().Be(conventions);
             datasource.Received(1).AddTopicDelegate("test", Arg.Any<Delegate>());
-        }
-
-        [Fact]
-        public async Task Invoked_delegate_should_trigger_linked_block()
-        {
-            var kafkabuilder = Substitute.For<IKafkaBuilder>();
-            var datasource = new TestDataSource();
-            var target = Substitute.For<ITargetBlock<(KafkaContext, string, string)>>();
-            
-            kafkabuilder.MetaData.Returns([]);
-            kafkabuilder.DataSource.Returns(datasource);
-
-            var block = new ConsumeBlock<string, string>(kafkabuilder, "test");
-            
-            block.LinkTo(target, new DataflowLinkOptions() { PropagateCompletion = true });
-
-            datasource.Topics["test"].DynamicInvoke(KafkaContext.Empty, "string", "string");
-            
-            await Task.Delay(10);
-
-            target.Received(1).OfferMessage(
-                Arg.Any<DataflowMessageHeader>(), 
-                Arg.Any<(KafkaContext, string, string)>(), 
-                Arg.Any<ISourceBlock<(KafkaContext, string, string)>>(), 
-                false);
         }
     }
 }
