@@ -14,7 +14,7 @@ public class ConsumeBlockTests
             var datasource = Substitute.For<IKafkaDataSource>();
             var conventions = new KafkaConventionBuilder([], []);
 
-            datasource.AddTopicDelegate(Arg.Any<string>(), Arg.Any<Delegate>())
+            datasource.AddTopicDelegate(Arg.Any<string>(), Arg.Any<KafkaDelegate>())
                 .Returns(conventions);
 
             kafkabuilder.MetaData.Returns([]);
@@ -27,7 +27,7 @@ public class ConsumeBlockTests
         }
 
         [Fact]
-        public void Invoked_delegate_should_trigger_linked_block()
+        public async Task Invoked_delegate_should_trigger_linked_block()
         {
             var kafkabuilder = Substitute.For<IKafkaBuilder>();
             var datasource = new TestDataSource();
@@ -41,6 +41,8 @@ public class ConsumeBlockTests
             block.LinkTo(target, new DataflowLinkOptions() { PropagateCompletion = true });
 
             datasource.Topics["test"].DynamicInvoke(KafkaContext.Empty, "string", "string");
+            
+            await Task.Delay(10);
 
             target.Received(1).OfferMessage(
                 Arg.Any<DataflowMessageHeader>(), 
