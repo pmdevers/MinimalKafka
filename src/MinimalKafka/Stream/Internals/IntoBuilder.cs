@@ -1,25 +1,43 @@
-﻿using System.Threading.Tasks.Dataflow;
+﻿using MinimalKafka.Builders;
+using MinimalKafka.Stream.Blocks;
+using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-public class IntoBuilder<TKey, TValue>(
-    IWithMetadataBuilder streamBuilder,
-    ISourceBlock<Tuple<KafkaContext, TKey, TValue>> left,
-    ISourceBlock<Tuple<KafkaContext, TKey, TValue>> right) : IIntoBuilder<TKey, TValue>
+public interface ILinkTo<out TOutput>
 {
-    private readonly IWithMetadataBuilder _streamBuilder = streamBuilder;
-    private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _left = left;
-    private readonly ISourceBlock<Tuple<KafkaContext, TKey, TValue>> _right = right;
-
-    public IWithMetadataBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
-    {
-        var action = new IntoBlock<TKey, TValue>(handler);
-
-        _left.LinkTo(action);
-        _right.LinkTo(action);
-
-        return _streamBuilder;
-    }
+    void LinkTo(ITargetBlock<TOutput> block, DataflowLinkOptions options);
 }
 
 
+internal class IntoBuilder<TValue>(
+    IKafkaConventionBuilder conventionBuilder,
+    ILinkTo<(KafkaContext, TValue)> source) : IIntoBuilder<TValue>
+{
+    public IKafkaConventionBuilder Into(Func<KafkaContext, TValue, Task> handler)
+    {
+        var action = new IntoBlock<TValue>(handler);
+
+        source.LinkTo(action, new DataflowLinkOptions { PropagateCompletion = true });
+
+        return conventionBuilder;
+    }
+}
+
+internal class IntoBuilder<TKey, TValue>(
+    IKafkaConventionBuilder conventionBuilder, 
+    ILinkTo<(KafkaContext, TKey, TValue)> consumeBlock) : IIntoBuilder<TKey, TValue>
+{
+    public IKafkaConventionBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
+    {
+        var action = new ActionBlock<(KafkaContext, TKey, TValue)>(async data =>
+        {
+            var (context, key, value) = data;
+            await handler(context, key, value);
+        });
+
+        consumeBlock.LinkTo(action, new DataflowLinkOptions { PropagateCompletion = true });
+
+        return conventionBuilder;
+    }
+}

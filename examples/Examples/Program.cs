@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Examples;
 using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
@@ -16,36 +17,33 @@ builder.Services.AddMinimalKafka(config =>
            .WithInMemoryStore();
  });
 
-var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
-
-builder.Services.AddHostedService(x => store);
-
 var app = builder.Build();
 
-app.MapStream<Guid, string>("left")
-    .Join<Guid, string>("right").OnKey()
-    .Into(async (c, k, v) =>
+app.MapStream<Guid, LeftObject>("left")
+    .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
+    .Into(async (c, value) =>
     {
-        if(v.Item1 is null || v.Item2 is null)
-        {
-            return;
-        }
+        var (left, right) = value;
+        var new_value = new ResultObject(left.Id, right);
+        Console.WriteLine($"multi into - {left.Id} - {new_value}");
+        await c.ProduceAsync("result", left.Id, new ResultObject(left.Id, right));
+    })
+    .WithGroupId($"multi-{Guid.NewGuid()}")
+    .WithClientId("multi");
 
-        Console.WriteLine(v.Item1 + v.Item2);
+app.MapStream<Guid,LeftObject>("left")
+    .Join<Guid, RightObject>("right")
+    .OnKey()
+    .Into("string");
 
-        var result = await c.ProduceAsync("result", k, v.Item1 + v.Item2);
 
-        Console.WriteLine(result.Message);
-    }).WithClientId("MapStream");
-
-app.MapTopic("topic.name", async (KafkaContext context, string key, string value) =>
-{
-    Console.WriteLine($"{key} - {value}");
-
-    var result =  await context.ProduceAsync("test2", key, value);
-
-    Console.WriteLine($"Produced {result.Status}");
-
-}).WithClientId("MapTopic");
+app.MapStream<Guid, LeftObject>("left")
+   .Into((c, k, v) =>
+   {
+       Console.WriteLine($"single Into - {k} - {v}");
+       return Task.CompletedTask;
+   })
+   .WithGroupId($"single-{Guid.NewGuid()}")
+   .WithClientId("single");
 
 await app.RunAsync();
