@@ -9,10 +9,12 @@ internal class KafkaService(IKafkaBuilder builder) : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        return Parallel.ForEachAsync(Processes, cancellationToken, async (p, t) =>
+        Parallel.ForEachAsync(Processes, cancellationToken, async (p, t) =>
         {
             await p.Start(t);
         });
+
+        return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
