@@ -63,6 +63,8 @@ public static class KafkaExtensions
         });
         services.AddHostedService<KafkaService>();
 
+        services.AddSingleton(typeof(CommandProducer<>));
+
         services.AddSingleton(typeof(IProducer<,>), typeof(KafkaProducerFactory<,>));
 
         return services;

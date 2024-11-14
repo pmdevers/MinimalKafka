@@ -1,0 +1,11 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@HostAddress = http://localhost:5242
+
+
+POST {{HostAddress}}/v1/2d5773c0-468f-444f-8f92-39fa2a419931/changeName
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Hello 2"
+}

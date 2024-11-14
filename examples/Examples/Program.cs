@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using Examples;
+using Microsoft.AspNetCore.Mvc;
 using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
@@ -18,6 +19,12 @@ builder.Services.AddMinimalKafka(config =>
  });
 
 var app = builder.Build();
+
+
+app.MapPost("/v1/{id}/changeName", (CommandProducer<Guid> producer, [FromRoute] Guid id, [FromBody] ChangeName cmd) =>
+{
+    producer.Produce("aggregate.cmd", id, cmd);
+});
 
 
 app.MapAggregate<Guid, MyAggregate>("aggregate.cmd", "aggregate", 
