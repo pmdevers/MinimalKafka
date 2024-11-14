@@ -1,7 +1,5 @@
 using Confluent.Kafka;
 using Examples;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
@@ -21,20 +19,7 @@ builder.Services.AddMinimalKafka(config =>
            .WithInMemoryStore();
  });
 
-var store = new InMemoryStore<Guid, Tuple<string?, string?>>();
-
-builder.Services.AddHostedService(x => store);
-
 var app = builder.Build();
-
-app.MapStream<Guid, AggregateEvent<Guid>>("eventstream")
-    .Aggregate<Guid, Aggregate<Guid>>("aggregate", builder =>
-    {
-        builder.AddEvent<ChangeName>((v, e) => v with { Name = e.Name });
-        builder.AddEvent<ChangeSurName>((v, e) => v with { SurName = e.Surname });
-    })
-    .WithGroupId("Aggregate")
-    .WithClientId("Aggregate");
 
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
@@ -48,6 +33,11 @@ app.MapStream<Guid, LeftObject>("left")
     .WithGroupId($"multi-{Guid.NewGuid()}")
     .WithClientId("multi");
 
+app.MapStream<Guid,LeftObject>("left")
+    .Join<Guid, RightObject>("right")
+    .OnKey()
+    .Into("string");
+
 
 app.MapStream<Guid, LeftObject>("left")
    .Into((c, k, v) =>
@@ -57,6 +47,5 @@ app.MapStream<Guid, LeftObject>("left")
    })
    .WithGroupId($"single-{Guid.NewGuid()}")
    .WithClientId("single");
-
 
 await app.RunAsync();
