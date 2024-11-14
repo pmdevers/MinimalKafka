@@ -41,6 +41,8 @@ public class KafkaServiceTests
         // Act
         await service.StartAsync(cancellationToken);
 
+        await Task.Delay(100);
+
         // Assert
         foreach (var process in _processes)
         {
