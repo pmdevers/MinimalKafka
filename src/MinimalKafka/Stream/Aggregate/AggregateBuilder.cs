@@ -1,41 +1,29 @@
 ﻿using MinimalKafka.Builders;
+using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
 namespace MinimalKafka.Stream;
-public interface IAggregateBuilder<TKey, TState>
-    where TState : Aggregate<TKey>, IAggregate<TKey, TState>
+public interface IAggregateBuilder<TKey, TAggregate>
+    where TAggregate : Aggregate<TKey>, IAggregate<TKey, TAggregate>
 {
-    IAggregateBuilder<TKey, TState> AddEvent(string name, Func<TKey, TState, AggregateEvent<TKey>, Task<TState>> handler);
-    IAggregateBuilder<TKey, TState> AddEvent<TEvent>(Func<TState, TEvent, TState> handler);
+
+    IAggregateBuilder<TKey, TAggregate> AddCommand<TCommand>() where TCommand : ICommand<TAggregate>;
 }
-public class AggregateBuilder<TKey, TState>(IIntoBuilder<TKey, (AggregateEvent<TKey>?, TState?)> builder, string topic)
-    : IAggregateBuilder<TKey, TState>
-    where TState : Aggregate<TKey>, IAggregate<TKey, TState>
+public class AggregateBuilder<TKey, TAggregate>(IIntoBuilder<TKey, (AggregateCommand<TKey>?, TAggregate?)> builder, string topic)
+    : IAggregateBuilder<TKey, TAggregate>
+    where TAggregate : Aggregate<TKey>, IAggregate<TKey, TAggregate>
 {
-    private readonly Dictionary<string, Func<TKey, TState, AggregateEvent<TKey>, Task<TState>>> _handlers = [];
-    private readonly IIntoBuilder<TKey, (AggregateEvent<TKey>?, TState?)> _builder = builder;
+    private readonly Dictionary<string, Func<AggregateCommand<TKey>, ValueTask<ICommand<TAggregate>?>>> _handlers = [];
+    private readonly IIntoBuilder<TKey, (AggregateCommand<TKey>?, TAggregate?)> _builder = builder;
 
-    public IAggregateBuilder<TKey, TState> AddEvent(string name, Func<TKey, TState, AggregateEvent<TKey>, Task<TState>> handler)
+
+    public IAggregateBuilder<TKey, TAggregate> AddCommand<TCommand>()
+        where TCommand : ICommand<TAggregate>
     {
-        _handlers.Add(name, handler);
+        _handlers.Add(typeof(TCommand).Name, async (e) => await GetCommand<TCommand>(e));
         return this;
-    }
-
-    public IAggregateBuilder<TKey, TState> AddEvent<TEvent>(
-       Func<TState, TEvent, TState> handler)
-    {
-        JsonSerializerOptions _options = new() { PropertyNameCaseInsensitive = true };
-
-        return AddEvent(typeof(TEvent).Name, async (k, v, e) =>
-        {
-            var jsonString = JsonSerializer.Serialize(e.Payload);
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonString));
-            var result = await JsonSerializer.DeserializeAsync<TEvent>(stream, _options);
-            var payload = result is null ? throw new InvalidCastException("Payload can not be read") : result;
-            var aggregate = handler(v, payload);
-            return aggregate;
-        });
     }
 
     public IKafkaConventionBuilder Build()
@@ -45,16 +33,30 @@ public class AggregateBuilder<TKey, TState>(IIntoBuilder<TKey, (AggregateEvent<T
             if (value.Item1 == null)
                 return;
 
-            var state = value.Item2 ?? TState.Create(context, key);
+            if (!_handlers.TryGetValue(value.Item1.Name, out var command))
+            {
+                throw new InvalidOperationException("Command not registred");
+            }
 
-            var result = await _handlers[value.Item1.Name](key, state, value.Item1);
-
-            if (result == state)
+            var c = await command.Invoke(value.Item1);
+            var result = c?.Execute(value.Item2 ?? TAggregate.Create(context, key));
+            
+            if (result == value.Item2)
             {
                 return;
             }
 
             await context.ProduceAsync(topic, key, result);
         });
+    }
+
+    private readonly JsonSerializerOptions _options = new() { PropertyNameCaseInsensitive = true };
+
+    private ValueTask<TCommand?> GetCommand<TCommand>(AggregateCommand<TKey> e)
+        where TCommand : ICommand<TAggregate>
+    {
+        var jsonString = JsonSerializer.Serialize(e.Payload);
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(jsonString));
+        return JsonSerializer.DeserializeAsync<TCommand>(stream, _options);
     }
 }

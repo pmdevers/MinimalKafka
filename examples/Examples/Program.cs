@@ -4,8 +4,6 @@ using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +19,18 @@ builder.Services.AddMinimalKafka(config =>
 
 var app = builder.Build();
 
+
+app.MapAggregate<Guid, MyAggregate>("aggregate.cmd", "aggregate", 
+    builder =>
+    {
+        builder.AddCommand<ChangeName>();
+        builder.AddCommand<ChangeSurName>();
+    })
+    .WithGroupId("Aggregate")
+    .WithClientId("Aggregate");
+
+
+
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
     .Into(async (c, value) =>
@@ -33,10 +43,12 @@ app.MapStream<Guid, LeftObject>("left")
     .WithGroupId($"multi-{Guid.NewGuid()}")
     .WithClientId("multi");
 
+
 app.MapStream<Guid,LeftObject>("left")
     .Join<Guid, RightObject>("right")
     .OnKey()
     .Into("string");
+
 
 
 app.MapStream<Guid, LeftObject>("left")
