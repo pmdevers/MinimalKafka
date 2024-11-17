@@ -20,18 +20,18 @@ builder.Services.AddMinimalKafka(config =>
 var app = builder.Build();
 
 app.MapStream<Guid, Command>("commands")
-    .Split(x=> x.Name, branches =>
+    .Split(branches =>
     {
-        branches.Branch("cmd1", (context, key, value) => Task.CompletedTask);
-        branches.Branch("cmd2", (context, key, value) => Task.CompletedTask);
+        branches.Branch((_, v) => v.Name == "cmd1", (_, _, _) => Task.CompletedTask);
+        branches.Branch((_, v) => v.Name == "cmd2", (_, _, _) => Task.CompletedTask);
         branches.DefaultBranch((context, key, value) => Task.CompletedTask);
     });
 
 app.MapStream<Guid, LeftObject>("left")
     .Join<Guid, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
-    .Split(x => x.Item2.Name, branches =>
+    .Split(branches =>
     {
-        branches.Branch("left", (context, key, value) => Task.CompletedTask);
+        branches.Branch((_, _) => true, (_, _, _) => Task.CompletedTask);
     });
 
 app.MapStream<Guid, LeftObject>("left")

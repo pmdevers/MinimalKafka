@@ -1,19 +1,19 @@
 namespace MinimalKafka.Stream.Internals;
 
+internal record Branch<TKey, TValue>(
+    Func<TKey, TValue, bool> Predicate,
+    Func<KafkaContext, TKey, TValue, Task> BranchAction
+);
+
 internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
 {
-    private readonly Dictionary<string, Func<KafkaContext, TKey, TValue, Task>> _branches = [];
-    private Func<KafkaContext, TKey, TValue, Task> _default;
-    private readonly Func<TValue, string> _branchSelector;
+    private readonly List<Branch<TKey, TValue>> _branches = [];
+    private Func<KafkaContext, TKey, TValue, Task> _default = 
+        (_,_,_) => throw new UnhandledBranchException();
 
-    public BranchBuilder(Func<TValue, string> branchSelector)
+    public IBranchBuilder<TKey, TValue> Branch(Func<TKey, TValue, bool> predicate, Func<KafkaContext, TKey, TValue, Task> method)
     {
-        _branchSelector = branchSelector;
-        _default = (_, _, value) => throw new UnhandledBranchException(_branchSelector(value));
-    }
-    public IBranchBuilder<TKey, TValue> Branch(string name, Func<KafkaContext, TKey, TValue, Task> method)
-    {
-        _branches.Add(name, method);
+        _branches.Add(new Branch<TKey, TValue>(predicate, method));
         return this;
     }
 
@@ -26,14 +26,12 @@ internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
     {
         return (c, k, v) =>
         {
-            string name = _branchSelector(v);
-            return _branches.TryGetValue(name, out Func<KafkaContext, TKey, TValue, Task>? branch) 
-                ? branch(c, k, v)
-                : _default(c, k, v);
+            var branch = _branches.Find(x => x.Predicate(k, v));
+            return branch?.BranchAction(c, k, v) ?? _default(c, k, v);
         };
     }
 }
 
-public class UnhandledBranchException(string branchName) : Exception(branchName)
+public class UnhandledBranchException() : Exception()
 {
 }
