@@ -24,7 +24,7 @@ app.MapStream<Guid, Command>("commands")
     {
         branches.Branch((_, v) => v.Name == "cmd1", (_, _, _) => Task.CompletedTask);
         branches.Branch((_, v) => v.Name == "cmd2", (_, _, _) => Task.CompletedTask);
-        branches.DefaultBranch((context, key, value) => Task.CompletedTask);
+        branches.DefaultBranch((_,_,_) => Task.CompletedTask);
     });
 
 app.MapStream<Guid, LeftObject>("left")
@@ -39,8 +39,8 @@ app.MapStream<Guid, LeftObject>("left")
     .Into(async (c, value) =>
     {
         var (left, right) = value;
-        var new_value = new ResultObject(left.Id, right);
-        Console.WriteLine($"multi into - {left.Id} - {new_value}");
+        var result = new ResultObject(left.Id, right);
+        Console.WriteLine($"multi into - {left.Id} - {result}");
         await c.ProduceAsync("result", left.Id, new ResultObject(left.Id, right));
     })
     .WithGroupId($"multi-{Guid.NewGuid()}")
@@ -53,7 +53,7 @@ app.MapStream<Guid,LeftObject>("left")
 
 
 app.MapStream<Guid, LeftObject>("left")
-   .Into((c, k, v) =>
+   .Into((_, k, v) =>
    {
        Console.WriteLine($"single Into - {k} - {v}");
        return Task.CompletedTask;
