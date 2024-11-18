@@ -7,7 +7,7 @@ internal record Branch<TKey, TValue>(
 
 internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
 {
-    private readonly List<Branch<TKey, TValue>> _branches = [];
+    private readonly ICollection<Branch<TKey, TValue>> _branches = [];
     private Func<KafkaContext, TKey, TValue, Task> _default = 
         (_,_,_) => throw new UnhandledBranchException();
 
@@ -26,7 +26,7 @@ internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
     {
         return (c, k, v) =>
         {
-            var branch = _branches.Find(x => x.Predicate(k, v));
+            var branch = _branches.FirstOrDefault(x => x.Predicate(k, v));
             return branch?.BranchAction(c, k, v) ?? _default(c, k, v);
         };
     }
