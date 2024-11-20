@@ -1,20 +1,32 @@
 ﻿using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using System.Globalization;
+using TopicMetadata = MinimalKafka.Metadata.TopicMetadata;
 
 namespace MinimalKafka;
 
-public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
+public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>, IMinimalProducer<TKey, TValue>
 {
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
+    
+    private readonly IAdminClient _adminClient;
+    
+    private readonly ITopicMetadata _topicMetadata;
+
+    private bool _initialized;
+
     public IProducer<TKey, TValue> Producer { get; set; }
 
     public Handle Handle => Producer.Handle;
 
     public string Name => Producer.Name;
 
-    public KafkaProducerFactory(IKafkaBuilder builder)
+    public KafkaProducerFactory(IKafkaBuilder builder, IAdminClient adminClient)
     {
+        _adminClient = adminClient;
         var config = builder.MetaData.OfType<ConfigurationMetadata>().First();
         var keySerializer = builder.MetaData.OfType<KeySerializerMetadata>().First(); 
         var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
@@ -22,11 +34,48 @@ public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 
         var serializerKey = ActivatorUtilities.CreateInstance(builder.ServiceProvider, keySerializer.GetSerializerType<TKey>());
         var serializerValue = ActivatorUtilities.CreateInstance(builder.ServiceProvider, valueSerializer.GetSerializerType<TValue>());
-
+        
+        _topicMetadata = builder.MetaData.OfType<TopicMetadata<TValue>>().FirstOrDefault()
+                ?? builder.MetaData.OfType<TopicMetadata>().First();
+        
         Producer = new ProducerBuilder<TKey, TValue>(producerConfig)
             .SetKeySerializer((ISerializer<TKey>)serializerKey)
             .SetValueSerializer((ISerializer<TValue>)serializerValue)
             .Build();
+    }
+
+    private async Task Initialize()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        var topicName = _topicMetadata.NamingConvention.Invoke(typeof(TValue));
+        
+        var metadata = _adminClient.GetMetadata(topicName, Timeout);
+        if (metadata.Topics.Exists(topic => topic.Topic == topicName))
+        {
+            return;
+        }
+
+        var config = new Dictionary<string, string>();
+
+        if (_topicMetadata.RetentionPeriod.HasValue)
+        {
+            config["retention.ms"] = _topicMetadata.RetentionPeriod.Value.TotalMilliseconds
+                .ToString(CultureInfo.InvariantCulture);
+        }
+
+        await _adminClient.CreateTopicsAsync([new TopicSpecification
+        {
+            Name = topicName,
+            Configs = config
+        }]);
+    }
+
+    public async Task<DeliveryResult<TKey, TValue>> ProduceAsync(Message<TKey, TValue> message, CancellationToken cancellationToken = default)
+    {
+        await Initialize();
+        return await Producer.ProduceAsync(_topicMetadata.NamingConvention.Invoke(typeof(TValue)), message, cancellationToken);
     }
 
     public Task<DeliveryResult<TKey, TValue>> ProduceAsync(string topic, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
