@@ -11,7 +11,7 @@ public interface IBranchBuilder<out TKey, out TValue>
 
 public static class IntoBuilderExtensions
 {
-    public static IKafkaConventionBuilder Split<TKey, TValue>(this IIntoBuilder<TKey, TValue> builder,
+    public static IKafkaConventionBuilder SplitInto<TKey, TValue>(this IIntoBuilder<TKey, TValue> builder,
         Action<IBranchBuilder<TKey, TValue>> branches)
     {
         BranchBuilder<TKey, TValue> branch = new();
@@ -20,7 +20,7 @@ public static class IntoBuilderExtensions
         return builder.Into(func);
     }
 
-    public static IKafkaConventionBuilder Split<TValue>(this IIntoBuilder<TValue> builder,
+    public static IKafkaConventionBuilder SplitInto<TValue>(this IIntoBuilder<TValue> builder,
         Action<IBranchBuilder<Guid, TValue>> branches)
     {
         BranchBuilder<Guid, TValue> branch = new();

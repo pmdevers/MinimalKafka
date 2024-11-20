@@ -20,7 +20,7 @@ builder.Services.AddMinimalKafka(config =>
 var app = builder.Build();
 
 app.MapStream<Guid, Command>("commands")
-    .Split(branches =>
+    .SplitInto(branches =>
     {
         branches.Branch((_, v) => v.Name == "cmd1", (_, _, _) => Task.CompletedTask);
         branches.Branch((_, v) => v.Name == "cmd2", (_, _, _) => Task.CompletedTask);
@@ -29,7 +29,7 @@ app.MapStream<Guid, Command>("commands")
 
 app.MapStream<Guid, LeftObject>("left")
     .Join<Guid, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
-    .Split(branches =>
+    .SplitInto(branches =>
     {
         branches.Branch((_, _) => true, (_, _, _) => Task.CompletedTask);
     });
