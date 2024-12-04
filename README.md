@@ -111,11 +111,11 @@ Or some other complicated stuff and produce to other topic
 
 ```mermaid
 flowchart LR
-    A[Topic-C] -->|Produce| B{{Processor}}
-    B --> C{DoStuff}
-    C <-->|Fetch Data| D[(Database)]
-    C <-->|Request| E[External HTTP]
-    B -->|Produce| F[Topic]
+    A[Topic-C] -->|Produce| B
+    B{{Processor}} --> |Execute| C
+    D[(Database)] <--> |Fetch Data| C
+    E[External HTTP] <-->|Request| C
+    C{DoStuff} -->|Produce| F[Topic]
 ```
 
 ```csharp
