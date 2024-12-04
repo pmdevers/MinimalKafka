@@ -75,10 +75,6 @@ This can be achieved with the following code
 
 ```csharp
 
-public record DatamodelA(Guid Id, string DataA);
-public record DatamodelB(Guid Id, DateTime DataB);
-public record DatamodelC(Guid Id, string DataA, DateTime DataB);
-
 // Join 2 streams
 app.MapStream<Guid, DatamodelA>("topic-a")
    .Join<Guid, DatamodelB>("topic-b").OnKey()
