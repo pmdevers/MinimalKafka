@@ -57,6 +57,85 @@ await app.RunAsync();
 
 ```
 
+
+### Kafka Stream Processing
+
+Often we want to join 2 topics and produce the outcome of this into a new topic
+
+```mermaid
+flowchart LR
+    A[Topic A] -->|Produce| C
+    B[Topic B] -->|Produce| C
+    C{{Processor}} -->|Produce| D[Topic C]
+```
+
+#### Join Streams
+
+This can be achieved with the following code
+
+```csharp
+
+public record DatamodelA(Guid Id, string DataA);
+public record DatamodelB(Guid Id, DateTime DataB);
+public record DatamodelC(Guid Id, string DataA, DateTime DataB);
+
+// Join 2 streams
+app.MapStream<Guid, DatamodelA>("topic-a")
+   .Join<Guid, DatamodelB>("topic-b").OnKey()
+   .Into(async (c, k, v) =>
+    {
+        await c.ProduceAsync<Guid, DatamodelC>("topic-c", k, new(k, v.Item1.DataA, v.Item2.DataB));
+    });
+```
+
+#### Store Projection
+
+Each service who is interested in this can consume this model and store this for later use.
+
+```mermaid
+flowchart LR
+    A[Topic C] -->|Produce| C
+    C{{Processor}} --> D[(Database)]
+```
+
+```csharp
+// Project to local storage
+app.MapStream<Guid, DatamodelC>("topic-c")
+    .Into(async (c, _, v) =>
+    {
+        var store = c.RequestServices.GetRequiredService<IStore>();
+        await store.SaveAsync(v);
+    });
+
+```
+
+#### Stream Proccessing
+
+Or some other complicated stuff and produce to other topic
+
+```mermaid
+flowchart LR
+    A[Topic-C] -->|Produce| B{{Processor}}
+    B --> C{DoStuff}
+    C <-->|Fetch Data| D[(Database)]
+    C <-->|Request| E[External HTTP]
+    B -->|Produce| F[Topic]
+```
+
+```csharp
+app.MapStream<Guid, DatamodelC>("topic-c")
+    .Into(async (c, _, v) =>
+    {
+        // Some Extreme Complicated task.
+        var result = DoStuff();
+
+        await c.ProduceAsync("other-topic", result.Id, result);
+    });
+```
+
+In this way you can chain topics together without interfering chancing 
+
+
 ## Contribution
 
 Contributions are welcome! Please submit a pull request or open an issue to discuss your ideas or improvements.
