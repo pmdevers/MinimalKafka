@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MinimalKafka.Helpers;
 
 namespace MinimalKafka;
 public interface IKafkaProcess
@@ -42,13 +43,14 @@ public class KafkaProcess : IKafkaProcess
                 if (context is EmptyKafkaContext)
                 {
 
-                    _consumer.Logger.LogError("Empty Context!");
+                    _consumer.Logger.EmptyContext();
+
                     continue;
                 }
 
                 _handler.Invoke(context);
             }
-            _consumer.Logger.LogInformation("Dropping out of consume loop");
+            _consumer.Logger.DropOutOfConsumeLoop();
         }, cancellationToken);
     }
 
