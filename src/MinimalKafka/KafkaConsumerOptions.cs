@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Helpers;
 
 namespace MinimalKafka;
 
@@ -15,8 +16,7 @@ public class KafkaConsumerOptions
 
     public IEnumerable<TopicPartitionOffset> PartitionsRevoked(IConsumer<object, object> consumer, List<TopicPartitionOffset> list)
     {
-        KafkaLogger.LogInformation("consumer {MemberId} had partitions {Partitions} revoked"
-            , consumer.MemberId, string.Join(",", list));
+        KafkaLogger.PartitionsRevoked(consumer.MemberId, string.Join(",", list));
         return list;
     }
 }

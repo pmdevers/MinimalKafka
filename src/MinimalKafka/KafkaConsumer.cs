@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
 
 namespace MinimalKafka;
@@ -65,7 +66,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
             if (++_recordsConsumed % _consumeReportInterval == 0)
             {
-                Logger.LogInformation("Consumed '{Records}' records from topic '{Topic}' so far.", _recordsConsumed, result.Topic);
+                Logger.RecordsConsumed(options.Metadata.GroupId(), options.Metadata.ClientId(), _recordsConsumed, result.Topic);
             }
 
             return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
@@ -73,7 +74,8 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
         catch (OperationCanceledException ex) 
         when (ex.CancellationToken == cancellationToken)
         {
-            Logger.LogInformation(ex, "Operation cancelled return Empty Context");
+            Logger.OperatonCanceled(options.Metadata.GroupId(), options.Metadata.ClientId());
+
             _consumer.Close();
             _consumer.Dispose();
             return KafkaContext.Empty;
@@ -82,14 +84,37 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override void Close()
     {
-        Logger.LogInformation("Close() on consumer called.");
+        Logger.ConsumerClosed(options.Metadata.GroupId(), options.Metadata.ClientId());
+        
         _consumer.Close();
         _consumer.Dispose();
     }
 
     public override void Subscribe()
     {
+        Logger.Subscribed(options.Metadata.GroupId(), options.Metadata.ClientId(), _topicName);
+
         _consumer.Subscribe(_topicName);
-        Logger.LogInformation("Subscribed to topic: '{Topic}'", _topicName);
     }
 }
+
+public static class MetadataHelperExtensions 
+{
+    public static string ClientId(this IReadOnlyList<object> metadata)
+    {
+        var meta = metadata.GetMetaData<IClientIdMetadata>()!;
+        return meta.ClientId;
+    }
+
+    public static string GroupId(this IReadOnlyList<object> metadata)
+    {
+        var meta = metadata.GetMetaData<IGroupIdMetadata>()!;
+        return meta.GroupId;
+    }
+
+    private static T? GetMetaData<T>(this IReadOnlyList<object> metaData)
+        => metaData.OfType<T>().FirstOrDefault();
+}
+
+
+

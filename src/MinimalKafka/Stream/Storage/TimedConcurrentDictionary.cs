@@ -1,6 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 
 namespace MinimalKafka.Stream.Storage;
 
