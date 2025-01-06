@@ -113,9 +113,11 @@ Or some other complicated stuff and produce to other topic
 flowchart LR
     A[Topic-C] -->|Consume| B
     B{{Processor}} --> |Execute| C
+    C{DoStuff} --> |Execute| B
     D[(Database)] <--> |Fetch Data| C
     E[External HTTP] <-->|Request| C
-    C{DoStuff} -->|Produce| F[Topic]
+    
+    B -->  |Produce| F[Topic]
 ```
 
 ```csharp
