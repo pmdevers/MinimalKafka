@@ -57,6 +57,174 @@ await app.RunAsync();
 
 ```
 
+
+### Kafka Stream Processing
+
+Often we want to join 2 topics and produce the outcome of this into a new topic
+
+```mermaid
+flowchart LR
+    A[Topic A] -->|Consume| C
+    B[Topic B] -->|Consume| C
+    C{{Processor}} -->|Produce| D[Topic C]
+```
+
+#### Join Streams
+
+This can be achieved with the following code
+
+```csharp
+
+// Join 2 streams
+app.MapStream<Guid, DatamodelA>("topic-a")
+   .Join<Guid, DatamodelB>("topic-b").OnKey()
+   .Into(async (c, k, v) =>
+    {
+        await c.ProduceAsync<Guid, DatamodelC>("topic-c", k, new(k, v.Item1.DataA, v.Item2.DataB));
+    });
+```
+
+#### Store Projection
+
+Each service who is interested in this can consume this model and store this for later use.
+
+```mermaid
+flowchart LR
+    A[Topic C] -->|Consume| C
+    C{{Processor}} --> D[(Database)]
+```
+
+```csharp
+// Project to local storage
+app.MapStream<Guid, DatamodelC>("topic-c")
+    .Into(async (c, _, v) =>
+    {
+        var store = c.RequestServices.GetRequiredService<IStore>();
+        await store.SaveAsync(v);
+    });
+
+```
+
+#### Stream Proccessing
+
+Or some other complicated stuff and produce to other topic
+
+```mermaid
+flowchart LR
+
+subgraph Process Logic
+    Logic{DoStuff} <--> Database[(Database)]
+    Logic <--> HttpClient    
+end
+
+subgraph Stream Process
+    Consumer[Topic-C] -->|Consume| Processor
+    Processor{{Processor}} --> Producer
+    Producer[Topic]
+end
+
+Processor <--> Logic
+```
+
+```csharp
+app.MapStream<Guid, DatamodelC>("topic-c")
+    .Into(async (c, _, v) =>
+    {
+        // Some Extreme Complicated task.
+        var result = DoStuff();
+
+        await c.ProduceAsync("other-topic", result.Id, result);
+    });
+```
+
+## Stream Branching
+
+You could also branch a topic in different topics for different processes
+
+```mermaid
+flowchart LR
+    A[Topic-A] -->|Consume| B{{Processor}}
+    B -->|branch| C[/branch v1/]
+    B -->|branch| D[/branch v2/]
+    B -->|branch| E[/branch v3/]
+    B -->|branch| F[/branch ??/]
+    C -->|Produce| G[Topic-1]
+    D -->|Produce| H[Topic-2]
+    E -->|Produce| I[Topic-3]
+    F -->|Produce| J[Unknown]
+```
+
+```csharp
+
+app.MapStream<Guid, DatamodelA>("topic-a")
+   .SplitInto(x =>
+   {
+       x.Branch((_, v) => v.DataA == "v1", (c, k, v) => c.ProduceAsync("topic-1", k, v));
+       x.Branch((_, v) => v.DataA == "v2", (c, k, v) => c.ProduceAsync("topic-2", k, v));
+       x.Branch((_, v) => v.DataA == "v3", (c, k, v) => c.ProduceAsync("topic-3", k, v));
+       x.DefaultBranch((c, k, v) => c.ProduceAsync("unknown", k, v));
+   });
+```
+
+## Streaming Command Proccessor
+
+
+```mermaid
+flowchart LR
+A[Topic-A] -->|Consume| C{{Processor}}
+B[Topic-B] -->|Produce| C
+C -->|branch| D[/Create/] 
+C -->|branch| E[/Addition/]
+C -->|branch| F[/Subtract/]
+D -->|Produce| G[Topic-B]
+E -->|Produce| G[Topic-B]
+F -->|Produce| G[Topic-B]
+```
+
+```csharp
+app.MapStream<Guid, DatamodelA>("topic-a")
+   .Join<Guid, DatamodelB>("topic-b").OnKey()
+   .SplitInto(x =>
+   {
+       // Initial Create Command
+       x.Branch((_, v) => v.Item1?.DataA == "Create", async (c, k, v) => {
+           if(v.Item2 != null) 
+            {
+               return;
+           }
+           await c.ProduceAsync("topic-b", k, new DatamodelB(k, 1));
+       });
+
+       // Add Command
+       x.Branch((_, v) => v.Item1?.DataA == "Addition", async (c, k, v) =>
+       {
+           if(v.Item2 == null) 
+           { 
+               return;
+           }
+
+           await c.ProduceAsync("topic-b", k, v.Item2 with { DataB = v.Item2.DataB + 1 });
+       });
+       
+       // Subtract Command
+       x.Branch((_, v) => v.Item1?.DataA == "Subtract", async (c, k, v) =>
+       {
+           if (v.Item2 == null)
+           {
+               return;
+           }
+
+           await c.ProduceAsync("topic-b", k, v.Item2 with { DataB = v.Item2.DataB - 1 });
+       });
+   });
+```
+
+
+In this way you can chain topics together without interfering chancing 
+
+
+
+
 ## Contribution
 
 Contributions are welcome! Please submit a pull request or open an issue to discuss your ideas or improvements.
