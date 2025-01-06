@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Tests;
 public class KafkaProcessTests
@@ -12,6 +13,7 @@ public class KafkaProcessTests
 
     public KafkaProcessTests()
     {
+        
         _consumer = Substitute.For<KafkaConsumer>();
         _handler = Substitute.For<KafkaDelegate>();
         _options = new KafkaProcessOptions { Consumer = _consumer, Delegate = _handler };
@@ -61,7 +63,6 @@ public class KafkaProcessTests
             return validContext;
         }) ;
 
-            
         var task = Task.Run(() => _kafkaProcess.Start(_cancellationTokenSource.Token));
 
         // Act
@@ -77,6 +78,11 @@ public class KafkaProcessTests
     {
         // Arrange
         var delay = false;
+
+        var logger = Substitute.For<ILogger>();
+
+        _consumer.Logger.Returns(logger);
+
         _consumer.Consume(Arg.Any<CancellationToken>()).Returns(x =>
         {
             if (delay)
@@ -88,14 +94,23 @@ public class KafkaProcessTests
             return KafkaContext.Empty;
         });
 
-        var task = Task.Run(() => _kafkaProcess.Start(_cancellationTokenSource.Token));
+        var process = KafkaProcess.Create(new()
+        {
+            Consumer = _consumer,
+            Delegate = (c) =>
+            {
+                return Task.CompletedTask;
+            }
+        });
+
+        var task = Task.Run(() => process.Start(_cancellationTokenSource.Token));
 
         // Act
         _cancellationTokenSource.CancelAfter(100); // Stop the task after a short delay
         await Task.Delay(100);
 
         // Assert
-        _consumer.Logger.Received(1).LogError("Empty Context!");
+        logger.Received(1).EmptyContext();
         await _handler.DidNotReceive().Invoke(Arg.Any<KafkaContext>());
     }
 
