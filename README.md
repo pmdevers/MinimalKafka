@@ -111,13 +111,19 @@ Or some other complicated stuff and produce to other topic
 
 ```mermaid
 flowchart LR
-    A[Topic-C] -->|Consume| B
-    B{{Processor}} --> |Execute| C
-    C{DoStuff} --> |Execute| B
-    D[(Database)] <--> |Fetch Data| C
-    E[External HTTP] <-->|Request| C
-    
-    B -->  |Produce| F[Topic]
+
+subgraph Process Logic
+    Logic{DoStuff} <--> Database[(Database)]
+    Logic <--> HttpClient    
+end
+
+subgraph Stream Process
+    Consumer[Topic-C] -->|Consume| Processor
+    Processor{{Processor}} --> Producer
+    Producer[Topic]
+end
+
+Processor <--> Logic
 ```
 
 ```csharp
@@ -166,7 +172,7 @@ app.MapStream<Guid, DatamodelA>("topic-a")
 ```mermaid
 flowchart LR
 A[Topic-A] -->|Consume| C{{Processor}}
-B[Topic-B] -->|Consume| C
+B[Topic-B] -->|Produce| C
 C -->|branch| D[/Create/] 
 C -->|branch| E[/Addition/]
 C -->|branch| F[/Subtract/]
