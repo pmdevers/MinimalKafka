@@ -64,8 +64,8 @@ Often we want to join 2 topics and produce the outcome of this into a new topic
 
 ```mermaid
 flowchart LR
-    A[Topic A] -->|Produce| C
-    B[Topic B] -->|Produce| C
+    A[Topic A] -->|Consume| C
+    B[Topic B] -->|Consume| C
     C{{Processor}} -->|Produce| D[Topic C]
 ```
 
@@ -90,7 +90,7 @@ Each service who is interested in this can consume this model and store this for
 
 ```mermaid
 flowchart LR
-    A[Topic C] -->|Produce| C
+    A[Topic C] -->|Consume| C
     C{{Processor}} --> D[(Database)]
 ```
 
@@ -111,7 +111,7 @@ Or some other complicated stuff and produce to other topic
 
 ```mermaid
 flowchart LR
-    A[Topic-C] -->|Produce| B
+    A[Topic-C] -->|Consume| B
     B{{Processor}} --> |Execute| C
     D[(Database)] <--> |Fetch Data| C
     E[External HTTP] <-->|Request| C
@@ -135,7 +135,7 @@ You could also branch a topic in different topics for different processes
 
 ```mermaid
 flowchart LR
-    A[Topic-A] -->|Produce| B{{Processor}}
+    A[Topic-A] -->|Consume| B{{Processor}}
     B -->|branch| C[/branch v1/]
     B -->|branch| D[/branch v2/]
     B -->|branch| E[/branch v3/]
@@ -163,8 +163,8 @@ app.MapStream<Guid, DatamodelA>("topic-a")
 
 ```mermaid
 flowchart LR
-A[Topic-A] -->|Produce| C{{Processor}}
-B[Topic-B] -->|Produce| C
+A[Topic-A] -->|Consume| C{{Processor}}
+B[Topic-B] -->|Consume| C
 C -->|branch| D[/Create/] 
 C -->|branch| E[/Addition/]
 C -->|branch| F[/Subtract/]
