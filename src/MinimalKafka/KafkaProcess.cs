@@ -32,7 +32,7 @@ public class KafkaProcess : IKafkaProcess
 
     public Task Start(CancellationToken cancellationToken)
     {
-        return Task.Factory.StartNew(() =>
+        return Task.Run(() =>
         {
             _consumer.Subscribe();
 

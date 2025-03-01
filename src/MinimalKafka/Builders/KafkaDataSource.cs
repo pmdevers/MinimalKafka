@@ -72,8 +72,8 @@ public sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDa
     {
         public string TopicName { get; set; } = string.Empty;
         public Delegate Delegate { get; set; } = () => Task.CompletedTask;
-        public AddAfterProcessBuildConventionCollection Conventions { get; init; }
-        public AddAfterProcessBuildConventionCollection FinallyConventions { get; init; }
+        public required AddAfterProcessBuildConventionCollection Conventions { get; init; }
+        public required AddAfterProcessBuildConventionCollection FinallyConventions { get; init; }
     }
     private sealed class AddAfterProcessBuildConventionCollection :
         List<Action<IKafkaBuilder>>,
