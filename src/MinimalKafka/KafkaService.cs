@@ -7,14 +7,12 @@ internal class KafkaService(IKafkaBuilder builder) : IHostedService
     public IEnumerable<IKafkaProcess> Processes
         = builder.DataSource?.GetProceses() ?? [];
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        Parallel.ForEachAsync(Processes, cancellationToken, async (p, t) =>
+        foreach (var p in Processes)
         {
-            await p.Start(t);
-        });
-
-        return Task.CompletedTask;
+            await p.Start(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
