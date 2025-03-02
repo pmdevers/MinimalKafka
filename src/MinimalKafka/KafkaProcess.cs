@@ -5,7 +5,7 @@ namespace MinimalKafka;
 public interface IKafkaProcess
 {
     Task Start(CancellationToken cancellationToken);
-    void Stop();
+    Task Stop();
 }
 
 public class KafkaProcessOptions
@@ -54,8 +54,9 @@ public class KafkaProcess : IKafkaProcess
         }, cancellationToken);
     }
 
-    public void Stop()
+    public Task Stop()
     {
         _consumer.Close();
+        return Task.CompletedTask;
     }
 }

@@ -63,7 +63,7 @@ public class KafkaServiceTests
         // Assert
         foreach (var process in _processes)
         {
-            process.Received(1).Stop();
+            await process.Received(1).Stop();
         }
     }
 

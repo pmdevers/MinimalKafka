@@ -9,19 +9,11 @@ internal class KafkaService(IKafkaBuilder builder) : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        foreach (var p in Processes)
-        {
-            await p.Start(cancellationToken).ConfigureAwait(false);
-        }
+        await Task.WhenAll(Processes.AsParallel().Select(p => p.Start(cancellationToken)));
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        foreach (var process in Processes)
-        {
-            process.Stop();
-        }
-
-        return Task.CompletedTask;
+        await Task.WhenAll(Processes.AsParallel().Select(p => p.Stop()));
     }
 }
