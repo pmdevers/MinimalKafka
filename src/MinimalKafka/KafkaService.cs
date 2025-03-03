@@ -14,7 +14,7 @@ internal class KafkaService(IKafkaBuilder builder) : IHostedService
     {
         foreach (var process in Processes)
         {
-            var task = Task.Run(() => process.Start(cancellationToken), cancellationToken);
+            var task = process.Start(cancellationToken);
             _runningTasks.Add(task);
         }
 

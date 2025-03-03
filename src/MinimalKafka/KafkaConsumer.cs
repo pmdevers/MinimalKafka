@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
 
@@ -45,7 +46,9 @@ public class NoConsumer : KafkaConsumer
 public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaConsumer
 {
     private readonly IServiceProvider _serviceProvider = options.ServiceProvider;
-    private readonly string _topicName = options.TopicName;
+    
+    private readonly string _topicName = options.Metadata.OfType<ITopicFormatter>()
+        .First().Format(options.TopicName);
 
     private readonly IConsumer<TKey, TValue> _consumer =
         new KafkaConsumerBuilder<TKey, TValue>(options.Metadata, options.ServiceProvider).Build();
