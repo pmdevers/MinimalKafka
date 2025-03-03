@@ -48,4 +48,18 @@ public static class KafkaConsumerConfigMetadataExtensions
         return builder;
     }
 
+    public static TBuilder WithTopicFormatter<TBuilder>(this TBuilder builder, Func<string, string> topicFormatter)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new TopicFormatterMetadataAttribute(topicFormatter));
+        return builder;
+    }
+
+    public static TBuilder WithClientIdFormatter<TBuilder>(this TBuilder builder, Func<string, string> clientIdFormatter)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new TopicFormatterMetadataAttribute(clientIdFormatter));
+        return builder;
+    }
+
 }

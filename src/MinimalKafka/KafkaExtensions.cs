@@ -49,6 +49,7 @@ public static class KafkaExtensions
 
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
+        configBuilder.WithTopicFormatter(topic => topic);
 
         config(configBuilder);
 

@@ -7,6 +7,8 @@ namespace MinimalKafka;
 
 public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 {
+    private readonly ITopicFormatter _topicFormatter;
+
     public IProducer<TKey, TValue> Producer { get; set; }
 
     public Handle Handle => Producer.Handle;
@@ -20,6 +22,8 @@ public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
         var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
         var producerConfig = new ProducerConfig(config.Configuration);
 
+        _topicFormatter = builder.MetaData.OfType<ITopicFormatter>().First();
+
         var serializerKey = ActivatorUtilities.CreateInstance(builder.ServiceProvider, keySerializer.GetSerializerType<TKey>());
         var serializerValue = ActivatorUtilities.CreateInstance(builder.ServiceProvider, valueSerializer.GetSerializerType<TValue>());
 
@@ -31,7 +35,7 @@ public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 
     public Task<DeliveryResult<TKey, TValue>> ProduceAsync(string topic, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
     {
-        return Producer.ProduceAsync(topic, message, cancellationToken);
+        return Producer.ProduceAsync(_topicFormatter.Format(topic), message, cancellationToken);
     }
 
     public Task<DeliveryResult<TKey, TValue>> ProduceAsync(TopicPartition topicPartition, Message<TKey, TValue> message, CancellationToken cancellationToken = default)
@@ -41,7 +45,7 @@ public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 
     public void Produce(string topic, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
     {
-        Producer.Produce(topic, message, deliveryHandler);
+        Producer.Produce(_topicFormatter.Format(topic), message, deliveryHandler);
     }
 
     public void Produce(TopicPartition topicPartition, Message<TKey, TValue> message, Action<DeliveryReport<TKey, TValue>>? deliveryHandler = null)
