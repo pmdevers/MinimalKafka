@@ -115,6 +115,39 @@ public class KafkaProcessTests
     }
 
     [Fact]
+    public async Task KafkaProcess_Start_ShouldLogErrorOnException()
+    {
+        // Arrange
+        var logger = Substitute.For<ILogger>();
+
+        _consumer.Logger.Returns(logger);
+
+        _consumer.Consume(Arg.Any<CancellationToken>()).Returns(x =>
+        {
+            throw new NotImplementedException();
+        });
+
+        var process = KafkaProcess.Create(new()
+        {
+            Consumer = _consumer,
+            Delegate = (c) =>
+            {
+                throw new NotImplementedException();
+            }
+        });
+
+        // Act
+
+        var task = () => process.Start(_cancellationTokenSource.Token);
+
+        task.Should().Throw<KafkaProcesException>();
+
+        // Assert
+        logger.Received(1).UnknownProcessException(new NotImplementedException().Message);
+        await _handler.DidNotReceive().Invoke(Arg.Any<KafkaContext>());
+    }
+
+    [Fact]
     public void KafkaProcess_Stop_ShouldInvokeCloseMethod()
     {
         // Act

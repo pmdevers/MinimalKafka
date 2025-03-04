@@ -46,7 +46,7 @@ public class KafkaServiceTests
         // Assert
         foreach (var process in _processes)
         {
-            await process.Received(1).Start(Arg.Any<CancellationToken>());
+            process.Received(1).Start(Arg.Any<CancellationToken>());
         }
     }
 
@@ -63,7 +63,7 @@ public class KafkaServiceTests
         // Assert
         foreach (var process in _processes)
         {
-            await process.Received(1).Stop();
+            process.Received(1).Stop();
         }
     }
 
