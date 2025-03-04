@@ -54,5 +54,10 @@ internal static partial class Logging
         )]
     public static partial void DropOutOfConsumeLoop(this ILogger logger);
 
-
+    [LoggerMessage(
+        EventId = 7,
+        Level = LogLevel.Error,
+        Message = "Consumer returned an Exception!. {message}"
+    )]
+    public static partial void UnknownProcessException(this ILogger logger, string message);
 }

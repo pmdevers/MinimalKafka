@@ -4,8 +4,8 @@ using MinimalKafka.Helpers;
 namespace MinimalKafka;
 public interface IKafkaProcess
 {
-    Task Start(CancellationToken cancellationToken);
-    Task Stop();
+    void Start(CancellationToken cancellationToken);
+    void Stop();
 }
 
 public class KafkaProcessOptions
@@ -30,12 +30,12 @@ public class KafkaProcess : IKafkaProcess
     public static KafkaProcess Create(KafkaProcessOptions options)
         => new(options.Consumer, options.Delegate);
 
-    public Task Start(CancellationToken cancellationToken)
+    public void Start(CancellationToken cancellationToken)
     {
-        return Task.Factory.StartNew(() =>
+        _consumer.Subscribe();
+            
+        try
         {
-            _consumer.Subscribe();
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 var context = _consumer.Consume(cancellationToken);
@@ -50,13 +50,26 @@ public class KafkaProcess : IKafkaProcess
 
                 _handler.Invoke(context);
             }
+        }
+        catch(Exception ex)
+        {
+            _consumer.Logger.UnknownProcessException(ex.Message);
+            throw new KafkaProcesException(ex, "Unknown Process error.");
+        }
+        finally
+        {
             _consumer.Logger.DropOutOfConsumeLoop();
-        }, cancellationToken);
+            _consumer.Close();
+        }
+           
     }
 
-    public Task Stop()
+    public void Stop()
     {
         _consumer.Close();
-        return Task.CompletedTask;
     }
+}
+
+public class KafkaProcesException(Exception ex, string message) : Exception(message, ex)
+{
 }

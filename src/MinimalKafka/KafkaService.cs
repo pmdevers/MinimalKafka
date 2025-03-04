@@ -2,7 +2,7 @@
 using MinimalKafka.Builders;
 
 namespace MinimalKafka;
-internal class KafkaService(IKafkaBuilder builder) : IHostedService
+internal class KafkaService(IKafkaBuilder builder) : BackgroundService
 {
     public IEnumerable<IKafkaProcess> Processes
         = builder.DataSource?.GetProceses() ?? [];
@@ -10,20 +10,23 @@ internal class KafkaService(IKafkaBuilder builder) : IHostedService
     private readonly List<Task> _runningTasks = [];
 
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         foreach (var process in Processes)
         {
-            var task = process.Start(cancellationToken);
+            var task = Task.Run(() => process.Start(stoppingToken), stoppingToken);
             _runningTasks.Add(task);
         }
 
-        return Task.CompletedTask;
+        await Task.WhenAll(_runningTasks);
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public override Task StopAsync(CancellationToken cancellationToken)
     {
-        await Task.WhenAll(Processes.Select(p => p.Stop()));
-        await Task.WhenAll(_runningTasks).ConfigureAwait(false);
+        foreach (var process in Processes)
+        {
+            process.Stop();
+        }
+        return base.StopAsync(cancellationToken);
     }
 }
