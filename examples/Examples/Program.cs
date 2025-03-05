@@ -4,6 +4,7 @@ using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
+using MinimalKafka.Stream.Storage.RocksDB;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,11 @@ builder.Services.AddMinimalKafka(config =>
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithJsonSerializers()
-           .WithInMemoryStore();
+           .UseRocksDB(options =>
+           {
+               options.Path = "c:\\SourceCode\\rocksdb";
+           });
+
  });
 
 var app = builder.Build();
