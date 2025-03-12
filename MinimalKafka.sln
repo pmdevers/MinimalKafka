@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka.RocksDB", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka.RockDB.Tests", "test\MinimalKafka.RockDB.Tests\MinimalKafka.RockDB.Tests.csproj", "{98C13E58-329B-4574-9DB0-A569DEC0ECC2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaAdventure", "examples\KafkaAdventure\KafkaAdventure.csproj", "{36D263AF-C209-437D-9528-2DD7BF78B0D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{98C13E58-329B-4574-9DB0-A569DEC0ECC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98C13E58-329B-4574-9DB0-A569DEC0ECC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98C13E58-329B-4574-9DB0-A569DEC0ECC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36D263AF-C209-437D-9528-2DD7BF78B0D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36D263AF-C209-437D-9528-2DD7BF78B0D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36D263AF-C209-437D-9528-2DD7BF78B0D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36D263AF-C209-437D-9528-2DD7BF78B0D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,6 +67,7 @@ Global
 		{CC13EBD7-29C8-4619-8CCB-0D7DC0F8AD96} = {FF927BA2-E4C3-4D02-ACD4-251E68C149E4}
 		{73E4A183-B305-4450-AC5D-3CAD94FEFE0E} = {A09FD86F-4832-467D-96BD-74DDD5066B2E}
 		{98C13E58-329B-4574-9DB0-A569DEC0ECC2} = {1C8F1D9A-608B-4F46-8A59-3CF48AA4AF9D}
+		{36D263AF-C209-437D-9528-2DD7BF78B0D8} = {FF927BA2-E4C3-4D02-ACD4-251E68C149E4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3EFB6EF-B785-4560-A9DB-E5BB7DADBFF4}

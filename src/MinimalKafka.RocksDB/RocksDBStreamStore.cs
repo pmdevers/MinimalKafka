@@ -8,10 +8,15 @@ public class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
     private readonly ColumnFamilyHandle _columnFamily;
     private readonly IByteSerializer _serializer;
 
-    public RocksDBStreamStore(RocksDBOptions options, IByteSerializer serializer)
+
+
+    public RocksDBStreamStore(RocksDb db, IByteSerializer serializer)
     {
-        _db = RocksDb.Open(options.DBOptions, options.Path, options.ColumnFamilies);           
-        _columnFamily = _db.GetDefaultColumnFamily();
+        _db = db;
+        if (!_db.TryGetColumnFamily(typeof(T2).ToString(), out _columnFamily))
+        {
+            _columnFamily = _db.CreateColumnFamily(new ColumnFamilyOptions(), typeof(T2).ToString());
+        }
         _serializer = serializer;
     }
 
@@ -19,6 +24,7 @@ public class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
     public ValueTask<T2> AddOrUpdate(T1 key, Func<T1, T2> create, Func<T1, T2, T2> update)
     {
         var keyBytes = _serializer.Serialize(key);
+        
         var existingValueBytes = _db.Get(keyBytes, _columnFamily);
 
         T2 newValue;

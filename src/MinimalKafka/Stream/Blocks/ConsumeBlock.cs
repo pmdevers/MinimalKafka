@@ -1,5 +1,4 @@
 ﻿using MinimalKafka.Builders;
-using MinimalKafka.Extension;
 using MinimalKafka.Stream.Internals;
 using System.Threading.Tasks.Dataflow;
 
@@ -15,12 +14,21 @@ public class ConsumeBlock<TKey, TValue> :
 
     public ConsumeBlock(IKafkaBuilder builder, string topic)
     {
-        var buffer = new BufferBlock<(KafkaContext, TKey, TValue)>();
+        var options = new ExecutionDataflowBlockOptions
+        {
+            MaxDegreeOfParallelism = 1, // Enables multiple tasks
+            EnsureOrdered = false       // Prevents the whole block from stopping on one failure
+        };
+
+        var buffer = new BufferBlock<(KafkaContext, TKey, TValue)>(options);
 
         _builder = builder.MapTopic(topic, async (KafkaContext context, TKey key, TValue value) =>
         {
-            await buffer.SendAsync((context, key, value));
+            
+             await buffer.SendAsync((context, key, value));
+
             await buffer.Completion;
+            
         });
 
         _target = buffer;
