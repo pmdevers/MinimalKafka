@@ -97,4 +97,42 @@ public class KafkaDelegateFactoryTests
         // Assert
         wasCalled.Should().BeTrue();
     }
+
+    [Fact]
+    public void Async_Handler_with_no_parameters_Should_not_Throw()
+    {
+        // Arrange
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+        Func<Task> handler = () => Task.CompletedTask;
+        // Act
+        var result = KafkaDelegateFactory.Create(handler, options);
+        // Assert
+        result.KeyType.Should().Be(typeof(Ignore));
+        result.ValueType.Should().Be(typeof(Ignore));
+    }
+
+    [Fact]
+    public void Void_handler_should_not_throw()
+    {
+        // Arrange
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+        Action handler = () => { };
+        // Act
+        var result = KafkaDelegateFactory.Create(handler, options);
+        // Assert
+        result.KeyType.Should().Be(typeof(Ignore));
+        result.ValueType.Should().Be(typeof(Ignore));
+    }
 }
