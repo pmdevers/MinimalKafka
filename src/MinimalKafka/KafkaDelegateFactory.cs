@@ -39,8 +39,23 @@ public static class KafkaDelegateFactory
         factoryContext.ArgumentExpressions ??= CreateArguments(methodInfo.GetParameters(), factoryContext);
         factoryContext.MethodCall = CreateMethodCall(methodInfo, targetExpression, factoryContext);
 
-        var continuation = Expression.Lambda<Func<object?, KafkaContext, Task>>(
+        Func<object?, KafkaContext, Task> continuation;
+
+        if (factoryContext.MethodCall.Type == typeof(void))
+        {
+            var block = Expression.Block(
+                factoryContext.MethodCall,
+                Expression.Constant(Task.CompletedTask)
+            );
+            continuation = Expression.Lambda<Func<object?, KafkaContext, Task>>(
+                block, TargetExpr, KafkaContextExpr).Compile();
+
+        }
+        else
+        {
+            continuation = Expression.Lambda<Func<object?, KafkaContext, Task>>(
                     factoryContext.MethodCall, TargetExpr, KafkaContextExpr).Compile();
+        }
 
         if (factoryContext.Handler is KafkaDelegate)
         {
