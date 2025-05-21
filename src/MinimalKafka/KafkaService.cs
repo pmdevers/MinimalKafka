@@ -26,6 +26,8 @@ internal class KafkaService(IKafkaBuilder builder) : BackgroundService
         foreach (var process in Processes)
         {
             await process.Stop();
-        }        
+        }
+
+        await base.StopAsync(cancellationToken);
     }
 }

@@ -63,10 +63,10 @@ public class KafkaProcess : IKafkaProcess
            
     }
 
-    public Task Stop()
+    public async Task Stop()
     {
         _consumer.Close();
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
 }
 

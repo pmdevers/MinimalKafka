@@ -148,10 +148,10 @@ public class KafkaProcessTests
     }
 
     [Fact]
-    public void KafkaProcess_Stop_ShouldInvokeCloseMethod()
+    public async Task KafkaProcess_Stop_ShouldInvokeCloseMethod()
     {
         // Act
-        _kafkaProcess.Stop();
+        await _kafkaProcess.Stop();
 
         // Assert
         _consumer.Received(1).Close();
