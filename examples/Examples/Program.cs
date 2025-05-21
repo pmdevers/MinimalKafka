@@ -19,12 +19,55 @@ builder.Services.AddMinimalKafka(config =>
 
 var app = builder.Build();
 
-app.MapTopic("test", (KafkaContext context) => {
-    
-    Console.WriteLine("Test topic received message: " + context.Value);
 
-    throw new Exception("Test exception");
+//app.MapStream<Guid, Command>("commands")
+//    .SplitInto(branches =>
+//    {
+//        branches.Branch((_, v) => v.Name == "cmd1", (_, _, _) => Task.CompletedTask);
+//        branches.Branch((_, v) => v.Name == "cmd2", (_, _, _) => Task.CompletedTask);
+//        branches.DefaultBranch((_, _, _) => Task.CompletedTask);
+//    });
 
-});
+//app.MapStream<Guid, LeftObject>("left")
+//    .Join<Guid, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
+//    .SplitInto(branches =>
+//    {
+//        branches.Branch((_, _) => true, (_, _, _) => Task.CompletedTask);
+//    });
+
+//app.MapStream<Guid, LeftObject>("left")
+//    .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
+//    .Into(async (c, value) =>
+//    {
+//        var (left, right) = value;
+//        var result = new ResultObject(left.Id, right);
+//        Console.WriteLine($"multi into - {left.Id} - {result}");
+//        await c.ProduceAsync("result", left.Id, new ResultObject(left.Id, right));
+//    })
+//    .WithGroupId($"multi-{Guid.NewGuid()}")
+//    .WithClientId("multi");
+
+//app.MapStream<Guid, LeftObject>("left")
+//    .Join<Guid, RightObject>("right")
+//    .OnKey()
+//    .Into("string");
+
+
+//app.MapStream<Guid, LeftObject>("left")
+//   .Into((_, k, v) =>
+//   {
+//       Console.WriteLine($"single Into - {k} - {v}");
+//       return Task.CompletedTask;
+//   })
+//   .WithGroupId($"single-{Guid.NewGuid()}")
+//   .WithClientId("single");
+
+
+app.MapStream<Ignore, Ignore>("test").Into((c, k, v) =>
+{
+  throw new NotImplementedException();
+})
+.WithGroupId("Example")
+.WithClientId("Example");
 
 await app.RunAsync();

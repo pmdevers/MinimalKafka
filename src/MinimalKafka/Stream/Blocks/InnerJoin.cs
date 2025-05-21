@@ -26,8 +26,23 @@ public class InnerJoinBlock<TKey, K1, V1, K2, V2> : ILinkTo<(KafkaContext, TKey,
     public ITargetBlock<(KafkaContext, K1, V1)> Left => _leftTransform;
     public ITargetBlock<(KafkaContext, K2, V2)> Right => _rightTransform;
 
+    private ITargetBlock<(KafkaContext, TKey, (V1?, V2?))>? _target;
+
+    public Task Completion => throw new NotImplementedException();
+
+    public void Complete()
+    {
+        
+    }
+
+    public void Fault(Exception exception)
+    {
+        _target?.Fault(exception);
+    }
+
     public void LinkTo(ITargetBlock<(KafkaContext, TKey, (V1?, V2?))> block, DataflowLinkOptions options)
     {
+        _target = block;
         _leftTransform.LinkTo(block, options);
         _rightTransform.LinkTo(block, options);
     }

@@ -13,6 +13,8 @@ public class ConsumeBlock<TKey, TValue> :
 
     public IKafkaConventionBuilder Builder => _builder;
 
+    public Task Completion => _target.Completion;
+
     public ConsumeBlock(IKafkaBuilder builder, string topic)
     {
         var buffer = new BufferBlock<(KafkaContext, TKey, TValue)>();
@@ -28,6 +30,15 @@ public class ConsumeBlock<TKey, TValue> :
 
     public void LinkTo(ITargetBlock<(KafkaContext, TKey, TValue)> target, DataflowLinkOptions options)
     {
-        _target.LinkTo(target, options);
+        _target.LinkTo(_target, options);
+    }
+
+    public void Fault(Exception exception)
+    {
+        (_target as IDataflowBlock).Fault(exception);
+    }
+    public void Complete()
+    {
+        _target.Complete();
     }
 }

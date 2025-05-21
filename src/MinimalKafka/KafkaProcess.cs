@@ -32,7 +32,7 @@ public class KafkaProcess : IKafkaProcess
     public async Task Start(CancellationToken cancellationToken)
     {
         _consumer.Subscribe();
-            
+
         try
         {
             while (!cancellationToken.IsCancellationRequested)

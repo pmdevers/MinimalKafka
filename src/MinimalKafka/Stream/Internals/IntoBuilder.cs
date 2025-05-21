@@ -4,7 +4,8 @@ using System.Threading.Tasks.Dataflow;
 
 namespace MinimalKafka.Stream.Internals;
 
-public interface ILinkTo<out TOutput>
+    
+public interface ILinkTo<out TOutput> : IDataflowBlock
 {
     void LinkTo(ITargetBlock<TOutput> block, DataflowLinkOptions options);
 }

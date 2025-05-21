@@ -27,8 +27,23 @@ public class JoinBlock<K1, V1, K2, V2> : ILinkTo<(KafkaContext, (V1, V2))>
     public ITargetBlock<(KafkaContext, K1, V1)> Left => _leftTransform;
     public ITargetBlock<(KafkaContext, K2, V2)> Right => _rightTransform;
 
+    private ITargetBlock<(KafkaContext, (V1, V2))>? _target = null;
+
+    public Task Completion => Task.CompletedTask;
+
+    public void Complete()
+    {
+        
+    }
+
+    public void Fault(Exception exception)
+    {
+        _target?.Fault(exception);
+    }
+
     public void LinkTo(ITargetBlock<(KafkaContext, (V1, V2))> target, DataflowLinkOptions options)
     {
+        _target = target;
         _leftTransform.LinkTo(target, options);
         _rightTransform.LinkTo(target, options);
     }

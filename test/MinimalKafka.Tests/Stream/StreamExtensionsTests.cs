@@ -36,3 +36,39 @@ public class StreamExtensionsTests
 
     }
 }
+
+
+public class Pipeline<TContext>
+{
+    private readonly List<Func<TContext, Func<Task>, Task>> _components = [];
+    private Func<TContext, Task>? _terminal;
+
+    public Pipeline<TContext> Add(Func<TContext, Func<Task>, Task> func)
+    {
+        _components.Add(func);
+        return this;
+    }
+
+    public Pipeline<TContext> Run(Func<TContext, Task> terminal)
+    {
+        _terminal = terminal;
+        return this;
+    }
+
+    internal Task ExecuteAsync(TContext context)
+    {
+        if(_terminal == null)
+            throw new InvalidOperationException("Pipeline must have an end via Run().");
+
+        Func<Task> next =() => _terminal(context);
+
+        for(int i = _components.Count - 1; i >= 0; i--)
+        {
+            var current = _components[i];
+            var prevNext = next;
+            next = () => current(context, prevNext);
+        }
+
+        return next();
+    }
+}
