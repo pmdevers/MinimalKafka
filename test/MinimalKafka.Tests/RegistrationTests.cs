@@ -100,7 +100,7 @@ public class ServiceCollectionTests
     }
 
     [Fact]
-    public void AddMinimalKafa_Should_Set_ClientId_And_GroupId_To_Default()
+    public void AddMinimalKafka_Should_Set_ClientId_And_GroupId_To_Default()
     {
         var services = new ServiceCollection();
 
@@ -118,5 +118,14 @@ public class ServiceCollectionTests
             .ContainSingle(x => x is IClientIdMetadata)
             .And
             .ContainSingle(x => x is IGroupIdMetadata);
+
+        // Verify the actual values
+        var clientId = kafkaBuilder.MetaData
+            .OfType<IClientIdMetadata>().Single().ClientId;
+        var groupId = kafkaBuilder.MetaData
+            .OfType<IGroupIdMetadata>().Single().GroupId;
+
+        clientId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
+        groupId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
     }
 }
