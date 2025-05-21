@@ -6,6 +6,7 @@ using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
+using System.Reflection;
 using System.Text.Json;
 
 namespace MinimalKafka;
@@ -47,6 +48,8 @@ public static class KafkaExtensions
         var conventions = new List<Action<IKafkaBuilder>>();
         var configBuilder = new AddKafkaBuilder(services, conventions);
 
+        configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithTopicFormatter(topic => topic);

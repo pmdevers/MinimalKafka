@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
+using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 using System.Diagnostics;
@@ -96,5 +97,35 @@ public class ServiceCollectionTests
 
         // Assert
         kafkaBuilder.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void AddMinimalKafka_Should_Set_ClientId_And_GroupId_To_Default()
+    {
+        var services = new ServiceCollection();
+
+        static void config(IAddKafkaBuilder builder) =>
+            builder.WithStreamStore(typeof(InMemoryStore<,>));
+
+        // Act
+        services.AddMinimalKafka(config);
+        var serviceProvider = services.BuildServiceProvider();
+        var kafkaBuilder = serviceProvider.GetRequiredService<IKafkaBuilder>();
+
+        // Assert
+        kafkaBuilder.MetaData
+            .Should()
+            .ContainSingle(x => x is IClientIdMetadata)
+            .And
+            .ContainSingle(x => x is IGroupIdMetadata);
+
+        // Verify the actual values
+        var clientId = kafkaBuilder.MetaData
+            .OfType<IClientIdMetadata>().Single().ClientId;
+        var groupId = kafkaBuilder.MetaData
+            .OfType<IGroupIdMetadata>().Single().GroupId;
+
+        clientId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
+        groupId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
     }
 }
