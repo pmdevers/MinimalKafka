@@ -138,9 +138,9 @@ public class KafkaProcessTests
 
         // Act
 
-        var task = () => process.Start(_cancellationTokenSource.Token);
+        var task = async () => await process.Start(_cancellationTokenSource.Token);
 
-        task.Should().Throw<KafkaProcesException>();
+        await task.Should().ThrowAsync<KafkaProcesException>();
 
         // Assert
         logger.Received(1).UnknownProcessException(new NotImplementedException().Message);
