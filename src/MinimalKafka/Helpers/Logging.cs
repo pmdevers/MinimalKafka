@@ -60,4 +60,11 @@ internal static partial class Logging
         Message = "Consumer returned an Exception!. {message}"
     )]
     public static partial void UnknownProcessException(this ILogger logger, string message);
+
+    [LoggerMessage(
+        EventId = 8,
+        Level = LogLevel.Information,
+        Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' already closed."
+        )]
+    public static partial void ConsumerAlreadyClosed(this ILogger logger, string groupId, string clientId);
 }

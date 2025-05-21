@@ -1,11 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using MinimalKafka.Helpers;
+﻿using MinimalKafka.Helpers;
 
 namespace MinimalKafka;
 public interface IKafkaProcess
 {
-    void Start(CancellationToken cancellationToken);
-    void Stop();
+    Task Start(CancellationToken cancellationToken);
+    Task Stop();
 }
 
 public class KafkaProcessOptions
@@ -30,7 +29,7 @@ public class KafkaProcess : IKafkaProcess
     public static KafkaProcess Create(KafkaProcessOptions options)
         => new(options.Consumer, options.Delegate);
 
-    public void Start(CancellationToken cancellationToken)
+    public async Task Start(CancellationToken cancellationToken)
     {
         _consumer.Subscribe();
             
@@ -48,7 +47,7 @@ public class KafkaProcess : IKafkaProcess
                     continue;
                 }
 
-                _handler.Invoke(context);
+                await _handler.Invoke(context);
             }
         }
         catch(Exception ex)
@@ -64,9 +63,10 @@ public class KafkaProcess : IKafkaProcess
            
     }
 
-    public void Stop()
+    public async Task Stop()
     {
         _consumer.Close();
+        await Task.CompletedTask;
     }
 }
 

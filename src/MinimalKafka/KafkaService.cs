@@ -21,12 +21,13 @@ internal class KafkaService(IKafkaBuilder builder) : BackgroundService
         await Task.WhenAll(_runningTasks);
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         foreach (var process in Processes)
         {
-            process.Stop();
+            await process.Stop();
         }
-        return base.StopAsync(cancellationToken);
+
+        await base.StopAsync(cancellationToken);
     }
 }

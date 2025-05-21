@@ -138,9 +138,9 @@ public class KafkaProcessTests
 
         // Act
 
-        var task = () => process.Start(_cancellationTokenSource.Token);
+        var task = async () => await process.Start(_cancellationTokenSource.Token);
 
-        task.Should().Throw<KafkaProcesException>();
+        await task.Should().ThrowAsync<KafkaProcesException>();
 
         // Assert
         logger.Received(1).UnknownProcessException(new NotImplementedException().Message);
@@ -148,10 +148,10 @@ public class KafkaProcessTests
     }
 
     [Fact]
-    public void KafkaProcess_Stop_ShouldInvokeCloseMethod()
+    public async Task KafkaProcess_Stop_ShouldInvokeCloseMethod()
     {
         // Act
-        _kafkaProcess.Stop();
+        await _kafkaProcess.Stop();
 
         // Assert
         _consumer.Received(1).Close();
