@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Adventure</title>
+    <base href="/kafka-adventure/" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <style>
+        .console {
+            scrollbar-color: var(--color-green-400) var(--color-gray-800);
+            scrollbar-width: thin;
+        }
+    </style>
+</head>
+<body class="bg-gray-600 text-white p-6 flex h-screen items-center justify-center font-mono">
+
+    <div id="gamewindow" class="bg-gray-800 p-4 w-full max-w-4xl rounded-lg shadow-lg">
+        <div class="title-bar pb-2 flex flex-row">
+            <div class="my-auto flex">
+                <div class="h-3 w-3 bg-red-500 rounded-full"></div>
+                <div class="ml-2 h-3 w-3 bg-orange-300 rounded-full"></div>
+                <div class="ml-2 h-3 w-3 bg-green-500 rounded-full"></div>
+            </div>
+            <div class="ml-2 flex-grow"> 
+                <span>Kafka Adventure</span> 
+            </div>
+        </div>
+        <div id="body" class="h-160 border-gray-700 p-2 console bg-gray-900 overflow-y-auto rounded-md border">
+            <div id="terminal"></div>
+            <div class="flex items-center">
+                <span class="text-green-500">$</span>
+                <input type="text" id="commandInput"
+                       placeholder="Type a command and press Enter"
+                       class="bg-transparent ml-2 text-white p-0 flex-grow outline-none"
+                       autofocus autocomplete="off" onblur="this.focus();">
+            </div>
+        </div>
+
+        
+    </div>
+
+    <script type="text/javascript" src="index.js"></script>
+</body>
+</html>

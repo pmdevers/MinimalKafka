@@ -6,7 +6,16 @@ public class IntoBlock<TValue>(Func<KafkaContext, TValue, Task> handler)
     : ITargetBlock<(KafkaContext, TValue)>
 {
     private readonly ITargetBlock<(KafkaContext, TValue)> _block = 
-        new ActionBlock<(KafkaContext, TValue)>((data) => handler(data.Item1, data.Item2));
+        new ActionBlock<(KafkaContext, TValue)>(async (data) => {
+            try
+            {
+                await handler(data.Item1, data.Item2);
+            } catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+        });
 
     public Task Completion => _block.Completion;
 

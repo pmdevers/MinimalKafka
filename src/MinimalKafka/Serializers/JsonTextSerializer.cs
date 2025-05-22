@@ -45,10 +45,18 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
             return default!;
         }
 
-        data = data.StartsWith(UTF8.BOM) ? data[3..] : data;
-        var result = JsonSerializer.Deserialize<T>(data, _jsonOptions);
+        try
+        {
+            data = data.StartsWith(UTF8.BOM) ? data[3..] : data;
+            var result = JsonSerializer.Deserialize<T>(data, _jsonOptions);
+            return (result ?? default)!;
 
-        return (result ?? default)!;
+        }
+        catch (JsonException ex)
+        {
+            var str = System.Text.Encoding.UTF8.GetString(data.ToArray());
+            throw new JsonException($"Error deserializing JSON: {str}", ex);
+        }
     }
 }
 

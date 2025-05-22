@@ -1,0 +1,257 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+POST HTTPs://localhost:63938/locations
+Content-Type: application/json
+
+[
+    {
+        "id": 1,
+        "name": "Chained Monastery",
+        "description": "A ruined place of worship, its halls lined with rusted chains. An ominous altar rests at the center of a secret chamber, whispering dark truths.",
+        "exits": {
+            "north": "Monastery Library",
+            "south": "Underground Cells",
+            "east": "Abandoned Courtyard",
+            "west": "Hall of Chains"
+        }
+    },
+    {
+        "id": 2,
+        "name": "Hall of Chains",
+        "description": "A corridor where shackles still hang from the walls.",
+        "exits": {
+            "east": "Chained Monastery"
+        }
+    },
+    {
+        "id": 3,
+        "name": "Abandoned Courtyard",
+        "description": "Overgrown with weeds, an old statue of a forgotten deity stands here.",
+        "exits": {
+            "west": "Chained Monastery",
+            "north": "Silent Chapel"
+        }
+    },
+    {
+        "id": 4,
+        "name": "Monastery Library",
+        "description": "Ancient texts warn of something beneath the land.",
+        "exits": {
+            "south": "Chained Monastery",
+            "north": "Bell Tower"
+        }
+    },
+    {
+        "id": 5,
+        "name": "Underground Cells",
+        "description": "Holding cells filled with skeletal remains.",
+        "exits": {
+            "north": "Chained Monastery",
+            "south": "The Hidden Crypt"
+        }
+    },
+    {
+        "id": 6,
+        "name": "Silent Chapel",
+        "description": "Stained-glass windows depict a forgotten ritual.",
+        "exits": {
+            "south": "Abandoned Courtyard",
+            "east": "Cloister Garden"
+        }
+    },
+    {
+        "id": 7,
+        "name": "Bell Tower",
+        "description": "The bell is missing, but something moves in the shadows above.",
+        "exits": {
+            "south": "Monastery Library"
+        }
+    },
+    {
+        "id": 8,
+        "name": "The Hidden Crypt",
+        "description": "Something is scratching from inside a sealed tomb.",
+        "exits": {
+            "north": "Underground Cells",
+            "east": "Graveyard"
+        }
+    },
+    {
+        "id": 9,
+        "name": "Cloister Garden",
+        "description": "A once-beautiful garden, now decayed.",
+        "exits": {
+            "west": "Silent Chapel"
+        }
+    },
+    {
+        "id": 10,
+        "name": "Graveyard",
+        "description": "Graves are disturbed, with claw marks on some coffins.",
+        "exits": {
+            "west": "The Hidden Crypt",
+            "south": "Broken Bridge"
+        }
+    },
+    {
+        "id": 11,
+        "name": "Broken Bridge",
+        "description": "The way forward has collapsed, but a rope dangles nearby.",
+        "exits": {
+            "north": "Graveyard",
+            "south": "Cave Entrance"
+        }
+    },
+    {
+        "id": 12,
+        "name": "Cave Entrance",
+        "description": "A hidden tunnel leading beneath the monastery.",
+        "exits": {
+            "north": "Broken Bridge",
+            "east": "Flooded Passage"
+        }
+    },
+    {
+        "id": 13,
+        "name": "Flooded Passage",
+        "description": "Water rises up to your knees.",
+        "exits": {
+            "west": "Cave Entrance",
+            "south": "The Labyrinthine Corridors"
+        }
+    },
+    {
+        "id": 14,
+        "name": "The Labyrinthine Corridors",
+        "description": "Twisting passages with no clear way forward.",
+        "exits": {
+            "north": "Flooded Passage",
+            "south": "The Chained Monastery (Secret Room)"
+        }
+    },
+    {
+        "id": 15,
+        "name": "The Chained Monastery (Secret Room)",
+        "description": "A secret room with an ominous altar at its center.",
+        "exits": {
+            "north": "The Labyrinthine Corridors",
+            "south": "The Abyssal Rift"
+        }
+    },
+    {
+        "id": 16,
+        "name": "The Abyssal Rift",
+        "description": "A bottomless pit, whispering your name.",
+        "exits": {
+            "north": "The Chained Monastery (Secret Room)"
+        }
+    },
+    {
+        "id": 17,
+        "name": "The Ruined Stable",
+        "description": "Old horseshoes litter the ground.",
+        "exits": {
+            "east": "The Old Well"
+        }
+    },
+    {
+        "id": 18,
+        "name": "The Old Well",
+        "description": "A faint voice calls from below.",
+        "exits": {
+            "west": "The Ruined Stable"
+        }
+    },
+    {
+        "id": 19,
+        "name": "The Whispering Woods",
+        "description": "Trees murmur in unknown tongues.",
+        "exits": {
+            "north": "The Fog-Covered Path"
+        }
+    },
+    {
+        "id": 20,
+        "name": "The Fog-Covered Path",
+        "description": "Visibility is near zero.",
+        "exits": {
+            "south": "The Whispering Woods",
+            "east": "The Ruined Chapel"
+        }
+    },
+    {
+        "id": 21,
+        "name": "The Ruined Chapel",
+        "description": "Candles burn, though the place is deserted.",
+        "exits": {
+            "west": "The Fog-Covered Path",
+            "north": "The Shadow Grove"
+        }
+    },
+    {
+        "id": 22,
+        "name": "The Shadow Grove",
+        "description": "Sunlight never reaches this place.",
+        "exits": {
+            "south": "The Ruined Chapel"
+        }
+    },
+    {
+        "id": 23,
+        "name": "The Forbidden Staircase",
+        "description": "A path leading underground.",
+        "exits": {
+            "north": "The Endless Hallway"
+        }
+    },
+    {
+        "id": 24,
+        "name": "The Endless Hallway",
+        "description": "No matter how far you walk, the doors remain the same.",
+        "exits": {
+            "south": "The Forbidden Staircase",
+            "east": "The Hidden Observatory"
+        }
+    },
+    {
+        "id": 25,
+        "name": "The Hidden Observatory",
+        "description": "A celestial map points to an ancient power.",
+        "exits": {
+            "west": "The Endless Hallway"
+        }
+    },
+    {
+        "id": 26,
+        "name": "The Chamber of Echoes",
+        "description": "Voices repeat your every word.",
+        "exits": {
+            "north": "The Eldritch Altar"
+        }
+    },
+    {
+        "id": 27,
+        "name": "The Eldritch Altar",
+        "description": "The culmination of the monastery\u2019s dark history.",
+        "exits": {
+            "south": "The Chamber of Echoes",
+            "east": "The Door of Chains"
+        }
+    },
+    {
+        "id": 28,
+        "name": "The Door of Chains",
+        "description": "Sealed with runes, it requires something\u2026 or someone.",
+        "exits": {
+            "west": "The Eldritch Altar",
+            "north": "The Final Chamber"
+        }
+    },
+    {
+        "id": 29,
+        "name": "The Final Chamber",
+        "description": "A choice must be made: seal the darkness or embrace it?",
+        "exits": {
+            "south": "The Door of Chains"
+        }
+    }
+]
