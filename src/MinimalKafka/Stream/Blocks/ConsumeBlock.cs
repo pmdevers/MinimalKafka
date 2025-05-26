@@ -15,15 +15,19 @@ public class ConsumeBlock<TKey, TValue> :
 
     public ConsumeBlock(IKafkaBuilder builder, string topic)
     {
-        var buffer = new BufferBlock<(KafkaContext, TKey, TValue)>();
+        _target = new BufferBlock<(KafkaContext, TKey, TValue)>();
 
         _builder = builder.MapTopic(topic, async (KafkaContext context, TKey key, TValue value) =>
         {
-            await buffer.SendAsync((context, key, value));
-            await buffer.Completion;
+            try
+            {
+                await _target.SendAsync((context, key, value));
+            }
+            catch (Exception error)
+            {
+                ((IDataflowBlock) _target).Fault(error);
+            }
         });
-
-        _target = buffer;
     }
 
     public void LinkTo(ITargetBlock<(KafkaContext, TKey, TValue)> target, DataflowLinkOptions options)
