@@ -47,4 +47,14 @@ app.MapStream<int, RightObject>("right")
     .WithGroupId("group3");
 
 
+app.MapStream<int, RightObject>("right")
+    .Join<Guid, LeftObject>("left").On((k, v) => k, (k, v) => v.RightObjectId)
+    .Into((c, k, v) =>
+    {
+       throw new InvalidOperationException("this will not commit");
+    })
+    .WithGroupId("group4");
+
+
+
 await app.RunAsync();
