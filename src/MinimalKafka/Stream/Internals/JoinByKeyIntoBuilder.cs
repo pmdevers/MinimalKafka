@@ -32,7 +32,7 @@ internal class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
 
     public async Task Handle(KafkaContext context, TKey key, (V1?, V2?) value)
     {
-        if (value.Item1 is not null && value.Item2 is not null)
+        if (value.Item1 is null || value.Item2 is null)
         {
             return;   
         }
