@@ -10,11 +10,11 @@ internal class JoinIntoBuilder<K1, V1, K2, V2>(
     Func<V1, V2, bool> on)
     : IIntoBuilder<(V1, V2)>
 {
-    private readonly Func<KafkaContext, IStreamStore<K1, V1>> _getLeftStore = (KafkaContext context)
-        => context.RequestServices.GetRequiredService<IStreamStore<K1, V1>>();
+    private readonly Func<KafkaContext, IStreamStore<K1, V1>> _getLeftStore = 
+        context => context.RequestServices.GetRequiredService<IStreamStore<K1, V1>>();
 
-    private readonly Func<KafkaContext, IStreamStore<K2, V2>> _getRightStore = (KafkaContext context)
-        => context.RequestServices.GetRequiredService<IStreamStore<K2, V2>>();
+    private readonly Func<KafkaContext, IStreamStore<K2, V2>> _getRightStore = 
+        context => context.RequestServices.GetRequiredService<IStreamStore<K2, V2>>();
 
     private Func<KafkaContext, (V1, V2), Task> _into = (_, _) => Task.CompletedTask;
 
