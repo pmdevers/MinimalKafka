@@ -6,7 +6,7 @@ namespace MinimalKafka.Stream.Internals;
 internal class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
         IKafkaBuilder builder,
         string leftTopic,
-        string rigthTopic,
+        string rightTopic,
         Func<K1, V1, TKey> leftKey,
         Func<K2, V2, TKey> rightKey) : IIntoBuilder<TKey, (V1?, V2?)>
 {
