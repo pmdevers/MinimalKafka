@@ -25,7 +25,7 @@ internal class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
         _into = handler;
 
         var l = builder.MapTopic(leftTopic, ExecuteLeftAsync);
-        var r = builder.MapTopic(rigthTopic, ExecuteRightAsync);
+        var r = builder.MapTopic(rightTopic, ExecuteRightAsync);
 
         return new JoinConventionBuilder(l, r);
     }
