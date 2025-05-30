@@ -10,7 +10,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="System.Linq.Async" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" />
   </ItemGroup>
 
 </Project>
