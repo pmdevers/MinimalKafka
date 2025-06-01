@@ -1,7 +1,6 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
 
@@ -53,6 +52,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
     private readonly IConsumer<TKey, TValue> _consumer =
         new KafkaConsumerBuilder<TKey, TValue>(options.Metadata, options.ServiceProvider).Build();
 
+    private bool _isClosed = false;
     private long _recordsConsumed;
     private readonly int _consumeReportInterval =
         options.Metadata.OfType<ReportIntervalMetadata>().FirstOrDefault()?.ReportInterval
@@ -87,8 +87,14 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override void Close()
     {
+        if(_isClosed)
+        {
+            Logger.ConsumerAlreadyClosed(options.Metadata.GroupId(), options.Metadata.ClientId());
+            return;
+        }
+
+        _isClosed = true;
         Logger.ConsumerClosed(options.Metadata.GroupId(), options.Metadata.ClientId());
-        
         _consumer.Close();
         _consumer.Dispose();
     }

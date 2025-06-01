@@ -1,6 +1,4 @@
-﻿using MinimalKafka.Builders;
-
-namespace MinimalKafka.Stream;
+﻿namespace MinimalKafka.Stream;
 
 public interface IJoinBuilder<K1, V1, K2, V2>
 {

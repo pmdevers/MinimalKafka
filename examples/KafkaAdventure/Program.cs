@@ -24,7 +24,7 @@ builder.Services.AddMinimalKafka(x =>
     x.WithJsonSerializers();
     x.UseRocksDB(o =>
     {
-        o.Path = "c:\\SourceCode\\rocksdb";
+        o.Path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RocksDB");
     });
 });
 

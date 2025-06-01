@@ -84,7 +84,7 @@ public static class KafkaDelegateFactory
 
         factoryContext.ArgumentTypes = new Type[parameters.Length];
         factoryContext.BoxedArgs = new Expression[parameters.Length];
-        factoryContext.Parameters = new List<ParameterInfo>(parameters);
+        factoryContext.Parameters = [.. parameters];
 
         for (var i = 0; i < parameters.Length; i++)
         {

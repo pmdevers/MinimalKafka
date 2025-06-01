@@ -20,7 +20,6 @@ public class LocationContext
                 }
             }];
 
-        throw new NotImplementedException();
     }
 
     public List<Location> Locations { get; set; }

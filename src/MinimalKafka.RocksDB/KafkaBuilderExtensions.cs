@@ -9,14 +9,20 @@ public static class KafkaBuilderExtensions
     public static IAddKafkaBuilder UseRocksDB(this IAddKafkaBuilder builder, Action<RocksDBOptions> options)
     {
         var o = new RocksDBOptions();
+
+        o.DBOptions.SetCreateIfMissing(true);
+        o.DBOptions.SetCreateMissingColumnFamilies(true);
         options(o);
 
-        var fam = RocksDb.ListColumnFamilies(o.DBOptions, o.Path);
-        foreach (var f in fam)
+        Directory.CreateDirectory(o.Path);
+
+        var cfNames = RocksDb.ListColumnFamilies(o.DBOptions, o.Path);
+        
+        foreach(var f in cfNames) 
         {
             o.ColumnFamilies.Add(f, new ColumnFamilyOptions());
         }
-
+        
         builder.Services.AddSingleton(RocksDb.Open(o.DBOptions, o.Path, o.ColumnFamilies));
         builder.Services.AddSingleton(o);
         builder.Services.AddSingleton<IByteSerializer, ByteSerializer>();

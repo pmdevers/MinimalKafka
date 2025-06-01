@@ -24,46 +24,42 @@ builder.Services.AddMinimalKafka(config =>
 
 var app = builder.Build();
 
-app.MapStream<Guid, Command>("commands")
-    .SplitInto(branches =>
-    {
-        branches.Branch((_, v) => v.Name == "cmd1", (_, _, _) => Task.CompletedTask);
-        branches.Branch((_, v) => v.Name == "cmd2", (_, _, _) => Task.CompletedTask);
-        branches.DefaultBranch((_,_,_) => Task.CompletedTask);
-    });
-
-app.MapStream<Guid, LeftObject>("left")
-    .Join<Guid, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
-    .SplitInto(branches =>
-    {
-        branches.Branch((_, _) => true, (_, _, _) => Task.CompletedTask);
-    });
-
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
-    .Into(async (c, value) =>
+    .Into((c, v) =>
     {
-        var (left, right) = value;
-        var result = new ResultObject(left.Id, right);
-        Console.WriteLine($"multi into - {left.Id} - {result}");
-        await c.ProduceAsync("result", left.Id, new ResultObject(left.Id, right));
-    })
-    .WithGroupId($"multi-{Guid.NewGuid()}")
-    .WithClientId("multi");
+        var (left, right) = v;
 
-app.MapStream<Guid,LeftObject>("left")
-    .Join<Guid, RightObject>("right")
-    .OnKey()
-    .Into("string");
-
+        return Task.CompletedTask;
+    }).WithGroupId("group1");
 
 app.MapStream<Guid, LeftObject>("left")
-   .Into((_, k, v) =>
-   {
-       Console.WriteLine($"single Into - {k} - {v}");
-       return Task.CompletedTask;
-   })
-   .WithGroupId($"single-{Guid.NewGuid()}")
-   .WithClientId("single");
+    .Into(async (c, k, v) =>
+    {
+        v = v with { RightObjectId = 2 };
+        await c.ProduceAsync("left-update", k, v);
+    }).WithGroupId("group2");
+
+
+app.MapStream<int, RightObject>("right")
+    .Join<Guid, LeftObject>("left").On((k, v) => k, (k, v) => v.RightObjectId)
+    .Into((c, k, v) =>
+    {
+        var (left, right) = v;
+
+        return Task.CompletedTask;
+    })
+    .WithGroupId("group3");
+
+
+app.MapStream<int, RightObject>("right")
+    .Join<Guid, LeftObject>("left").On((k, v) => k, (k, v) => v.RightObjectId)
+    .Into((c, k, v) =>
+    {
+       throw new InvalidOperationException("this will not commit");
+    })
+    .WithGroupId("group4");
+
+
 
 await app.RunAsync();
