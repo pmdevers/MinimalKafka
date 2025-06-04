@@ -1,6 +1,8 @@
 using Confluent.Kafka;
 using Examples;
+using Microsoft.AspNetCore.Mvc;
 using MinimalKafka;
+using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
@@ -55,6 +57,11 @@ app.MapStream<int, RightObject>("right")
     })
     .WithGroupId("group4");
 
+
+app.MapGet("/", ([FromServices] IKafkaBuilder builder) => {
+    var source = builder.DataSource;
+    return TypedResults.Ok(source.Results);
+});
 
 
 await app.RunAsync();
