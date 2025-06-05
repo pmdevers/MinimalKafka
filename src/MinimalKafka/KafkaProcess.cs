@@ -37,17 +37,7 @@ public class KafkaProcess : IKafkaProcess
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var context = _consumer.Consume(cancellationToken);
-
-                if (context is EmptyKafkaContext)
-                {
-
-                    _consumer.Logger.EmptyContext();
-
-                    continue;
-                }
-
-                await _handler.Invoke(context);
+                await _consumer.Consume(_handler, cancellationToken);
             }
         }
         catch(Exception ex)

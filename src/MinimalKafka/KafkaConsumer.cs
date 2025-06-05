@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
+using System.Reflection.Metadata;
 
 namespace MinimalKafka;
 
@@ -10,7 +11,7 @@ public abstract class KafkaConsumer
 {
     public abstract ILogger Logger { get; }
     public abstract void Subscribe();
-    public abstract KafkaContext Consume(CancellationToken cancellationToken);
+    public abstract Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken);
 
     public abstract void Close();
 
@@ -32,9 +33,9 @@ public class NoConsumer : KafkaConsumer
     {
     }
 
-    public override KafkaContext Consume(CancellationToken cancellationToken)
+    public override Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
     {
-        return KafkaContext.Empty;
+        return Task.CompletedTask;
     }
 
     public override void Subscribe()
@@ -60,7 +61,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override ILogger Logger => options.KafkaLogger;
 
-    public override KafkaContext Consume(CancellationToken cancellationToken)
+    public override Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
     {
         try
         {
@@ -72,16 +73,21 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
                 Logger.RecordsConsumed(options.Metadata.GroupId(), options.Metadata.ClientId(), _recordsConsumed, result.Topic);
             }
 
-            return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+            var context = KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+
+            if (context is EmptyKafkaContext)
+            {
+                return Task.CompletedTask;
+            }
+
+            return kafkaDelegate.Invoke(context);
         }
         catch (OperationCanceledException ex) 
         when (ex.CancellationToken == cancellationToken)
         {
             Logger.OperatonCanceled(options.Metadata.GroupId(), options.Metadata.ClientId());
-
             _consumer.Close();
-            _consumer.Dispose();
-            return KafkaContext.Empty;
+            return Task.CompletedTask;
         }
     }
 
