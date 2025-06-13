@@ -50,10 +50,8 @@ public class KafkaProcessTests
     public async Task KafkaProcess_Start_ShouldInvokeHandlerWithValidContext()
     {
         // Arrange
-        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>()).Returns(async x =>
-        {
-            await x.Arg<KafkaDelegate>().Invoke(new TestKafkaContext());
-        });
+        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => callInfo.Arg<KafkaDelegate>().Invoke(new TestKafkaContext()));
 
         var task = Task.Run(() => _kafkaProcess.Start(_cancellationTokenSource.Token));
 
