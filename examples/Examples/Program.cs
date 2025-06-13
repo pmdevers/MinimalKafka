@@ -12,9 +12,16 @@ builder.Services.AddMinimalKafka(config =>
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
            .WithGroupId(Guid.NewGuid().ToString())
+           .WithAutoCommit(false)
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithJsonSerializers()
-           .WithInMemoryStore();
+           .WithInMemoryStore()
+           .Use(async (ctx, next) =>
+           {
+               await next();
+
+               Console.WriteLine("From Middleware");
+           });
  });
 
 var app = builder.Build();

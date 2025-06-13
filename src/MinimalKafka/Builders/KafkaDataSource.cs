@@ -63,9 +63,26 @@ public sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDa
             yield return KafkaProcess.Create(new()
             {
                 Consumer = consumer,
-                Delegate = result.Delegate,
+                Delegate = BuildPipeline(builder.Middlewares, result.Delegate),
             });
         }
+
+
+    }
+
+    public static KafkaDelegate BuildPipeline(
+        IEnumerable<KafkaMiddleware> middlewares,
+        KafkaDelegate finalHandler)
+    {
+        KafkaDelegate pipeline = finalHandler;
+
+        foreach (var middleware in middlewares.Reverse())
+        {
+            var next = pipeline;
+            pipeline = context => middleware(context, () => next(context));
+        }
+
+        return pipeline;
     }
 
     private struct KafkaProcessEntry()

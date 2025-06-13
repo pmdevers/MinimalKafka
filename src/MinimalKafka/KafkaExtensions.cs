@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -6,7 +6,6 @@ using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
-using System.Reflection;
 using System.Text.Json;
 
 namespace MinimalKafka;
@@ -118,6 +117,13 @@ public static class KafkaExtensions
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;
+    }
+
+    public static TBuilder Use<TBuilder>(this TBuilder builder, KafkaMiddleware middleware)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(x => x.Middlewares.Add(middleware));
+        return builder;
     }
 
 
