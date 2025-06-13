@@ -100,7 +100,7 @@ public class ServiceCollectionTests
     }
 
     [Fact]
-    public void AddMinimalKafka_Should_Set_ClientId_And_GroupId_To_Default()
+    public void AddMinimalKafka_Should_Set_Default_Config()
     {
         var services = new ServiceCollection();
 
