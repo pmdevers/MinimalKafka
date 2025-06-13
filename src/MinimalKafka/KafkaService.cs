@@ -8,7 +8,6 @@ internal class KafkaService(IKafkaBuilder builder) : BackgroundService
         = builder.DataSource?.GetProceses() ?? [];
 
     private readonly List<Task> _runningTasks = [];
-    private bool _running = true;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -23,7 +22,6 @@ internal class KafkaService(IKafkaBuilder builder) : BackgroundService
                 }
                 catch (KafkaProcesException)
                 {
-                    _running = false;
                     await cts.CancelAsync();
                     throw;
                 }
@@ -38,11 +36,6 @@ internal class KafkaService(IKafkaBuilder builder) : BackgroundService
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (!_running) {
-            return;
-        }
-
-
         foreach (var process in Processes)
         {
             await process.Stop();
