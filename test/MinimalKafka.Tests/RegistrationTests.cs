@@ -117,15 +117,20 @@ public class ServiceCollectionTests
             .Should()
             .ContainSingle(x => x is IClientIdMetadata)
             .And
-            .ContainSingle(x => x is IGroupIdMetadata);
+            .ContainSingle(x => x is IGroupIdMetadata)
+            .And
+            .ContainSingle(x => x is IAutoCommitMetaData);
 
         // Verify the actual values
         var clientId = kafkaBuilder.MetaData
             .OfType<IClientIdMetadata>().Single().ClientId;
         var groupId = kafkaBuilder.MetaData
             .OfType<IGroupIdMetadata>().Single().GroupId;
+        var autoCommit = kafkaBuilder.MetaData
+            .OfType<IAutoCommitMetaData>().Single().Enabled;
 
         clientId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
         groupId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
+        autoCommit.Should().BeFalse();
     }
 }
