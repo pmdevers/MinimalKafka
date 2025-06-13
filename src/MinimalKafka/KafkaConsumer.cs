@@ -138,7 +138,7 @@ public static class MetadataHelperExtensions
         => metaData.OfType<T>().FirstOrDefault();
 
     public static bool HasAutoCommit(this IReadOnlyList<object> metaData)
-        => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? true;
+        => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? false;
 }
 
 

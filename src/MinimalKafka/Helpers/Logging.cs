@@ -14,7 +14,7 @@ internal static partial class Logging
 
     [LoggerMessage(
         EventId = 1,
-        Level = LogLevel.Critical,
+        Level = LogLevel.Information,
         Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' was closed, Operation cancelled."
         )]
     public static partial void OperatonCanceled(this ILogger logger, string groupId, string clientId);

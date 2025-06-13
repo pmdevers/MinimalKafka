@@ -50,6 +50,7 @@ public static class KafkaExtensions
 
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithAutoCommit(false);
         configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
         configBuilder.WithTopicFormatter(topic => topic);
