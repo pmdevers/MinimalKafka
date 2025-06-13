@@ -48,9 +48,8 @@ public class KafkaProcess : IKafkaProcess
         finally
         {
             _consumer.Logger.DropOutOfConsumeLoop();
-            _consumer.Close();
         }
-           
+        
     }
 
     public async Task Stop()

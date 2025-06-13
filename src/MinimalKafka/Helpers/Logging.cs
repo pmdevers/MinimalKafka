@@ -15,7 +15,7 @@ internal static partial class Logging
     [LoggerMessage(
         EventId = 1,
         Level = LogLevel.Critical,
-        Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}', Operation cancelled return Empty Context."
+        Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' was closed, Operation cancelled."
         )]
     public static partial void OperatonCanceled(this ILogger logger, string groupId, string clientId);
 
@@ -67,4 +67,11 @@ internal static partial class Logging
         Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' already closed."
         )]
     public static partial void ConsumerAlreadyClosed(this ILogger logger, string groupId, string clientId);
+
+    [LoggerMessage(
+       EventId = 9,
+       Level = LogLevel.Information,
+       Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' committing offset."
+       )]
+    public static partial void Committing(this ILogger logger, string groupId, string clientId);
 }

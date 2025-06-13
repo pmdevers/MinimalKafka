@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
-using System.Reflection.Metadata;
 
 namespace MinimalKafka;
 
@@ -61,7 +60,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override ILogger Logger => options.KafkaLogger;
 
-    public override Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
+    public override async Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
     {
         try
         {
@@ -77,17 +76,25 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
             if (context is EmptyKafkaContext)
             {
-                return Task.CompletedTask;
+                return;
             }
 
-            return kafkaDelegate.Invoke(context);
+            await kafkaDelegate.Invoke(context);
+
+            if (options.Metadata.HasAutoCommit())
+            {
+                return;
+            }
+
+            Logger.Committing(options.Metadata.GroupId(), options.Metadata.ClientId());
+
+            _consumer.StoreOffset(result);
+            _consumer.Commit();
         }
         catch (OperationCanceledException ex) 
         when (ex.CancellationToken == cancellationToken)
         {
             Logger.OperatonCanceled(options.Metadata.GroupId(), options.Metadata.ClientId());
-            _consumer.Close();
-            return Task.CompletedTask;
         }
     }
 
@@ -129,6 +136,9 @@ public static class MetadataHelperExtensions
 
     private static T? GetMetaData<T>(this IReadOnlyList<object> metaData)
         => metaData.OfType<T>().FirstOrDefault();
+
+    public static bool HasAutoCommit(this IReadOnlyList<object> metaData)
+        => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? true;
 }
 
 
