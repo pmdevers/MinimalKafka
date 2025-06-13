@@ -81,7 +81,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
             await kafkaDelegate.Invoke(context);
 
-            if (options.Metadata.HasAutoCommit())
+            if (options.Metadata.IsAutoCommitEnabled())
             {
                 return;
             }
@@ -137,7 +137,7 @@ public static class MetadataHelperExtensions
     private static T? GetMetaData<T>(this IReadOnlyList<object> metaData)
         => metaData.OfType<T>().FirstOrDefault();
 
-    public static bool HasAutoCommit(this IReadOnlyList<object> metaData)
+    public static bool IsAutoCommitEnabled(this IReadOnlyList<object> metaData)
         => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? false;
 }
 
