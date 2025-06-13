@@ -64,7 +64,7 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
     {
         try
         {
-            var scope = _serviceProvider.CreateScope();
+            using var scope = _serviceProvider.CreateScope();
             var result = _consumer.Consume(cancellationToken);
 
             if (++_recordsConsumed % _consumeReportInterval == 0)
