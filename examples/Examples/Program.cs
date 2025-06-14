@@ -13,6 +13,9 @@ builder.Services.AddMinimalKafka(config =>
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
            .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
+           .WithPartitionHandler((_, p) => {
+               return p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning));
+           })
            .WithJsonSerializers()
            .WithInMemoryStore();
  });

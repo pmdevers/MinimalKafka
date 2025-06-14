@@ -7,6 +7,7 @@ using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text.Json;
 
 namespace MinimalKafka;
@@ -114,6 +115,7 @@ public static class KafkaExtensions
 
         return builder;
     }
+
     private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);

@@ -58,7 +58,20 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
     public IConsumer<TKey, TValue> Build()
     {
         SetDeserializers(_consumerBuilder);
+        SetPartitionsAssignedHandler(_consumerBuilder);
         return _consumerBuilder.Build();
+    }
+
+    private void SetPartitionsAssignedHandler(ConsumerBuilder<TKey, TValue> consumerBuilder)
+    {
+        if(GetMetaData<IConsumerHandlerMetadata>(out var handlers))
+        {
+            if (handlers.PartitionsAssignedHandler is not null) consumerBuilder.SetPartitionsAssignedHandler(handlers.PartitionsAssignedHandler);
+            if (handlers.StatisticsHandler is not null) consumerBuilder.SetStatisticsHandler(handlers.StatisticsHandler);
+            if (handlers.ErrorHandler is not null) consumerBuilder.SetErrorHandler(handlers.ErrorHandler);
+         }
+
+        
     }
 
     private void SetDeserializers(ConsumerBuilder<TKey, TValue> builder)
