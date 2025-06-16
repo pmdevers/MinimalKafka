@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class ReportIntervalMetadata(int reportInterval) : IReportIntervalMetadata
+internal class ReportIntervalMetadata(int reportInterval) : IReportIntervalMetadata
 {
     public int ReportInterval { get; } = reportInterval;
 

@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class ValueSerializerMetadata(Type serializerType) : ISerializerMetadata
+internal class ValueSerializerMetadata(Type serializerType) : ISerializerMetadata
 {
     public Type GetSerializerType<T>()
     {

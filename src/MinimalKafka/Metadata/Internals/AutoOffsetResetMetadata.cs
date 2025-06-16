@@ -3,7 +3,7 @@ using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class AutoOffsetResetMetadata(AutoOffsetReset autoOffsetReset) : IAutoOffsetResetMetadata, IConsumerConfigMetadata
+internal class AutoOffsetResetMetadata(AutoOffsetReset autoOffsetReset) : IAutoOffsetResetMetadata, IConsumerConfigMetadata
 {
     public AutoOffsetReset AutoOffsetReset => autoOffsetReset;
 

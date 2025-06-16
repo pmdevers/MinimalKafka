@@ -5,11 +5,29 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MinimalKafka;
 
+/// <summary>
+/// Defines a builder interface for configuring and constructing Kafka consumers.
+/// </summary>
 public interface IKafkaConsumerBuilder
 {
+    /// <summary>
+    /// Gets the service provider used for dependency resolution.
+    /// </summary>
     IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
+    /// Gets the type of the Kafka message key.
+    /// </summary>
     Type KeyType { get; }
+
+    /// <summary>
+    /// Gets the type of the Kafka message value.
+    /// </summary>
     Type ValueType { get; }
+
+    /// <summary>
+    /// Gets the collection of metadata objects used for configuration.
+    /// </summary>
     IReadOnlyList<object> Metadata { get; }
 }
 

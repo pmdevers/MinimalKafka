@@ -1,5 +1,12 @@
 ﻿namespace MinimalKafka.Metadata;
+
+/// <summary>
+/// Represents metadata for specifying the Kafka bootstrap servers configuration.
+/// </summary>
 public interface IBootstrapServersMetadata
 {
-    public string BootstrapServers { get; }
+    /// <summary>
+    /// Gets the bootstrap servers connection string used to connect to the Kafka cluster.
+    /// </summary>
+    string BootstrapServers { get; }
 }

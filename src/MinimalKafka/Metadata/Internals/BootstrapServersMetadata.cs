@@ -3,7 +3,7 @@ using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServersMetadata, IConsumerConfigMetadata, IProducerConfigMetadata
+internal class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServersMetadata, IConsumerConfigMetadata, IProducerConfigMetadata
 {
     public string BootstrapServers => bootstrapServers;
 

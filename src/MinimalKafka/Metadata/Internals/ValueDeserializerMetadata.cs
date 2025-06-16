@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class ValueDeserializerMetadata(Func<IKafkaConsumerBuilder, object> valueDeserializerType) : IDeserializerMetadata
+internal class ValueDeserializerMetadata(Func<IKafkaConsumerBuilder, object> valueDeserializerType) : IDeserializerMetadata
 {
     public Func<IKafkaConsumerBuilder, object> Deserializer => valueDeserializerType;
 

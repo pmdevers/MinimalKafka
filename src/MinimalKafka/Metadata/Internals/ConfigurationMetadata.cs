@@ -1,9 +1,8 @@
-﻿using Confluent.Kafka;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace MinimalKafka.Metadata.Internals;
 
-public class ConfigurationMetadata : IConfigurationMetadata
+internal class ConfigurationMetadata : IConfigurationMetadata
 {
     /// <summary>
     /// 
@@ -14,7 +13,6 @@ public class ConfigurationMetadata : IConfigurationMetadata
     /// 
     /// </summary>
     /// <param name="configuration"></param>
-    /// <param name="section"></param>
     /// <returns></returns>
     public static ConfigurationMetadata FromConfig(IConfiguration configuration)
     {

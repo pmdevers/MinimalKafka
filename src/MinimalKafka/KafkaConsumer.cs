@@ -1,20 +1,45 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Extension;
 using MinimalKafka.Helpers;
-using MinimalKafka.Metadata;
 using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka;
 
+/// <summary>
+/// Represents an abstract base class for a Kafka consumer, providing methods for subscribing, consuming, and closing the consumer.
+/// </summary>
 public abstract class KafkaConsumer
 {
+    /// <summary>
+    /// Gets the logger instance used by the consumer.
+    /// </summary>
     public abstract ILogger Logger { get; }
+
+    /// <summary>
+    /// Subscribes the consumer to the configured topic(s).
+    /// </summary>
     public abstract void Subscribe();
+
+    /// <summary>
+    /// Consumes a message from the topic and invokes the provided delegate to process the message.
+    /// </summary>
+    /// <param name="kafkaDelegate">The delegate to invoke for processing the consumed message.</param>
+    /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+    /// <returns>A task representing the asynchronous consume operation.</returns>
     public abstract Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Closes the consumer and releases any resources.
+    /// </summary>
     public abstract void Close();
 
+    /// <summary>
+    /// Creates a new <see cref="KafkaConsumer"/> instance for the specified options.
+    /// </summary>
+    /// <param name="options">The consumer options containing types, topic, metadata, and service provider.</param>
+    /// <returns>A concrete <see cref="KafkaConsumer"/> instance.</returns>
     public static KafkaConsumer Create(KafkaConsumerOptions options)
     {
         var creator = typeof(KafkaConsumer<,>)
@@ -119,27 +144,6 @@ internal sealed class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) 
 
         _consumer.Subscribe(_topicName);
     }
-}
-
-public static class MetadataHelperExtensions 
-{
-    public static string ClientId(this IReadOnlyList<object> metadata)
-    {
-        var meta = metadata.GetMetaData<IClientIdMetadata>()!;
-        return meta.ClientId;
-    }
-
-    public static string GroupId(this IReadOnlyList<object> metadata)
-    {
-        var meta = metadata.GetMetaData<IGroupIdMetadata>()!;
-        return meta.GroupId;
-    }
-
-    private static T? GetMetaData<T>(this IReadOnlyList<object> metaData)
-        => metaData.OfType<T>().FirstOrDefault();
-
-    public static bool IsAutoCommitEnabled(this IReadOnlyList<object> metaData)
-        => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? false;
 }
 
 

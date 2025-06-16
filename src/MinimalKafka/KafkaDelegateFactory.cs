@@ -180,14 +180,14 @@ internal static class KafkaDelegateFactory
 #pragma warning restore IDE1006 // Naming Styles
 }
 
-public static class KafkaDelegateFactoryConstants
+internal static class KafkaDelegateFactoryConstants
 {
     public const string KeyAttribute = "Key (Attribute)";
     public const string ValueAttribute = "Value (Attribute)";
     public const string ServiceParameter = "Services (Inferred)";
 }
 
-public sealed class KafkaDelegateResult
+internal sealed class KafkaDelegateResult
 {
     private KafkaDelegateResult(KafkaDelegate kafkaDelegate, Type keyType, Type valueType, IReadOnlyList<object> metadata)
     {
@@ -208,13 +208,13 @@ public sealed class KafkaDelegateResult
     public IReadOnlyList<object> Metadata { get; }
 }
 
-public class KafkaDelegateFactoryOptions
+internal class KafkaDelegateFactoryOptions
 {
     public required IServiceProvider? ServiceProvider { get; init; }
     public required IKafkaBuilder KafkaBuilder { get; init; }
 }
 
-public class KafkaDelegateFactoryContext
+internal class KafkaDelegateFactoryContext
 {
     public required IServiceProvider ServiceProvider { get; init; }
     public required IServiceProviderIsService? ServiceProviderIsService { get; init; }
