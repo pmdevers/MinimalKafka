@@ -23,7 +23,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examples", "examples\Exampl
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{09B66B09-386D-4F15-B704-FA7AB04FBB7B}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		CODE_OF_CONDUCT.md = CODE_OF_CONDUCT.md
+		CONTRIBUTING.md = CONTRIBUTING.md
 		Directory.Packages.props = Directory.Packages.props
+		global.json = global.json
+		LICENSE.md = LICENSE.md
+		nuget.config = nuget.config
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global
