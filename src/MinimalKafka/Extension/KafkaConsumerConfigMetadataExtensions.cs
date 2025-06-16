@@ -2,11 +2,20 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
-using System.Reflection.Emit;
 
 namespace MinimalKafka.Extension;
 public static class KafkaConsumerConfigMetadataExtensions
 {
+    public static void Ensure<TMetadata>(this IKafkaBuilder b, Action<TMetadata> assign)
+        where TMetadata : new()
+    {
+        if (!b.MetaData.OfType<TMetadata>().Any())
+            b.MetaData.Add(new TMetadata());
+
+        foreach (var ch in b.MetaData.OfType<TMetadata>())
+            assign(ch);
+    }
+
     public static TBuilder WithConfiguration<TBuilder>(this TBuilder builder, IConfiguration configuration)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -63,62 +72,45 @@ public static class KafkaConsumerConfigMetadataExtensions
         return builder;
     }
 
-    public static TBuilder WithPartitionHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
+    public static TBuilder WithPartitionAssignedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-
-        builder.Add(b =>
-        {
-            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
-            {
-                b.MetaData.Add(new ConsumerHandlerMetadata());
-            }
-
-            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
-            {
-                item.PartitionsAssignedHandler = handler;
-            }
-        });
-
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsAssignedHandler = handler));
         return builder;
     }
+
+    public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Action<object, List<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsRevokedHandler = handler));
+        return builder;
+    }
+
+    public static TBuilder WithPartitionLostHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsLostHandler = handler));
+        return builder;
+    }
+
     public static TBuilder WithErrorHandler<TBuilder>(this TBuilder builder, Action<object, Error> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-
-        builder.Add(b =>
-        {
-            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
-            {
-                b.MetaData.Add(new ConsumerHandlerMetadata());
-            }
-
-            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
-            {
-                item.ErrorHandler = handler;
-            }
-        });
-
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.ErrorHandler = handler));
         return builder;
     }
 
     public static TBuilder WithStatisticsHandler<TBuilder>(this TBuilder builder, Action<object, string> handler)
         where TBuilder : IKafkaConventionBuilder
     {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.StatisticsHandler = handler));
+        return builder;
+    }
 
-        builder.Add(b =>
-        {
-            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
-            {
-                b.MetaData.Add(new ConsumerHandlerMetadata());
-            }
-
-            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
-            {
-                item.StatisticsHandler = handler;
-            }
-        });
-
+    public static TBuilder WithLogHandler<TBuilder>(this TBuilder builder, Action<object, LogMessage> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.LogHandler = handler));
         return builder;
     }
 

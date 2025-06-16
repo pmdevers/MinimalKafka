@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 using System.Diagnostics.CodeAnalysis;
 
@@ -58,20 +59,21 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
     public IConsumer<TKey, TValue> Build()
     {
         SetDeserializers(_consumerBuilder);
-        SetPartitionsAssignedHandler(_consumerBuilder);
+        SetHandlers(_consumerBuilder);
         return _consumerBuilder.Build();
     }
 
-    private void SetPartitionsAssignedHandler(ConsumerBuilder<TKey, TValue> consumerBuilder)
+    private void SetHandlers(ConsumerBuilder<TKey, TValue> consumerBuilder)
     {
         if(GetMetaData<IConsumerHandlerMetadata>(out var handlers))
         {
             if (handlers.PartitionsAssignedHandler is not null) consumerBuilder.SetPartitionsAssignedHandler(handlers.PartitionsAssignedHandler);
+            if (handlers.PartitionsRevokedHandler is not null) consumerBuilder.SetPartitionsRevokedHandler(handlers.PartitionsRevokedHandler);
+            if (handlers.PartitionsLostHandler is not null) consumerBuilder.SetPartitionsLostHandler(handlers.PartitionsLostHandler);
             if (handlers.StatisticsHandler is not null) consumerBuilder.SetStatisticsHandler(handlers.StatisticsHandler);
             if (handlers.ErrorHandler is not null) consumerBuilder.SetErrorHandler(handlers.ErrorHandler);
+            if (handlers.LogHandler is not null) consumerBuilder.SetLogHandler(handlers.LogHandler);
          }
-
-        
     }
 
     private void SetDeserializers(ConsumerBuilder<TKey, TValue> builder)
