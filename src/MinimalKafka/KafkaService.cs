@@ -2,7 +2,7 @@
 using MinimalKafka.Builders;
 
 namespace MinimalKafka;
-internal class KafkaService(IKafkaBuilder builder) : BackgroundService
+internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
 {
     public IEnumerable<IKafkaProcess> Processes
         = builder.DataSource?.GetProceses() ?? [];

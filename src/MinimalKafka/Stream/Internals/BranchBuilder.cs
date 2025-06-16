@@ -5,7 +5,7 @@ internal record Branch<TKey, TValue>(
     Func<KafkaContext, TKey, TValue, Task> BranchAction
 );
 
-internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
+internal sealed class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
 {
     private readonly ICollection<Branch<TKey, TValue>> _branches = [];
     private Func<KafkaContext, TKey, TValue, Task> _default = 
@@ -30,8 +30,4 @@ internal class BranchBuilder<TKey, TValue> : IBranchBuilder<TKey, TValue>
             return branch?.BranchAction(c, k, v) ?? _default(c, k, v);
         };
     }
-}
-
-public class UnhandledBranchException() : Exception()
-{
 }

@@ -1,17 +1,54 @@
 ﻿using Confluent.Kafka;
 
 namespace MinimalKafka;
+
+/// <summary>
+/// Represents the context for a Kafka message, providing access to the message key, value, headers, metadata, and request services.
+/// </summary>
 public abstract class KafkaContext
 {
+    /// <summary>
+    /// Gets the key of the Kafka message.
+    /// </summary>
     public abstract object? Key { get; }
+
+    /// <summary>
+    /// Gets the value of the Kafka message.
+    /// </summary>
     public abstract object? Value { get; }
+
+    /// <summary>
+    /// Gets the headers of the Kafka message.
+    /// </summary>
     public abstract Headers Headers { get; }
+
+    /// <summary>
+    /// Gets the metadata associated with the Kafka message.
+    /// </summary>
     public abstract IReadOnlyList<object> MetaData { get; }
+
+    /// <summary>
+    /// Gets the service provider for resolving dependencies within the context of the request.
+    /// </summary>
     public abstract IServiceProvider RequestServices { get; }
+
+    /// <summary>
+    /// Gets the timestamp of the Kafka message.
+    /// </summary>
     public abstract DateTime Timestamp { get; }
 
+    /// <summary>
+    /// Gets an empty Kafka context instance.
+    /// </summary>
     public static KafkaContext Empty { get; } = new EmptyKafkaContext();
 
+    /// <summary>
+    /// Creates a new <see cref="KafkaContext"/> instance for the specified result, service provider, and metadata.
+    /// </summary>
+    /// <param name="result">The consumed Kafka result object.</param>
+    /// <param name="serviceProvider">The service provider for dependency resolution.</param>
+    /// <param name="metadata">The metadata associated with the message.</param>
+    /// <returns>A concrete <see cref="KafkaContext"/> instance or <see cref="Empty"/> if the result is not valid.</returns>
     public static KafkaContext Create(object result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata)
     {
         var resultType = result.GetType();
@@ -39,7 +76,7 @@ public abstract class KafkaContext
     }
 }
 
-internal class EmptyKafkaContext : KafkaContext
+internal sealed class EmptyKafkaContext : KafkaContext
 {
     public override object? Key => null;
 
@@ -54,7 +91,10 @@ internal class EmptyKafkaContext : KafkaContext
     public override DateTime Timestamp => TimeProvider.System.GetUtcNow().DateTime;
 }
 
-internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata) : KafkaContext
+internal sealed class KafkaContext<TKey, TValue>(
+    ConsumeResult<TKey, TValue> result, 
+    IServiceProvider serviceProvider, 
+    IReadOnlyList<object> metadata) : KafkaContext
 {
     public override object? Key => result.Message.Key;
 

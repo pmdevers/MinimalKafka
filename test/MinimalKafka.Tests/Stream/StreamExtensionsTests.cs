@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using MinimalKafka.Builders.Internals;
 using MinimalKafka.Stream;
 using MinimalKafka.Stream.Internals;
 
@@ -27,9 +28,6 @@ public class StreamExtensionsTests
             var app = Substitute.For<IApplicationBuilder>();
             app.ApplicationServices.Returns(serviceCollection.BuildServiceProvider());
 
-            var resul = app.ApplicationServices.GetRequiredService<IKafkaBuilder>();
-
-                     
             var result = StreamExtensions.MapStream<Guid, string>(app, "topic-name");
             result.Should().BeOfType<StreamBuilder<Guid, string>>();
         }

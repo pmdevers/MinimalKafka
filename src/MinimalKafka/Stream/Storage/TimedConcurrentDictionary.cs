@@ -11,7 +11,7 @@ namespace MinimalKafka.Stream.Storage;
 /// This dictionary automatically removes entries that have exceeded the specified expiration time.
 /// </remarks>
 /// <param name="expirationTime">The time duration after which items in the dictionary expire and are removed.</param>
-public class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime) : IStreamStore<TKey, TValue>
+internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime) : IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
 {
     private readonly ConcurrentDictionary<TKey, Tuple<TValue, DateTimeOffset>> _dictionary = [];

@@ -1,24 +1,15 @@
-﻿using MinimalKafka.Helpers;
+﻿namespace MinimalKafka.Metadata;
 
-namespace MinimalKafka.Metadata;
-
+/// <summary>
+/// Represents metadata for providing a deserializer factory for Kafka consumer keys or values.
+/// </summary>
 public interface IDeserializerMetadata
 {
-    public Func<IKafkaConsumerBuilder, object> Deserializer { get; }
-}
-
-public class KeyDeserializerMetadata(Func<IKafkaConsumerBuilder, object> keyDeserializerType) : IDeserializerMetadata
-{
-    public Func<IKafkaConsumerBuilder, object> Deserializer => keyDeserializerType;
-
-    public override string ToString()
-        => DebuggerHelpers.GetDebugText(nameof(KeyDeserializerMetadata), Deserializer);
-}
-
-public class ValueDeserializerMetadata(Func<IKafkaConsumerBuilder, object> valueDeserializerType) : IDeserializerMetadata
-{
-    public Func<IKafkaConsumerBuilder, object> Deserializer => valueDeserializerType;
-
-    public override string ToString()
-        => DebuggerHelpers.GetDebugText(nameof(ValueDeserializerMetadata), Deserializer);
+    /// <summary>
+    /// Gets a factory function that produces a deserializer instance for use with a Kafka consumer builder.
+    /// </summary>
+    /// <remarks>
+    /// The function receives an <see cref="IKafkaConsumerBuilder"/> and returns an object implementing the deserializer.
+    /// </remarks>
+    Func<IKafkaConsumerBuilder, object> Deserializer { get; }
 }

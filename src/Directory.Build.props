@@ -31,7 +31,7 @@
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/pmdevers/MinimalKafka</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 
 	</PropertyGroup>
 

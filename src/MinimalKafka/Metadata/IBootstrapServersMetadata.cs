@@ -1,21 +1,12 @@
-﻿using Confluent.Kafka;
-using MinimalKafka.Helpers;
+﻿namespace MinimalKafka.Metadata;
 
-namespace MinimalKafka.Metadata;
+/// <summary>
+/// Represents metadata for specifying the Kafka bootstrap servers configuration.
+/// </summary>
 public interface IBootstrapServersMetadata
 {
-    public string BootstrapServers { get; }
-}
-
-public class BootstrapServersMetadata(string bootstrapServers) : IBootstrapServersMetadata, IConsumerConfigMetadata, IProducerConfigMetadata
-{
-    public string BootstrapServers => bootstrapServers;
-
-    public void Set(ClientConfig config)
-    {
-        config.BootstrapServers = BootstrapServers;
-    }
-
-    public override string ToString()
-        => DebuggerHelpers.GetDebugText(nameof(BootstrapServers), BootstrapServers);
+    /// <summary>
+    /// Gets the bootstrap servers connection string used to connect to the Kafka cluster.
+    /// </summary>
+    string BootstrapServers { get; }
 }

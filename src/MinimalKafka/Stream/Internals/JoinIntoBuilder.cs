@@ -3,7 +3,7 @@ using MinimalKafka.Builders;
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class JoinIntoBuilder<K1, V1, K2, V2>(
+internal sealed class JoinIntoBuilder<K1, V1, K2, V2>(
     IKafkaBuilder builder,
     string leftTopic, 
     string rightTopic,
