@@ -185,7 +185,6 @@ public static class KafkaDelegateFactoryConstants
     public const string KeyAttribute = "Key (Attribute)";
     public const string ValueAttribute = "Value (Attribute)";
     public const string ServiceParameter = "Services (Inferred)";
-    public const string BodyParameter = "Body (Inferred)";
 }
 
 public sealed class KafkaDelegateResult
