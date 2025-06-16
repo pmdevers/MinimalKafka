@@ -31,6 +31,8 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
     private readonly JsonSerializerOptions _jsonOptions = jsonOptions
             ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
+    private static readonly byte[] _utf8_BOM = [0xEF, 0xBB, 0xBF];
+
     /// <inheritdoc />
     [Pure]
     public byte[] Serialize(T? data, SerializationContext context)
@@ -40,12 +42,12 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
     [Pure]
     public T Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
     {
-        if (isNull || typeof(T) == typeof(Ignore))
+        if (isNull || typeof(T) == typeof(Ignore) || data.IsEmpty)
         {
             return default!;
         }
 
-        data = data.StartsWith(UTF8.BOM) ? data[3..] : data;
+        data = data.StartsWith(_utf8_BOM) ? data[3..] : data;
         var result = JsonSerializer.Deserialize<T>(data, _jsonOptions);
 
         return (result ?? default)!;
