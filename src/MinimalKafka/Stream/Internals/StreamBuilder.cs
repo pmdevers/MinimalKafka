@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) 
+internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) 
     : IStreamBuilder<TKey, TValue>
 {
     private readonly string _topic = topic;

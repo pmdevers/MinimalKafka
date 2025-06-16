@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Stream.Internals;
 
-internal class JoinConventionBuilder(
+internal sealed class JoinConventionBuilder(
     IKafkaConventionBuilder left, 
     IKafkaConventionBuilder right) : IKafkaConventionBuilder
 {

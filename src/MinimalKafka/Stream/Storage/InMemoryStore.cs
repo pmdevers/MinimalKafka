@@ -12,7 +12,7 @@ public static class AddKakfkaBuilderExtensions
 } 
 
 
-public class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
+internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
 {
     private readonly TimedConcurrentDictionary<TKey, TValue> _dictionary = new(TimeSpan.FromMinutes(3600));
