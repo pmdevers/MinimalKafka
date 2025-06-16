@@ -1,10 +1,6 @@
 ﻿using Confluent.Kafka;
 
-namespace MinimalKafka.Metadata;
-public interface IAutoCommitMetaData : IConsumerConfigMetadata
-{
-    bool Enabled { get; }
-}
+namespace MinimalKafka.Metadata.Internals;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
 internal class AutoCommitMetaDataAttribute(bool enabled) : Attribute, IAutoCommitMetaData

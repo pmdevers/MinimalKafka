@@ -1,11 +1,4 @@
-﻿namespace MinimalKafka.Builders;
-
-public interface IKafkaDataSource
-{
-    IServiceProvider ServiceProvider { get; }
-    IKafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler);
-    IEnumerable<IKafkaProcess> GetProceses();
-}
+﻿namespace MinimalKafka.Builders.Internals;
 
 internal sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSource
 {

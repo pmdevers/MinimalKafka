@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
-using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 using System.Diagnostics.CodeAnalysis;
 
 namespace MinimalKafka;

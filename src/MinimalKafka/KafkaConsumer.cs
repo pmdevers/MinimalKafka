@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka;
 

@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka;
 

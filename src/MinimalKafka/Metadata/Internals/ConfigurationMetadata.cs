@@ -1,20 +1,14 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 
-namespace MinimalKafka.Metadata;
-
-
-public interface IConfigurationMetadata
-{
-    IDictionary<string, string> Configuration { get; }
-}
+namespace MinimalKafka.Metadata.Internals;
 
 public class ConfigurationMetadata : IConfigurationMetadata
 {
     /// <summary>
     /// 
     /// </summary>
-    public required IDictionary<string, string> Configuration {get; init; }
+    public required IDictionary<string, string> Configuration { get; init; }
 
     /// <summary>
     /// 

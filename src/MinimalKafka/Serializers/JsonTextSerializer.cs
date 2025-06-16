@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using System.Diagnostics.Contracts;
 using System.Text.Json;

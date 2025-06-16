@@ -1,4 +1,4 @@
-﻿namespace MinimalKafka.Builders;
+﻿namespace MinimalKafka.Builders.Internals;
 
 internal class KafkaConventionBuilder(
     ICollection<Action<IKafkaBuilder>> conventions,

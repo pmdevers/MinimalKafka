@@ -2,7 +2,6 @@ using Confluent.Kafka;
 using Examples;
 using MinimalKafka;
 using MinimalKafka.Extension;
-using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 

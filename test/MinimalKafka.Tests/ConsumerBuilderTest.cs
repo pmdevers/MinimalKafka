@@ -1,5 +1,5 @@
 ﻿using Confluent.Kafka;
-using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka.Tests;
 public class ConsumerBuilderTest

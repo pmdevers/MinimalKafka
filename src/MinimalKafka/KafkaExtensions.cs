@@ -3,24 +3,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
+using MinimalKafka.Builders.Internals;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
-using MinimalKafka.Stream;
 using System.Text.Json;
 
 namespace MinimalKafka;
-
-public interface IAddKafkaBuilder : IKafkaConventionBuilder
-{
-    IServiceCollection Services { get; }
-}
-
-
-internal class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
-    : KafkaConventionBuilder(conventions, []), IAddKafkaBuilder
-{
-    public IServiceCollection Services { get; } = services;
-}
 
 
 public static class KafkaExtensions
@@ -33,14 +21,10 @@ public static class KafkaExtensions
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithAutoCommit(false);
-        configBuilder.WithKeyDeserializer(typeof(JsonTextSerializer<>));
-        configBuilder.WithValueDeserializer(typeof(JsonTextSerializer<>));
+        configBuilder.WithJsonSerializers();
         configBuilder.WithTopicFormatter(topic => topic);
 
         config(configBuilder);
-
-        services.TryAddSingleton(new JsonSerializerOptions(JsonSerializerDefaults.Web));
-        services.AddTransient(typeof(JsonTextSerializer<>));
 
         services.AddSingleton<IKafkaBuilder>(s =>
         {

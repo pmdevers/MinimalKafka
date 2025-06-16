@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
+using MinimalKafka.Builders.Internals;
 using MinimalKafka.Extension;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;

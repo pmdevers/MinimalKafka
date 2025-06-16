@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Builders;
 using MinimalKafka.Stream;
 using MinimalKafka.Stream.Storage;
 

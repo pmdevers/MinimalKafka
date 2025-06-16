@@ -1,12 +1,7 @@
 ﻿using Confluent.Kafka;
 using MinimalKafka.Helpers;
 
-namespace MinimalKafka.Metadata;
-
-public interface IClientIdMetadata : IConsumerConfigMetadata, IProducerConfigMetadata
-{
-    string ClientId { get; }
-}
+namespace MinimalKafka.Metadata.Internals;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
 public class ClientIdMetadataAttribute(string clientId) : Attribute, IClientIdMetadata

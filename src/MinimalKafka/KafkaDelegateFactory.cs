@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using MinimalKafka.Builders.Internals;
 using MinimalKafka.Metadata;
 using System.Linq.Expressions;
 using System.Reflection;

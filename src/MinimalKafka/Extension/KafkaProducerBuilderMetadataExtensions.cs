@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka.Extension;
 
