@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 using System.Diagnostics.CodeAnalysis;
 
@@ -73,8 +74,6 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
             if (handlers.ErrorHandler is not null) consumerBuilder.SetErrorHandler(handlers.ErrorHandler);
             if (handlers.LogHandler is not null) consumerBuilder.SetLogHandler(handlers.LogHandler);
          }
-
-        
     }
 
     private void SetDeserializers(ConsumerBuilder<TKey, TValue> builder)
