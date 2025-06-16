@@ -12,7 +12,7 @@ public class KafkaProcessOptions
     public KafkaConsumer Consumer { get; set; } = new NoConsumer();
     public KafkaDelegate Delegate { get; set; } = (context) => Task.CompletedTask;
 }
-public class KafkaProcess : IKafkaProcess
+internal sealed class KafkaProcess : IKafkaProcess
 {
     private readonly KafkaConsumer _consumer;
     private readonly KafkaDelegate _handler;

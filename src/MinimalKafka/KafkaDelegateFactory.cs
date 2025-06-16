@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace MinimalKafka;
 
-public static class KafkaDelegateFactory
+internal static class KafkaDelegateFactory
 {
     public static KafkaDelegateResult Create(Delegate handler, KafkaDelegateFactoryOptions? options = null)
     {

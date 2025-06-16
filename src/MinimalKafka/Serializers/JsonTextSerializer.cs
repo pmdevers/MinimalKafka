@@ -26,7 +26,7 @@ public static class AddKafkaBuilderExtensions
 }
 
 /// <summary>Initializes a new instance of the <see cref="KafkaJsonSerializer{T}"/> class.</summary>
-public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerializer<T>, IDeserializer<T>
+internal sealed class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerializer<T>, IDeserializer<T>
 {
     private readonly JsonSerializerOptions _jsonOptions = jsonOptions
             ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);

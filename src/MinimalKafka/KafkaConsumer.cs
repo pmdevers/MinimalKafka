@@ -24,7 +24,7 @@ public abstract class KafkaConsumer
     }
 }
 
-public class NoConsumer : KafkaConsumer
+internal sealed class NoConsumer : KafkaConsumer
 {
     public override ILogger Logger => throw new NotImplementedException();
 
@@ -42,7 +42,7 @@ public class NoConsumer : KafkaConsumer
     }
 }
 
-public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaConsumer
+internal sealed class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaConsumer
 {
     private readonly IServiceProvider _serviceProvider = options.ServiceProvider;
     

@@ -6,39 +6,20 @@ using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Text.Json;
 
 namespace MinimalKafka;
 
-
 public interface IAddKafkaBuilder : IKafkaConventionBuilder
 {
     IServiceCollection Services { get; }
-    IAddKafkaBuilder WithStreamStore(Type streamStoreType);
 }
 
 
-public class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
+internal class AddKafkaBuilder(IServiceCollection services, ICollection<Action<IKafkaBuilder>> conventions) 
     : KafkaConventionBuilder(conventions, []), IAddKafkaBuilder
 {
     public IServiceCollection Services { get; } = services;
-
-    public IAddKafkaBuilder WithStreamStore(Type streamStoreType)
-    {
-        if (!Array.Exists(streamStoreType.GetInterfaces(),
-            x => x.IsGenericType &&
-                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
-        ))
-        {
-            throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
-        }
-
-        Services.AddSingleton(typeof(IStreamStore<,>), streamStoreType);
-
-        return this;
-    }
 }
 
 
@@ -72,6 +53,21 @@ public static class KafkaExtensions
         services.AddSingleton(typeof(IProducer<,>), typeof(KafkaProducerFactory<,>));
 
         return services;
+    }
+
+    public static IAddKafkaBuilder WithStreamStore(this IAddKafkaBuilder builder, Type streamStoreType)
+    {
+        if (!Array.Exists(streamStoreType.GetInterfaces(),
+            x => x.IsGenericType &&
+                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
+        ))
+        {
+            throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
+        }
+
+        builder.Services.AddSingleton(typeof(IStreamStore<,>), streamStoreType);
+
+        return builder;
     }
 
     public static IKafkaConventionBuilder MapTopic(this IApplicationBuilder builder, string topic, Delegate handler)

@@ -3,17 +3,17 @@
 public interface IKafkaDataSource
 {
     IServiceProvider ServiceProvider { get; }
-    KafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler);
+    IKafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler);
     IEnumerable<IKafkaProcess> GetProceses();
 }
 
-public sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSource
+internal sealed class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSource
 {
     private readonly List<KafkaProcessEntry> _entries = [];
 
     public IServiceProvider ServiceProvider => serviceProvider;
 
-    public KafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler)
+    public IKafkaConventionBuilder AddTopicDelegate(string topicName, Delegate handler)
     {
         var conventions = new AddAfterProcessBuildConventionCollection();
         var finallyConventions = new AddAfterProcessBuildConventionCollection();

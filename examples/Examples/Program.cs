@@ -2,25 +2,30 @@ using Confluent.Kafka;
 using Examples;
 using MinimalKafka;
 using MinimalKafka.Extension;
+using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMinimalKafka(config =>
- {
-     config
-           .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithGroupId(Guid.NewGuid().ToString())
-           .WithOffsetReset(AutoOffsetReset.Earliest)
-           .WithPartitionAssignedHandler((_, p) => {
-               return p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning));
-           })
-           .WithJsonSerializers()
-           .WithInMemoryStore();
- });
+{
+    config
+        .WithBootstrapServers("localhost:19092")
+        .WithOffsetReset(AutoOffsetReset.Earliest)
+        .WithPartitionAssignedHandler((_, p) => {
+            return p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning));
+        })
+        .WithJsonSerializers()
+        .WithInMemoryStore();
+});
 
 var app = builder.Build();
+
+app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
+{
+    Console.WriteLine($"Received: {key} - {value}");
+});
 
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)

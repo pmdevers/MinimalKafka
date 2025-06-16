@@ -1,6 +1,6 @@
 ﻿namespace MinimalKafka.Builders;
 
-public class KafkaBuilder(IServiceProvider serviceProvider) : IKafkaBuilder
+internal class KafkaBuilder(IServiceProvider serviceProvider) : IKafkaBuilder
 {
     public IServiceProvider ServiceProvider { get; } = serviceProvider;
     public IKafkaDataSource DataSource { get; set; } = new KafkaDataSource(serviceProvider);

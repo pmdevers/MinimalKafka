@@ -5,7 +5,7 @@ using MinimalKafka.Metadata;
 
 namespace MinimalKafka;
 
-public class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
+internal class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 {
     private readonly ITopicFormatter _topicFormatter;
 

@@ -39,7 +39,7 @@ public abstract class KafkaContext
     }
 }
 
-internal class EmptyKafkaContext : KafkaContext
+internal sealed class EmptyKafkaContext : KafkaContext
 {
     public override object? Key => null;
 
@@ -54,7 +54,10 @@ internal class EmptyKafkaContext : KafkaContext
     public override DateTime Timestamp => TimeProvider.System.GetUtcNow().DateTime;
 }
 
-internal class KafkaContext<TKey, TValue>(ConsumeResult<TKey, TValue> result, IServiceProvider serviceProvider, IReadOnlyList<object> metadata) : KafkaContext
+internal sealed class KafkaContext<TKey, TValue>(
+    ConsumeResult<TKey, TValue> result, 
+    IServiceProvider serviceProvider, 
+    IReadOnlyList<object> metadata) : KafkaContext
 {
     public override object? Key => result.Message.Key;
 
