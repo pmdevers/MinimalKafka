@@ -1,0 +1,23 @@
+<!-- For more info on central package management go to https://devblogs.microsoft.com/nuget/introducing-central-package-management/ -->
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageVersion Include="AwesomeAssertions" Version="8.1.0" />
+		<PackageVersion Include="coverlet.collector" Version="6.0.4" />
+		<PackageVersion Include="FluentAssertions" Version="7.0.0" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+		<PackageVersion Include="NSubstitute" Version="5.3.0" />
+		<PackageVersion Include="xunit" Version="2.9.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
+		<PackageVersion Include="Confluent.Kafka" Version="2.10.0" />
+		<PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+		<PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
+		<PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+		<PackageVersion Include="SonarAnalyzer.CSharp" Version="10.8.0.113526" />
+		<PackageVersion Include="System.Linq.Async" Version="6.0.1" />
+		<PackageVersion Include="Microsoft.Sbom.Targets" Version="3.0.0" />
+	</ItemGroup>
+</Project>

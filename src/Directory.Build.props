@@ -9,6 +9,9 @@
 		<CompanyName>Pmdevers</CompanyName>
 		<ProjectName>MinimalKafka</ProjectName>
 
+		<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+		<GenerateSBOM>true</GenerateSBOM>
+
 		<Description>
 			MinimalKafka is a simple and efficient Kafka consumer library designed to work seamlessly with .NET 8.0.
 			It allows for minimalistic and straightforward message consumption similar to minimal APIs.
@@ -44,5 +47,10 @@
 			<PackagePath>\</PackagePath>
 		</None>
 		<InternalsVisibleTo Include="MinimalKafka.Tests"/>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Sbom.Targets" PrivateAssets="all" />
 	</ItemGroup>
 </Project>
