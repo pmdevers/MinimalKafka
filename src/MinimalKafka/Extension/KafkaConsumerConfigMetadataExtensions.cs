@@ -2,7 +2,6 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
-using System.Reflection.Emit;
 
 namespace MinimalKafka.Extension;
 public static class KafkaConsumerConfigMetadataExtensions
