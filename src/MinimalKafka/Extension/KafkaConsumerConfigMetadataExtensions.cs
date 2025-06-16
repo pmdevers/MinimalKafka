@@ -83,7 +83,7 @@ public static class KafkaConsumerConfigMetadataExtensions
         return builder;
     }
 
-    public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
+    public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Action<object, List<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
 
