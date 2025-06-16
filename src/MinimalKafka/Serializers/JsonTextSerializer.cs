@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
@@ -14,7 +15,8 @@ public static class AddKafkaBuilderExtensions
     {
         var defaults = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options?.Invoke(defaults);
-        builder.Services.TryAddSingleton(defaults);
+        builder.Services.AddSingleton(defaults);
+        builder.Services.AddTransient(typeof(JsonTextSerializer<>));
 
         builder
            .WithKeyDeserializer(typeof(JsonTextSerializer<>))
