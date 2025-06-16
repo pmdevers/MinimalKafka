@@ -40,15 +40,16 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
     [Pure]
     public T Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
     {
-        if (isNull || typeof(T) == typeof(Ignore))
+        if (isNull || typeof(T) == typeof(Ignore) || data.IsEmpty)
         {
             return default!;
         }
 
-        data = data.StartsWith(UTF8.BOM) ? data[3..] : data;
+        if (data.Length >= 3 && data[..3].SequenceEqual(Utf8Constants.BOM))
+            data = data[3..];
+
         var result = JsonSerializer.Deserialize<T>(data, _jsonOptions);
 
         return (result ?? default)!;
     }
 }
-
