@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Extension;
 using MinimalKafka.Helpers;
+using MinimalKafka.Metadata;
 using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka;
@@ -72,7 +73,7 @@ internal sealed class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) 
 {
     private readonly IServiceProvider _serviceProvider = options.ServiceProvider;
     
-    private readonly string _topicName = options.Metadata.OfType<ITopicFormatter>()
+    private readonly string _topicName = options.Metadata.OfType<ITopicFormatterMetadata>()
         .First().Format(options.TopicName);
 
     private readonly IConsumer<TKey, TValue> _consumer =

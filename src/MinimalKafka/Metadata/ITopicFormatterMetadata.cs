@@ -1,9 +1,9 @@
-﻿namespace MinimalKafka.Metadata.Internals;
+﻿namespace MinimalKafka.Metadata;
 
 /// <summary>
 /// Defines a contract for formatting Kafka topic names.
 /// </summary>
-public interface ITopicFormatter
+public interface ITopicFormatterMetadata
 {
     /// <summary>
     /// Formats the specified topic name according to custom logic.

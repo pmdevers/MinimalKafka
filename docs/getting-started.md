@@ -77,7 +77,7 @@ The Kafka service will gracefully stop and commit offsets when your application 
 
 ## Further Reading
 
-- [MinimalKafka API Reference](./api.md)
+- [MinimalKafka API Reference](./api/MinimalKafka.html)
 - [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
 
 ---
