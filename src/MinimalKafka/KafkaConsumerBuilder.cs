@@ -67,8 +67,11 @@ internal class KafkaConsumerBuilder<TKey, TValue> : IKafkaConsumerBuilder
         if(GetMetaData<IConsumerHandlerMetadata>(out var handlers))
         {
             if (handlers.PartitionsAssignedHandler is not null) consumerBuilder.SetPartitionsAssignedHandler(handlers.PartitionsAssignedHandler);
+            if (handlers.PartitionsRevokedHandler is not null) consumerBuilder.SetPartitionsRevokedHandler(handlers.PartitionsRevokedHandler);
+            if (handlers.PartitionsLostHandler is not null) consumerBuilder.SetPartitionsLostHandler(handlers.PartitionsLostHandler);
             if (handlers.StatisticsHandler is not null) consumerBuilder.SetStatisticsHandler(handlers.StatisticsHandler);
             if (handlers.ErrorHandler is not null) consumerBuilder.SetErrorHandler(handlers.ErrorHandler);
+            if (handlers.LogHandler is not null) consumerBuilder.SetLogHandler(handlers.LogHandler);
          }
 
         

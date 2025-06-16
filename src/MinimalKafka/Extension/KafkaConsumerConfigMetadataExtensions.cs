@@ -63,7 +63,7 @@ public static class KafkaConsumerConfigMetadataExtensions
         return builder;
     }
 
-    public static TBuilder WithPartitionHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
+    public static TBuilder WithPartitionAssignedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
 
@@ -82,6 +82,47 @@ public static class KafkaConsumerConfigMetadataExtensions
 
         return builder;
     }
+
+    public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.PartitionsRevokedHandler = handler;
+            }
+        });
+
+        return builder;
+    }
+
+    public static TBuilder WithPartitionLostHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.PartitionsLostHandler = handler;
+            }
+        });
+
+        return builder;
+    }
+
     public static TBuilder WithErrorHandler<TBuilder>(this TBuilder builder, Action<object, Error> handler)
         where TBuilder : IKafkaConventionBuilder
     {
@@ -116,6 +157,26 @@ public static class KafkaConsumerConfigMetadataExtensions
             foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
             {
                 item.StatisticsHandler = handler;
+            }
+        });
+
+        return builder;
+    }
+
+    public static TBuilder WithLogHandler<TBuilder>(this TBuilder builder, Action<object, LogMessage> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.LogHandler = handler;
             }
         });
 
