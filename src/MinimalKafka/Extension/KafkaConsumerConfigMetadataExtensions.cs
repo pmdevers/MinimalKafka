@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
@@ -122,4 +122,10 @@ public static class KafkaConsumerConfigMetadataExtensions
         return builder;
     }
 
+    public static TBuilder WithAutoCommit<TBuilder>(this TBuilder builder, bool enabled = true)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new AutoCommitMetaDataAttribute(enabled));
+        return builder;
+    }
 }

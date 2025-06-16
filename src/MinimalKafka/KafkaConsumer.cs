@@ -10,7 +10,7 @@ public abstract class KafkaConsumer
 {
     public abstract ILogger Logger { get; }
     public abstract void Subscribe();
-    public abstract KafkaContext Consume(CancellationToken cancellationToken);
+    public abstract Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken);
 
     public abstract void Close();
 
@@ -32,9 +32,9 @@ public class NoConsumer : KafkaConsumer
     {
     }
 
-    public override KafkaContext Consume(CancellationToken cancellationToken)
+    public override Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
     {
-        return KafkaContext.Empty;
+        return Task.CompletedTask;
     }
 
     public override void Subscribe()
@@ -60,11 +60,11 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
 
     public override ILogger Logger => options.KafkaLogger;
 
-    public override KafkaContext Consume(CancellationToken cancellationToken)
+    public override async Task Consume(KafkaDelegate kafkaDelegate, CancellationToken cancellationToken)
     {
         try
         {
-            var scope = _serviceProvider.CreateScope();
+            using var scope = _serviceProvider.CreateScope();
             var result = _consumer.Consume(cancellationToken);
 
             if (++_recordsConsumed % _consumeReportInterval == 0)
@@ -72,16 +72,29 @@ public class KafkaConsumer<TKey, TValue>(KafkaConsumerOptions options) : KafkaCo
                 Logger.RecordsConsumed(options.Metadata.GroupId(), options.Metadata.ClientId(), _recordsConsumed, result.Topic);
             }
 
-            return KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+            var context = KafkaContext.Create(result, scope.ServiceProvider, options.Metadata);
+
+            if (context is EmptyKafkaContext)
+            {
+                return;
+            }
+
+            await kafkaDelegate.Invoke(context);
+
+            if (options.Metadata.IsAutoCommitEnabled())
+            {
+                return;
+            }
+
+            Logger.Committing(options.Metadata.GroupId(), options.Metadata.ClientId());
+
+            _consumer.StoreOffset(result);
+            _consumer.Commit();
         }
         catch (OperationCanceledException ex) 
         when (ex.CancellationToken == cancellationToken)
         {
             Logger.OperatonCanceled(options.Metadata.GroupId(), options.Metadata.ClientId());
-
-            _consumer.Close();
-            _consumer.Dispose();
-            return KafkaContext.Empty;
         }
     }
 
@@ -123,6 +136,9 @@ public static class MetadataHelperExtensions
 
     private static T? GetMetaData<T>(this IReadOnlyList<object> metaData)
         => metaData.OfType<T>().FirstOrDefault();
+
+    public static bool IsAutoCommitEnabled(this IReadOnlyList<object> metaData)
+        => metaData.GetMetaData<IAutoCommitMetaData>()?.Enabled ?? false;
 }
 
 
