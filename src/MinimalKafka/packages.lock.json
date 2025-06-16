@@ -60,6 +60,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
         }
       },
+      "Microsoft.Sbom.Targets": {
+        "type": "Direct",
+        "requested": "[3.0.0, )",
+        "resolved": "3.0.0",
+        "contentHash": "YRf+19P0HJoKbCj7lw+KrAk7TE6tTppq1phgWfEx4634N/xTNUM+roV97APGZOqbus5mtwzXdDSvj6KCQsJttA=="
+      },
       "SonarAnalyzer.CSharp": {
         "type": "Direct",
         "requested": "[10.8.0.113526, )",
