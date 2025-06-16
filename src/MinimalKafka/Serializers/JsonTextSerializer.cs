@@ -31,8 +31,6 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
     private readonly JsonSerializerOptions _jsonOptions = jsonOptions
             ?? new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
-    private static readonly byte[] _utf8_BOM = [0xEF, 0xBB, 0xBF];
-
     /// <inheritdoc />
     [Pure]
     public byte[] Serialize(T? data, SerializationContext context)
@@ -47,10 +45,11 @@ public class JsonTextSerializer<T>(JsonSerializerOptions? jsonOptions) : ISerial
             return default!;
         }
 
-        data = data.StartsWith(_utf8_BOM) ? data[3..] : data;
+        if (data.Length >= 3 && data[..3].SequenceEqual(Utf8Constants.BOM))
+            data = data[3..];
+
         var result = JsonSerializer.Deserialize<T>(data, _jsonOptions);
 
         return (result ?? default)!;
     }
 }
-
