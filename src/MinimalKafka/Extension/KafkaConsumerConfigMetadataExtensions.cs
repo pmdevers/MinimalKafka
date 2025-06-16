@@ -1,7 +1,8 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
+using System.Reflection.Emit;
 
 namespace MinimalKafka.Extension;
 public static class KafkaConsumerConfigMetadataExtensions
@@ -59,6 +60,65 @@ public static class KafkaConsumerConfigMetadataExtensions
         where TBuilder : IKafkaConventionBuilder
     {
         builder.WithSingle(new TopicFormatterMetadataAttribute(clientIdFormatter));
+        return builder;
+    }
+
+    public static TBuilder WithPartitionHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.PartitionsAssignedHandler = handler;
+            }
+        });
+
+        return builder;
+    }
+    public static TBuilder WithErrorHandler<TBuilder>(this TBuilder builder, Action<object, Error> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.ErrorHandler = handler;
+            }
+        });
+
+        return builder;
+    }
+
+    public static TBuilder WithStatisticsHandler<TBuilder>(this TBuilder builder, Action<object, string> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+
+        builder.Add(b =>
+        {
+            if (!b.MetaData.OfType<ConsumerHandlerMetadata>().Any())
+            {
+                b.MetaData.Add(new ConsumerHandlerMetadata());
+            }
+
+            foreach (var item in b.MetaData.OfType<ConsumerHandlerMetadata>())
+            {
+                item.StatisticsHandler = handler;
+            }
+        });
+
         return builder;
     }
 
