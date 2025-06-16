@@ -1,16 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
-using MinimalKafka.Stream.Storage;
 
-namespace MinimalKafka.Stream;
-
-public static class AddKakfkaBuilderExtensions
-{
-    public static IAddKafkaBuilder WithInMemoryStore(this IAddKafkaBuilder builder)
-    {
-        return builder.WithStreamStore(typeof(InMemoryStore<,>));
-    }
-} 
-
+namespace MinimalKafka.Stream.Storage;
 
 internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
     where TKey : IEquatable<TKey>
@@ -34,7 +24,7 @@ internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStream
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while(!stoppingToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
             _dictionary.CleanUp();

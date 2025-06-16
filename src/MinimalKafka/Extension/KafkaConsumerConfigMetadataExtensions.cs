@@ -4,6 +4,7 @@ using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Extension;
+
 public static class KafkaConsumerConfigMetadataExtensions
 {
     public static void Ensure<TMetadata>(this IKafkaBuilder b, Action<TMetadata> assign)

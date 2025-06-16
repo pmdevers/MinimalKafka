@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
+using MinimalKafka.Extension;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
+using MinimalKafka.Stream.Storage;
 using System.Diagnostics;
 
 namespace MinimalKafka.Tests;

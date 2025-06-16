@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Extension;
 using MinimalKafka.Stream;
+using MinimalKafka.Stream.Storage;
 
 namespace MinimalKafka.Tests;
 public class AddKafkaBuilderTests

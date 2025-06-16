@@ -4,6 +4,7 @@ using MinimalKafka.Builders;
 using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Extension;
+
 public static class KafkaConsumerBuilderMetadataExtensions
 {
     public static TBuilder WithKeyDeserializer<TBuilder>(this TBuilder builder, Func<IKafkaConsumerBuilder, object> serializer)

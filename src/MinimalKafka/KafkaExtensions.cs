@@ -55,21 +55,6 @@ public static class KafkaExtensions
         return services;
     }
 
-    public static IAddKafkaBuilder WithStreamStore(this IAddKafkaBuilder builder, Type streamStoreType)
-    {
-        if (!Array.Exists(streamStoreType.GetInterfaces(),
-            x => x.IsGenericType &&
-                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
-        ))
-        {
-            throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
-        }
-
-        builder.Services.AddSingleton(typeof(IStreamStore<,>), streamStoreType);
-
-        return builder;
-    }
-
     public static IKafkaConventionBuilder MapTopic(this IApplicationBuilder builder, string topic, Delegate handler)
     {
         var tb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
@@ -82,50 +67,10 @@ public static class KafkaExtensions
             .AddTopicDelegate(topic, handler)
             .WithMetaData([.. builder.MetaData]);
     }
-    public static TBuilder WithMetaData<TBuilder>(this TBuilder builder, params object[] items)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.Add(b =>
-        {
-            foreach (var item in items)
-            {
-                b.MetaData.Add(item);
-            }
-        });
-
-        return builder;
-    }
-    public static TBuilder WithSingle<TBuilder>(this TBuilder builder, object metadata)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.RemoveMetaData(metadata);
-        builder.WithMetaData(metadata);
-        return builder;
-    }
-    public static TBuilder RemoveMetaData<TBuilder>(this TBuilder builder, object item)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.Add(b =>
-        {
-            b.MetaData.RemoveAll(x => x.GetType() == item.GetType());
-        });
-
-        return builder;
-    }
 
     private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;
-    }
-
-
-    public static Task<DeliveryResult<TKey, TValue>> ProduceAsync<TKey, TValue>(this KafkaContext context, string topic, TKey key, TValue value)
-        => Produce(context, topic, new Message<TKey, TValue>() {  Key = key, Value = value });
-
-    public static async Task<DeliveryResult<TKey, TValue>> Produce<TKey, TValue>(this KafkaContext context, string topic, Message<TKey, TValue> message)
-    {
-        var producer = context.RequestServices.GetRequiredService<IProducer<TKey, TValue>>();
-        return await producer.ProduceAsync(topic, message);   
     }
 }
