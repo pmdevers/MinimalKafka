@@ -18,17 +18,18 @@ internal class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 
     public KafkaProducerFactory(IKafkaBuilder builder)
     {
-        var config = builder.MetaData.OfType<ConfigurationMetadata>().First();
+        var c = builder.MetaData.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
         var keySerializer = builder.MetaData.OfType<KeySerializerMetadata>().First(); 
         var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
-        var producerConfig = new ProducerConfig(config.Configuration);
+        
+        ProducerConfig config = c is null ? new() : new(c);
 
         _topicFormatter = builder.MetaData.OfType<ITopicFormatterMetadata>().First();
 
         var serializerKey = ActivatorUtilities.CreateInstance(builder.ServiceProvider, keySerializer.GetSerializerType<TKey>());
         var serializerValue = ActivatorUtilities.CreateInstance(builder.ServiceProvider, valueSerializer.GetSerializerType<TValue>());
 
-        Producer = new ProducerBuilder<TKey, TValue>(producerConfig)
+        Producer = new ProducerBuilder<TKey, TValue>(config)
             .SetKeySerializer((ISerializer<TKey>)serializerKey)
             .SetValueSerializer((ISerializer<TValue>)serializerValue)
             .Build();
