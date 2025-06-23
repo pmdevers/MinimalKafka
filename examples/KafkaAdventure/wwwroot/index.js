@@ -1,4 +1,4 @@
-﻿const inputField = document.getElementById("commandInput");
+const inputField = document.getElementById("commandInput");
 const terminal = document.getElementById("terminal");
 const gamewindow = document.getElementById("gamewindow");
 
@@ -18,11 +18,18 @@ inputField.addEventListener("keydown", function (event) {
 });
 
 
+/**
+ * Scrolls the element with ID "body" to its bottom.
+ */
 function scrollToBottom() {
     const bdy = document.getElementById("body");
     bdy.scrollTop = bdy.scrollHeight;
 }
 
+/**
+ * Sends a user command to the server and displays it in the terminal.
+ * @param {string} command - The command string entered by the user.
+ */
 function executeCommand(command) {
     const gameId = localStorage.getItem('gameid');
     connection.send("SendMessage", gameId, command);
@@ -33,6 +40,10 @@ function executeCommand(command) {
 
     scrollToBottom();
 }
+/**
+ * Displays a server response in the terminal with a typewriter animation effect.
+ * @param {string} res - The response text to display.
+ */
 function addResponse(res) {
     const response = document.createElement("p");
     response.className = "text-green-400";
@@ -51,6 +62,12 @@ function addResponse(res) {
     scrollToBottom();
 }
 
+/**
+ * Animates text into a specified DOM element, displaying one character at a time at a given speed.
+ * @param {string} elementId - The ID of the DOM element where the text will be displayed.
+ * @param {string} text - The text to animate.
+ * @param {number} speed - The delay in milliseconds between each character.
+ */
 function slowType(elementId, text, speed) {
     let i = 0;
     const element = document.getElementById(elementId);
@@ -65,6 +82,10 @@ function slowType(elementId, text, speed) {
 
     typeWriter();
 }
+/**
+ * Generates a version 4 UUID string using timestamp and randomization.
+ * @return {string} A randomly generated UUID in the format xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx.
+ */
 function generateUUID() { // Public Domain/MIT
     var d = new Date().getTime();//Timestamp
     var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -82,6 +103,11 @@ function generateUUID() { // Public Domain/MIT
 }
 
 
+/**
+ * Initializes and maintains the SignalR connection for the game session.
+ *
+ * Retrieves or generates a unique game ID, establishes the SignalR connection, sets up a handler for incoming messages, and joins the game session. If the connection fails, it retries after a delay.
+ */
 async function start() {
     try {
         let gameId = localStorage.getItem('gameid');

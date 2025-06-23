@@ -1,4 +1,4 @@
-﻿using KafkaAdventure.Extensions;
+using KafkaAdventure.Extensions;
 using KafkaAdventure.Features.Locations;
 using MinimalKafka.Extension;
 using MinimalKafka.Stream;
@@ -7,6 +7,10 @@ namespace KafkaAdventure.Features.Movement;
 
 public static class MovementFeature
 {
+    /// <summary>
+    /// Configures a Kafka stream processing pipeline for handling player movement commands in a game, joining movement events with player positions and producing appropriate responses and location updates.
+    /// </summary>
+    /// <typeparam name="T">The application type implementing both <see cref="IEndpointRouteBuilder"/> and <see cref="IApplicationBuilder"/>.</typeparam>
     public static void MapMovement<T>(this T app)
         where T : IEndpointRouteBuilder, IApplicationBuilder
     {
@@ -48,7 +52,12 @@ public static class MovementFeature
 
     public record class Movement(string Cmd, string Direction)
     {
-        public bool IsCommand(string s) => Cmd.StartsWith(s, StringComparison.InvariantCultureIgnoreCase);
+        /// <summary>
+/// Determines whether the movement command starts with the specified string, using a case-insensitive comparison.
+/// </summary>
+/// <param name="s">The string to compare against the start of the command.</param>
+/// <returns>True if the command starts with the specified string; otherwise, false.</returns>
+public bool IsCommand(string s) => Cmd.StartsWith(s, StringComparison.InvariantCultureIgnoreCase);
     };
 
     public record Response(string Command, string Value);

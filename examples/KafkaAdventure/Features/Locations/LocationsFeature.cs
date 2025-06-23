@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using KafkaAdventure.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using MinimalKafka.Extension;
@@ -8,6 +8,12 @@ namespace KafkaAdventure.Features.Locations;
 
 public static class LocationsFeature
 {
+    /// <summary>
+    /// Configures HTTP and Kafka stream endpoints for managing location data.
+    /// </summary>
+    /// <remarks>
+    /// Maps a POST endpoint at <c>/locations</c> that accepts an array of <see cref="Location"/> objects and produces them to the "game-locations" Kafka topic. Also sets up a Kafka stream consumer for the "game-locations" topic, updating or adding locations in the <see cref="LocationContext"/> based on incoming messages.
+    /// </remarks>
     public static void MapLocations<T>(this T app)
         where T : IEndpointRouteBuilder, IApplicationBuilder
     {

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
 using MinimalKafka.Stream.Storage.RocksDB;
@@ -18,7 +18,11 @@ public static class KafkaBuilderExtensions
     /// </summary>
     /// <param name="builder"></param>
     /// <param name="options"></param>
-    /// <returns></returns>
+    /// <summary>
+    /// Configures the Kafka builder to use RocksDB as the stream storage backend.
+    /// </summary>
+    /// <param name="options">A delegate to configure the <see cref="RocksDBOptions"/> for the RocksDB instance.</param>
+    /// <returns>The configured <see cref="IAddKafkaBuilder"/> instance for fluent chaining.</returns>
     public static IAddKafkaBuilder UseRocksDB(this IAddKafkaBuilder builder, Action<RocksDBOptions> options)
     {
         var o = new RocksDBOptions();

@@ -1,4 +1,4 @@
-﻿using RocksDbSharp;
+using RocksDbSharp;
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 
@@ -11,6 +11,11 @@ internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
 
 
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RocksDBStreamStore{T1, T2}"/> class using the specified RocksDB instance and serializer.
+    /// </summary>
+    /// <param name="db">The RocksDB database instance to use for storage.</param>
+    /// <param name="serializer">The serializer for serializing and deserializing keys and values.</param>
     public RocksDBStreamStore(RocksDb db, IByteSerializer serializer)
     {
         _db = db;
@@ -22,6 +27,13 @@ internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
     }
 
 
+    /// <summary>
+    /// Adds a new value or updates an existing value for the specified key in the RocksDB store.
+    /// </summary>
+    /// <param name="key">The key to add or update.</param>
+    /// <param name="create">A function to generate a new value if the key does not exist.</param>
+    /// <param name="update">A function to update the existing value if the key is found.</param>
+    /// <returns>The newly added or updated value.</returns>
     public ValueTask<T2> AddOrUpdate(T1 key, Func<T1, T2> create, Func<T1, T2, T2> update)
     {
         var keyBytes = _serializer.Serialize(key);
@@ -44,6 +56,11 @@ internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
         return ValueTask.FromResult(newValue);
     }
 
+    /// <summary>
+    /// Asynchronously enumerates all values in the store that satisfy the specified predicate.
+    /// </summary>
+    /// <param name="predicate">A function to filter values of type T2.</param>
+    /// <returns>An asynchronous stream of values matching the predicate.</returns>
     public async IAsyncEnumerable<T2> FindAsync(Func<T2, bool> predicate)
     {
         using var iterator = _db.NewIterator(_columnFamily);
@@ -58,6 +75,11 @@ internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
         }
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a value by its key from the RocksDB column family.
+    /// </summary>
+    /// <param name="key">The key to search for.</param>
+    /// <returns>The value associated with the specified key, or null if not found.</returns>
     public ValueTask<T2?> FindByIdAsync(T1 key)
     {
         var keyBytes = _serializer.Serialize(key);

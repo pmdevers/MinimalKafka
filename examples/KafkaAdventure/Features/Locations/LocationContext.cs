@@ -1,10 +1,13 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.Json;
 
 namespace KafkaAdventure.Features.Locations;
 
 public class LocationContext
 {
+    /// <summary>
+    /// Initializes the LocationContext with a default list containing a single forest location and its exits.
+    /// </summary>
     public LocationContext()
     {
         Locations = [

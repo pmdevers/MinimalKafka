@@ -1,4 +1,4 @@
-﻿using KafkaAdventure.Extensions;
+using KafkaAdventure.Extensions;
 using KafkaAdventure.Features.Locations;
 using MinimalKafka.Extension;
 using MinimalKafka.Metadata;
@@ -8,6 +8,10 @@ namespace KafkaAdventure.Features.PlayerLocation;
 
 public static class PlayerLocations
 {
+    /// <summary>
+    /// Configures a Kafka stream processing pipeline that listens for player location updates and produces descriptive responses about the player's current location and available exits.
+    /// </summary>
+    /// <typeparam name="T">A type that implements <see cref="IApplicationBuilder"/>.</typeparam>
     public static void MapPlayerLocations<T>(this T app)
         where T : IApplicationBuilder
     {

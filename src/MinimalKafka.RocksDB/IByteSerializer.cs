@@ -1,4 +1,4 @@
-﻿namespace MinimalKafka.Stream.Storage.RocksDB;
+namespace MinimalKafka.Stream.Storage.RocksDB;
 
 /// <summary>
 /// Interface for serializing and deserializing byte arrays.
@@ -10,7 +10,12 @@ public interface IByteSerializer
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="value"></param>
-    /// <returns></returns>
+    /// <summary>
+/// Serializes the specified value into a byte array.
+/// </summary>
+/// <typeparam name="T">The type of the value to serialize.</typeparam>
+/// <param name="value">The value to serialize.</param>
+/// <returns>A byte array representing the serialized value.</returns>
     byte[] Serialize<T>(T value);
 
     /// <summary>
@@ -18,6 +23,10 @@ public interface IByteSerializer
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="bytes"></param>
-    /// <returns></returns>
+    /// <summary>
+/// Deserializes a byte array into an object of type <typeparamref name="T"/>.
+/// </summary>
+/// <param name="bytes">The byte array to deserialize, or null.</param>
+/// <returns>The deserialized object of type <typeparamref name="T"/>.</returns>
     T Deserialize<T>(byte[]? bytes);
 }

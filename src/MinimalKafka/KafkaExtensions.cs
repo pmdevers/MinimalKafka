@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
@@ -23,6 +23,10 @@ public static class KafkaExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to which the Kafka services will be added.</param>
     /// <param name="config">A delegate to configure the Kafka settings using an <see cref="IAddKafkaBuilder"/>.  This allows customization
     /// of client ID, group ID, serializers, topic formatting, and other Kafka-related options.</param>
+    /// <summary>
+    /// Registers MinimalKafka services and configuration into the dependency injection container, enabling Kafka producers, consumers, and topic handlers for the application.
+    /// </summary>
+    /// <param name="config">A delegate to configure Kafka options and conventions using the provided builder.</param>
     /// <returns>The <see cref="IServiceCollection"/> with the Kafka services registered.</returns>
     public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IAddKafkaBuilder> config)
     {
