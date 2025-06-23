@@ -1,24 +1,12 @@
-﻿using Confluent.Kafka;
-using MinimalKafka.Helpers;
+﻿namespace MinimalKafka.Metadata;
 
-namespace MinimalKafka.Metadata;
+/// <summary>
+/// Represents metadata for specifying the Kafka consumer group ID configuration.
+/// </summary>
 public interface IGroupIdMetadata
 {
+    /// <summary>
+    /// Gets the consumer group ID used to identify the Kafka consumer group.
+    /// </summary>
     string GroupId { get; }
-}
-
-public class GroupIdMetadata(string name) : IGroupIdMetadata, IConsumerConfigMetadata
-{
-    public string GroupId { get; } = name;
-
-    public void Set(ClientConfig config)
-    {
-        ((ConsumerConfig)config).GroupId = GroupId;
-    }
-
-    /// <inheritdoc/>
-    public override string ToString()
-    {
-        return DebuggerHelpers.GetDebugText(nameof(GroupId), GroupId);
-    }
 }

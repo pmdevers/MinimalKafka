@@ -1,9 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MinimalKafka.Builders;
+using MinimalKafka.Builders.Internals;
+using MinimalKafka.Extension;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
+using MinimalKafka.Stream.Storage;
 using System.Diagnostics;
 
 namespace MinimalKafka.Tests;
@@ -100,7 +103,7 @@ public class ServiceCollectionTests
     }
 
     [Fact]
-    public void AddMinimalKafka_Should_Set_ClientId_And_GroupId_To_Default()
+    public void AddMinimalKafka_Should_Set_Default_Config()
     {
         var services = new ServiceCollection();
 
@@ -117,15 +120,20 @@ public class ServiceCollectionTests
             .Should()
             .ContainSingle(x => x is IClientIdMetadata)
             .And
-            .ContainSingle(x => x is IGroupIdMetadata);
+            .ContainSingle(x => x is IGroupIdMetadata)
+            .And
+            .ContainSingle(x => x is IAutoCommitMetaData);
 
         // Verify the actual values
         var clientId = kafkaBuilder.MetaData
             .OfType<IClientIdMetadata>().Single().ClientId;
         var groupId = kafkaBuilder.MetaData
             .OfType<IGroupIdMetadata>().Single().GroupId;
+        var autoCommit = kafkaBuilder.MetaData
+            .OfType<IAutoCommitMetaData>().Single().Enabled;
 
         clientId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
         groupId.Should().Be(AppDomain.CurrentDomain.FriendlyName);
+        autoCommit.Should().BeFalse();
     }
 }

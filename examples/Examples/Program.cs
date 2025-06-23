@@ -24,6 +24,11 @@ builder.Services.AddMinimalKafka(config =>
 
 var app = builder.Build();
 
+app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
+{
+    Console.WriteLine($"Received: {key} - {value}");
+});
+
 app.MapStream<Guid, LeftObject>("left")
     .Join<int, RightObject>("right").On((l, r) => l.RightObjectId == r.Id)
     .Into((c, v) =>

@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 
-public class ByteSerializer : IByteSerializer
+internal class ByteSerializer : IByteSerializer
 {
     public byte[] Serialize<T>(T value)
     {
@@ -11,6 +11,7 @@ public class ByteSerializer : IByteSerializer
 
         return JsonSerializer.SerializeToUtf8Bytes(value);
     }
+
     public T Deserialize<T>(byte[]? bytes)
     {
         if (bytes == null || bytes.Length == 0)

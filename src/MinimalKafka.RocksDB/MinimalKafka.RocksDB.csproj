@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="RocksDB" />
+    <InternalsVisibleTo Include="MinimalKafka.RockDB.Tests"/>
   </ItemGroup>
 
   <ItemGroup>

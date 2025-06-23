@@ -1,5 +1,5 @@
 ﻿using KafkaAdventure.Extensions;
-using MinimalKafka;
+using MinimalKafka.Extension;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features.CommandProcessor;

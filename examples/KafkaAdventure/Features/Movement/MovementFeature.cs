@@ -1,6 +1,6 @@
 ﻿using KafkaAdventure.Extensions;
 using KafkaAdventure.Features.Locations;
-using MinimalKafka;
+using MinimalKafka.Extension;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features.Movement;
@@ -24,10 +24,7 @@ public static class MovementFeature
                 var context = c.RequestServices.GetRequiredService<LocationContext>();
                 var locations = context.Locations;
 
-                if (v.Item2 is null)
-                {
-                    v.Item2 = locations.Single(x => x.Id == 1);
-                }
+                v.Item2 ??= locations.Single(x => x.Id == 1);
 
                 if (v.Item2.Exits.ContainsKey(v.Item1.Direction.ToLower()))
                 {

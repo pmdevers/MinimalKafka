@@ -2,22 +2,35 @@
 using MinimalKafka.Builders;
 
 namespace MinimalKafka;
-internal class KafkaService(IKafkaBuilder builder) : BackgroundService
+internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
 {
     public IEnumerable<IKafkaProcess> Processes
         = builder.DataSource?.GetProceses() ?? [];
 
     private readonly List<Task> _runningTasks = [];
 
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         foreach (var process in Processes)
-        {
-            var task = Task.Run(() => process.Start(stoppingToken), stoppingToken);
+        { 
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    await process.Start(cts.Token);
+                }
+                catch (KafkaProcesException)
+                {
+                    await cts.CancelAsync();
+                    throw;
+                }
+                
+            }
+            , cts.Token);
             _runningTasks.Add(task);
-        }
-
+        } 
+        
         await Task.WhenAll(_runningTasks);
     }
 

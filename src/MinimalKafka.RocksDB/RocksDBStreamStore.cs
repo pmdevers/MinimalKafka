@@ -2,7 +2,8 @@
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 
-public class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
+
+internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
 {
     private readonly RocksDb _db;
     private readonly ColumnFamilyHandle _columnFamily;

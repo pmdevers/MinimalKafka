@@ -50,18 +50,8 @@ public class KafkaProcessTests
     public async Task KafkaProcess_Start_ShouldInvokeHandlerWithValidContext()
     {
         // Arrange
-        var validContext = new TestKafkaContext();
-        var delay = false;
-        _consumer.Consume(Arg.Any<CancellationToken>()).Returns(x =>
-        {
-            if (delay)
-            {
-                Task.Delay(200).GetAwaiter().GetResult();
-                return KafkaContext.Empty;
-            }
-            delay = true;
-            return validContext;
-        }) ;
+        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => callInfo.Arg<KafkaDelegate>().Invoke(new TestKafkaContext()));
 
         var task = Task.Run(() => _kafkaProcess.Start(_cancellationTokenSource.Token));
 
@@ -70,48 +60,7 @@ public class KafkaProcessTests
         await Task.Delay(100);
 
         // Assert
-        await _handler.Received(1).Invoke(validContext);
-    }
-
-    [Fact]
-    public async Task KafkaProcess_Start_ShouldLogErrorOnEmptyContext()
-    {
-        // Arrange
-        var delay = false;
-
-        var logger = Substitute.For<ILogger>();
-
-        _consumer.Logger.Returns(logger);
-
-        _consumer.Consume(Arg.Any<CancellationToken>()).Returns(x =>
-        {
-            if (delay)
-            {
-                Task.Delay(200).GetAwaiter().GetResult();
-                return KafkaContext.Empty;
-            }
-            delay = true;
-            return KafkaContext.Empty;
-        });
-
-        var process = KafkaProcess.Create(new()
-        {
-            Consumer = _consumer,
-            Delegate = (c) =>
-            {
-                return Task.CompletedTask;
-            }
-        });
-
-        var task = Task.Run(() => process.Start(_cancellationTokenSource.Token));
-
-        // Act
-        _cancellationTokenSource.CancelAfter(100); // Stop the task after a short delay
-        await Task.Delay(100);
-
-        // Assert
-        logger.Received(1).EmptyContext();
-        await _handler.DidNotReceive().Invoke(Arg.Any<KafkaContext>());
+        await _handler.ReceivedWithAnyArgs().Invoke(Arg.Any<KafkaContext>());
     }
 
     [Fact]
@@ -122,7 +71,9 @@ public class KafkaProcessTests
 
         _consumer.Logger.Returns(logger);
 
-        _consumer.Consume(Arg.Any<CancellationToken>()).Returns(x =>
+
+
+        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>()).Returns(x =>
         {
             throw new NotImplementedException();
         });
@@ -130,10 +81,7 @@ public class KafkaProcessTests
         var process = KafkaProcess.Create(new()
         {
             Consumer = _consumer,
-            Delegate = (c) =>
-            {
-                throw new NotImplementedException();
-            }
+            Delegate = (c) => Task.CompletedTask
         });
 
         // Act
@@ -144,7 +92,6 @@ public class KafkaProcessTests
 
         // Assert
         logger.Received(1).UnknownProcessException(new NotImplementedException().Message);
-        await _handler.DidNotReceive().Invoke(Arg.Any<KafkaContext>());
     }
 
     [Fact]

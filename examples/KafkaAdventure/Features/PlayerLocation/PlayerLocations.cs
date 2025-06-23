@@ -1,6 +1,6 @@
 ﻿using KafkaAdventure.Extensions;
 using KafkaAdventure.Features.Locations;
-using MinimalKafka;
+using MinimalKafka.Extension;
 using MinimalKafka.Metadata;
 using MinimalKafka.Stream;
 

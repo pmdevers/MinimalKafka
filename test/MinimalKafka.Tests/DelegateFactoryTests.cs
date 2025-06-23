@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using MinimalKafka.Metadata;
 using MinimalKafka.Builders;
+using MinimalKafka.Metadata.Internals;
 
 namespace MinimalKafka.Tests;
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
