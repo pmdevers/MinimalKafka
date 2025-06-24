@@ -96,7 +96,7 @@ public class ServiceCollectionTests
         // Act
         services.AddMinimalKafka(config);
         var serviceProvider = services.BuildServiceProvider();
-        var kafkaBuilder = serviceProvider.GetService<IStreamStore<Guid, string>>();
+        var kafkaBuilder = serviceProvider.GetService<IStreamStoreFactory>();
 
         // Assert
         kafkaBuilder.Should().NotBeNull();
