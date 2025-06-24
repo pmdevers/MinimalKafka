@@ -1,11 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Stream;
 
-namespace MinimalKafka.RockDB.Tests;
+namespace MinimalKafka.RocksDB.Tests;
 
-public class UnitTest1
+public class StreamStore_Tests
 {
-    public UnitTest1()
+    public StreamStore_Tests()
     {
         RocksDBHelper.ResetDatabase();
     }
