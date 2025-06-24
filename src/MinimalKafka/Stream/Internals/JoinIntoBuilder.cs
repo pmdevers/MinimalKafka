@@ -9,12 +9,20 @@ internal sealed class JoinIntoBuilder<K1, V1, K2, V2>(
     string rightTopic,
     Func<V1, V2, bool> on)
     : IIntoBuilder<(V1, V2)>
+    where K1 : notnull
+    where K2 : notnull
 {
-    private readonly Func<KafkaContext, IStreamStore<K1, V1>> _getLeftStore = 
-        context => context.RequestServices.GetRequiredService<IStreamStore<K1, V1>>();
+        private readonly Func<KafkaContext, IStreamStore<K1, V1>> _getLeftStore = 
+        context => 
+            context.RequestServices
+                .GetRequiredService<IStreamStoreFactory>()
+                    .GetStreamStore<K1, V1>();
 
     private readonly Func<KafkaContext, IStreamStore<K2, V2>> _getRightStore = 
-        context => context.RequestServices.GetRequiredService<IStreamStore<K2, V2>>();
+        context => 
+            context.RequestServices
+                .GetRequiredService<IStreamStoreFactory>()
+                    .GetStreamStore<K2, V2>();
 
     private Func<KafkaContext, (V1, V2), Task> _into = (_, _) => Task.CompletedTask;
 

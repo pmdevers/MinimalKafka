@@ -1,15 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>4ccc947d-36d3-4464-b8f8-695155c5984f</UserSecretsId>
+    <UserSecretsId>d9496ae5-bc08-4c31-985d-3b37998f479f</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="InnerJoin.cs" />
-    <Compile Remove="LeftJoin.cs" />
+    <Content Remove="Features\Locations\Locations.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Features\Locations\Locations.json" />
   </ItemGroup>
 
   <ItemGroup>

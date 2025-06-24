@@ -46,7 +46,7 @@
 			<Visible>False</Visible>
 			<PackagePath>\</PackagePath>
 		</None>
-		<InternalsVisibleTo Include="MinimalKafka.Tests"/>
+		<InternalsVisibleTo Include="$(ProjectName).Tests"/>
 	</ItemGroup>
 
 	<ItemGroup>

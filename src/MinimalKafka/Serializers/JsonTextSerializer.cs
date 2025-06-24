@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
