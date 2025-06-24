@@ -12,26 +12,24 @@ public class UnitTest1
 
 
     [Fact]
-    public async Task Test1()
+    public async Task AddOrUpdate_WithNewKey_ShouldAddValue()
     {
         var services = new ServiceCollection();
-
         services.AddMinimalKafka(builder =>
         {
             builder.UseRocksDB(RocksDBHelper.DataPath);
         });
-
         var provider = services.BuildServiceProvider();
-
         var factory = provider.GetRequiredService<IStreamStoreFactory>();
-
         var streamStore = factory.GetStreamStore<string, string>();
-
-        var result = await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
-
+        // Test adding new key
+        await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
         var value = await streamStore.FindByIdAsync("key");
-
         Assert.Equal("value", value);
+        // Test updating existing key
+        await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
+        var updatedValue = await streamStore.FindByIdAsync("key");
+        Assert.Equal("value2", updatedValue);
     }
 }
 
