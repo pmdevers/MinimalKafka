@@ -4,7 +4,6 @@ using MinimalKafka;
 using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 using MinimalKafka.Stream;
-using MinimalKafka.Stream.Storage.RocksDB;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +11,10 @@ builder.Services.AddMinimalKafka(config =>
  {
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithGroupId(Guid.NewGuid().ToString())
            .WithOffsetReset(AutoOffsetReset.Earliest)
+           .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            .WithJsonSerializers()
-           .UseRocksDB(options =>
-           {
-               options.Path = "c:\\SourceCode\\rocksdb";
-           });
+           .UseRocksDB();
 
  });
 
@@ -27,6 +23,10 @@ var app = builder.Build();
 app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
 {
     Console.WriteLine($"Received: {key} - {value}");
+
+    Console.WriteLine("##################");
+    Console.WriteLine("my-topic");
+    Console.WriteLine("##################");
 });
 
 app.MapStream<Guid, LeftObject>("left")
@@ -35,6 +35,10 @@ app.MapStream<Guid, LeftObject>("left")
     {
         var (left, right) = v;
 
+        Console.WriteLine("##################");
+        Console.WriteLine("LEFT Join Right");
+        Console.WriteLine("##################");
+
         return Task.CompletedTask;
     }).WithGroupId("group1");
 
@@ -42,6 +46,11 @@ app.MapStream<Guid, LeftObject>("left")
     .Into(async (c, k, v) =>
     {
         v = v with { RightObjectId = 2 };
+
+        Console.WriteLine("##################");
+        Console.WriteLine("LEFT INTO UPDATE");
+        Console.WriteLine("##################");
+
         await c.ProduceAsync("left-update", k, v);
     }).WithGroupId("group2");
 
@@ -52,18 +61,15 @@ app.MapStream<int, RightObject>("right")
     {
         var (left, right) = v;
 
+        Console.WriteLine("##################");
+        Console.WriteLine("RIGHT JOIN LEFT");
+        Console.WriteLine("##################");
+
         return Task.CompletedTask;
     })
     .WithGroupId("group3");
 
 
-app.MapStream<int, RightObject>("right")
-    .Join<Guid, LeftObject>("left").On((k, v) => k, (k, v) => v.RightObjectId)
-    .Into((c, k, v) =>
-    {
-       throw new InvalidOperationException("this will not commit");
-    })
-    .WithGroupId("group4");
 
 
 

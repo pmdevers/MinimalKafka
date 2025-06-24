@@ -17,27 +17,19 @@ public static class AddKafkaBuilderExtensions
     /// <returns>The same <see cref="IAddKafkaBuilder"/> instance for chaining.</returns>
     public static IAddKafkaBuilder WithInMemoryStore(this IAddKafkaBuilder builder)
     {
-        return builder.WithStreamStore(typeof(InMemoryStore<,>));
+        return builder.WithStreamStoreFactory(new InMemoryStreamStoreFactory());
     }
 
     /// <summary>
     /// Registers a custom stream store implementation for use with MinimalKafka.
     /// </summary>
     /// <param name="builder">The Kafka builder to configure.</param>
-    /// <param name="streamStoreType">The type of the stream store to register. Must implement <c>IStreamStore&lt;,&gt;</c>.</param>
+    /// <param name="streamStoreFactory">The type of the stream store to register. Must implement <c>IStreamStore&lt;,&gt;</c>.</param>
     /// <returns>The same <see cref="IAddKafkaBuilder"/> instance for chaining.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if <paramref name="streamStoreType"/> does not implement <c>IStreamStore&lt;,&gt;</c>.</exception>
-    public static IAddKafkaBuilder WithStreamStore(this IAddKafkaBuilder builder, Type streamStoreType)
+    /// <exception cref="InvalidOperationException">Thrown if <paramref name="streamStoreFactory"/> does not implement <c>IStreamStore&lt;,&gt;</c>.</exception>
+    public static IAddKafkaBuilder WithStreamStoreFactory(this IAddKafkaBuilder builder, IStreamStoreFactory streamStoreFactory)
     {
-        if (!Array.Exists(streamStoreType.GetInterfaces(),
-            x => x.IsGenericType &&
-                 x.GetGenericTypeDefinition() == typeof(IStreamStore<,>)
-        ))
-        {
-            throw new InvalidOperationException($"Type: '{streamStoreType}' does not implement IStreamStore<,>");
-        }
-
-        builder.Services.AddSingleton(typeof(IStreamStore<,>), streamStoreType);
+        builder.Services.AddSingleton(streamStoreFactory);
 
         return builder;
     }

@@ -18,10 +18,7 @@ public class UnitTest1
 
         services.AddMinimalKafka(builder =>
         {
-            builder.UseRocksDB(options =>
-            {
-                options.Path = "c:\\SourceCode\\rocksdb";
-            });
+            builder.UseRocksDB();
         });
 
         var provider = services.BuildServiceProvider();

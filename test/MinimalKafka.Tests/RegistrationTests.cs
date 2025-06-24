@@ -91,7 +91,7 @@ public class ServiceCollectionTests
         var services = new ServiceCollection();
 
         static void config(IAddKafkaBuilder builder) =>
-            builder.WithStreamStore(typeof(InMemoryStore<,>));
+            builder.WithInMemoryStore();
 
         // Act
         services.AddMinimalKafka(config);
@@ -108,7 +108,7 @@ public class ServiceCollectionTests
         var services = new ServiceCollection();
 
         static void config(IAddKafkaBuilder builder) =>
-            builder.WithStreamStore(typeof(InMemoryStore<,>));
+            builder.WithInMemoryStore();
 
         // Act
         services.AddMinimalKafka(config);

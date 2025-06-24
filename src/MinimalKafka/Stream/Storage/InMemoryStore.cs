@@ -2,8 +2,15 @@
 
 namespace MinimalKafka.Stream.Storage;
 
+internal sealed class InMemoryStreamStoreFactory : IStreamStoreFactory
+{
+    public IStreamStore<TKey, TValue> GetStreamStore<TKey, TValue>()
+        where TKey : notnull
+        => new InMemoryStore<TKey, TValue>();
+}
+
 internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
-    where TKey : IEquatable<TKey>
+    where TKey : notnull
 {
     private readonly TimedConcurrentDictionary<TKey, TValue> _dictionary = new(TimeSpan.FromMinutes(3600));
 

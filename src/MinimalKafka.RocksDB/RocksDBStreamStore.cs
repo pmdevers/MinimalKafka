@@ -2,71 +2,50 @@
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 
-
-internal class RocksDBStreamStore<T1, T2> : IStreamStore<T1, T2>
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+internal class RocksDBStreamStore<TKey, TValue>(RocksDb db, ColumnFamilyHandle cfHandle, IByteSerializer serializer) : IStreamStore<TKey, TValue>
 {
-    private readonly RocksDb _db;
-    private readonly ColumnFamilyHandle _columnFamily;
-    private readonly IByteSerializer _serializer;
-
-
-
-    public RocksDBStreamStore(RocksDb db, IByteSerializer serializer)
+    public async ValueTask<TValue> AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
-        _db = db;
-        if (!_db.TryGetColumnFamily(typeof(T2).ToString(), out _columnFamily))
+        var keyBytes = serializer.Serialize(key);
+        var existingBytes = db.Get(keyBytes, cfHandle);
+        TValue value;
+
+        if (existingBytes == null)
         {
-            _columnFamily = _db.CreateColumnFamily(new ColumnFamilyOptions(), typeof(T2).ToString());
-        }
-        _serializer = serializer;
-    }
-
-
-    public ValueTask<T2> AddOrUpdate(T1 key, Func<T1, T2> create, Func<T1, T2, T2> update)
-    {
-        var keyBytes = _serializer.Serialize(key);
-        
-        var existingValueBytes = _db.Get(keyBytes, _columnFamily);
-
-        T2 newValue;
-        if (existingValueBytes == null)
-        {
-            newValue = create(key);
+            value = create(key);
         }
         else
         {
-            var existingValue = _serializer.Deserialize<T2>(existingValueBytes);
-            newValue = update(key, existingValue);
+            var existingValue = serializer.Deserialize<TValue>(existingBytes);
+            value = update(key, existingValue);
         }
 
-        _db.Put(keyBytes, _serializer.Serialize(newValue), _columnFamily);
+        var valueBytes = serializer.Serialize(value);
+        db.Put(keyBytes, valueBytes, cfHandle);
 
-        return ValueTask.FromResult(newValue);
+        return value;
     }
 
-    public async IAsyncEnumerable<T2> FindAsync(Func<T2, bool> predicate)
+    public async ValueTask<TValue?> FindByIdAsync(TKey key)
     {
-        using var iterator = _db.NewIterator(_columnFamily);
+        var keyBytes = serializer.Serialize(key);
+        var valueBytes = db.Get(keyBytes, cfHandle);
+        if (valueBytes == null)
+            return default;
+
+        return serializer.Deserialize<TValue>(valueBytes);
+    }
+
+    public async IAsyncEnumerable<TValue> FindAsync(Func<TValue, bool> predicate)
+    {
+        using var iterator = db.NewIterator(cfHandle);
         for (iterator.SeekToFirst(); iterator.Valid(); iterator.Next())
         {
-            var value = _serializer.Deserialize<T2>(iterator.Value());
+            var value = serializer.Deserialize<TValue>(iterator.Value());
             if (predicate(value))
-            {
                 yield return value;
-                await Task.Yield(); // Ensure the method is async
-            }
         }
     }
-
-    public ValueTask<T2?> FindByIdAsync(T1 key)
-    {
-        var keyBytes = _serializer.Serialize(key);
-        var valueBytes = _db.Get(keyBytes, _columnFamily);
-
-        if (valueBytes == null)
-            return ValueTask.FromResult<T2?>(default);
-
-        var value = _serializer.Deserialize<T2>(valueBytes);
-        return ValueTask.FromResult<T2?>(value);
-    }
 }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously

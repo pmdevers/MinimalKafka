@@ -28,7 +28,7 @@ public class InputHub(
         await command.ProduceAsync("game-commands", new()
         {
             Key = gameId,
-            Value = new Command(cmd.First(), cmd.Skip(1).ToArray())
+            Value = new Command(cmd.First(), [.. cmd.Skip(1)])
         });
     }
 }

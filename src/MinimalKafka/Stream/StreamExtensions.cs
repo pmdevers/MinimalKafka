@@ -19,6 +19,7 @@ public static class StreamExtensions
     /// <param name="topic">The name of the Kafka topic.</param>
     /// <returns>An <see cref="IStreamBuilder{TKey, TValue}"/> for further stream configuration.</returns>
     public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IApplicationBuilder builder, string topic)
+        where TKey : notnull
     {
         var sb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
 
@@ -34,6 +35,7 @@ public static class StreamExtensions
     /// <param name="topic">The name of the Kafka topic.</param>
     /// <returns>An <see cref="IStreamBuilder{TKey, TValue}"/> for further stream configuration.</returns>
     public static IStreamBuilder<TKey, TValue> MapStream<TKey, TValue>(this IKafkaBuilder builder, string topic)
+        where TKey : notnull
     {
         var sb = new StreamBuilder<TKey, TValue>(builder, topic);
         return sb;

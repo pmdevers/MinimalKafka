@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Extension;
+using MinimalKafka.Stream;
 using MinimalKafka.Stream.Storage.RocksDB;
 using RocksDbSharp;
 
@@ -17,31 +18,17 @@ public static class KafkaBuilderExtensions
     /// Configures the <see cref="IAddKafkaBuilder"/> to use RocksDB as the stream store.
     /// </summary>
     /// <param name="builder"></param>
-    /// <param name="options"></param>
+    /// <param name="path"></param>
     /// <returns></returns>
-    public static IAddKafkaBuilder UseRocksDB(this IAddKafkaBuilder builder, Action<RocksDBOptions> options)
+    public static IAddKafkaBuilder UseRocksDB(this IAddKafkaBuilder builder, string? path = null)
     {
-        var o = new RocksDBOptions();
+        var dataPath = path ?? 
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+            "RockDB");
 
-        o.DBOptions.SetCreateIfMissing(true);
-        o.DBOptions.SetCreateMissingColumnFamilies(true);
-        options(o);
-
-        Directory.CreateDirectory(o.Path);
-
-        var cfNames = RocksDb.ListColumnFamilies(o.DBOptions, o.Path);
+        Directory.CreateDirectory(dataPath);
         
-        foreach(var f in cfNames) 
-        {
-            o.ColumnFamilies.Add(f, new ColumnFamilyOptions());
-        }
-        
-        builder.Services.AddSingleton(RocksDb.Open(o.DBOptions, o.Path, o.ColumnFamilies));
-        builder.Services.AddSingleton(o);
-        builder.Services.AddSingleton<IByteSerializer, ByteSerializer>();
-        builder.Services.AddSingleton(typeof(RocksDBStreamStore<,>));
-
-        builder.WithStreamStore(typeof(RocksDBStreamStore<,>));
+        builder.WithStreamStoreFactory(new RocksDBStreamStoreFactory(dataPath));
         return builder;
     }
 }

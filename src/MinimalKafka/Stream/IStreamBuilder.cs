@@ -17,6 +17,7 @@ public interface IStreamBuilder<K1, V1> : IIntoBuilder<K1, V1>
     /// <typeparam name="V2">The type of the value in the other stream.</typeparam>
     /// <param name="topic">The name of the topic representing the other stream to join with. Cannot be null or empty.</param>
     /// <returns>An <see cref="IJoinBuilder{K1, V1, K2, V2}"/> that allows further configuration of the join operation.</returns>
-    IJoinBuilder<K1, V1, K2, V2> Join<K2, V2>(string topic);
+    IJoinBuilder<K1, V1, K2, V2> Join<K2, V2>(string topic)
+        where K2 : notnull;
 }
 
