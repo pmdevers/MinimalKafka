@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Stream;
 using MinimalKafka.Stream.Storage.RocksDB;
 
 namespace MinimalKafka.RockDB.Tests;
@@ -23,7 +24,9 @@ public class UnitTest1
 
         var provider = services.BuildServiceProvider();
 
-        var streamStore = provider.GetRequiredService<RocksDBStreamStore<string, string>>();
+        var factory = provider.GetRequiredService<IStreamStoreFactory>();
+
+        var streamStore = factory.GetStreamStore<string, string>();
 
         var result = await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
 
