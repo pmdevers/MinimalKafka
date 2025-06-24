@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Stream;
-using MinimalKafka.Stream.Storage.RocksDB;
 
 namespace MinimalKafka.RockDB.Tests;
 
@@ -8,7 +7,7 @@ public class UnitTest1
 {
     public UnitTest1()
     {
-        RocksDBHelper.ResetDatabase("c:\\SourceCode\\rocksdb");
+        RocksDBHelper.ResetDatabase();
     }
 
 
@@ -19,7 +18,7 @@ public class UnitTest1
 
         services.AddMinimalKafka(builder =>
         {
-            builder.UseRocksDB();
+            builder.UseRocksDB(RocksDBHelper.DataPath);
         });
 
         var provider = services.BuildServiceProvider();
@@ -39,11 +38,13 @@ public class UnitTest1
 
 public static class RocksDBHelper
 {
-    public static void ResetDatabase(string dbPath)
+    public static string DataPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RocksDB");
+
+    public static void ResetDatabase()
     {
-        if (Directory.Exists(dbPath))
+        if (Directory.Exists(DataPath))
         {
-            Directory.Delete(dbPath, true); // Deletes all database files
+            Directory.Delete(DataPath, true); // Deletes all database files
         }
     }
 }
