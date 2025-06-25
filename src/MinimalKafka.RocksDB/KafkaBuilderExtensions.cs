@@ -41,8 +41,7 @@ public static class KafkaBuilderExtensions
     /// <returns>The configured <see cref="RocksDBOptions"/> instance.</returns>
     public static RocksDBOptions UseJsonSerializer(this RocksDBOptions rockDBOptions, Action<JsonSerializerOptions>? options = null)
     {
-        var config = JsonSerializerOptions.Default;
-
+        var config = new JsonSerializerOptions();
         options?.Invoke(config);
 
         rockDBOptions.Serializer = new ByteSerializer(config);

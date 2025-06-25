@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System.Collections.Concurrent;
 
 namespace MinimalKafka.Stream.Storage;
 
 internal sealed class InMemoryStreamStoreFactory : IStreamStoreFactory
 {
-    private readonly List<object> _stores = [];
+    private readonly ConcurrentBag<object> _stores = [];
 
     public IStreamStore<TKey, TValue> GetStreamStore<TKey, TValue>()
         where TKey : notnull

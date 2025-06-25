@@ -12,6 +12,9 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
 
     public RocksDBStreamStoreFactory(RocksDBOptions config)
     {
+        ArgumentNullException.ThrowIfNull(config);
+        _config = config;
+
         var options = new DbOptions()
             .SetCreateIfMissing(true)
             .SetCreateMissingColumnFamilies(true);
@@ -21,7 +24,7 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
         string[] existingFamilies;
         try
         {
-            existingFamilies = [.. RocksDb.ListColumnFamilies(options, config.DataPath)];
+            existingFamilies = [.. RocksDb.ListColumnFamilies(options, _config.DataPath)];
         }
         catch
         {
@@ -35,15 +38,13 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
             cfDescriptors.Add(name, new ColumnFamilyOptions());
         }
         
-        _db = RocksDb.Open(options, config.DataPath, cfDescriptors);
+        _db = RocksDb.Open(options, _config.DataPath, cfDescriptors);
 
         // Store all handles
         for (int i = 0; i < existingFamilies.Length; i++)
         {
             _columnFamilies[existingFamilies[i]] = _db.GetColumnFamily(existingFamilies[i]);
         }
-
-        _config = config;
     }
 
     public void Dispose()
