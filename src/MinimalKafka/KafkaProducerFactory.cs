@@ -16,15 +16,18 @@ internal class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
 
     public string Name => Producer.Name;
 
+    public IReadOnlyList<object> Metadata { get; }
+
     public KafkaProducerFactory(IKafkaBuilder builder)
     {
-        var c = builder.MetaData.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
-        var keySerializer = builder.MetaData.OfType<KeySerializerMetadata>().First(); 
-        var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
-        
-        ProducerConfig config = c is null ? new() : new(c);
+        Metadata = builder.MetaData;
+
+        var config = BuildConfig();
 
         _topicFormatter = builder.MetaData.OfType<ITopicFormatterMetadata>().First();
+
+        var keySerializer = builder.MetaData.OfType<KeySerializerMetadata>().First();
+        var valueSerializer = builder.MetaData.OfType<ValueSerializerMetadata>().First();
 
         var serializerKey = ActivatorUtilities.CreateInstance(builder.ServiceProvider, keySerializer.GetSerializerType<TKey>());
         var serializerValue = ActivatorUtilities.CreateInstance(builder.ServiceProvider, valueSerializer.GetSerializerType<TValue>());
@@ -33,6 +36,19 @@ internal class KafkaProducerFactory<TKey, TValue> : IProducer<TKey, TValue>
             .SetKeySerializer((ISerializer<TKey>)serializerKey)
             .SetValueSerializer((ISerializer<TValue>)serializerValue)
             .Build();
+    }
+
+    private ProducerConfig BuildConfig()
+    {
+        var c = Metadata.OfType<IConfigurationMetadata>().FirstOrDefault()?.Configuration;
+
+        ProducerConfig config = c is null ? new() : new(c);
+
+        foreach (var item in Metadata.OfType<IProducerConfigMetadata>())
+        {
+            item.Set(config);
+        }
+        return config;
     }
 
     public Task<DeliveryResult<TKey, TValue>> ProduceAsync(string topic, Message<TKey, TValue> message, CancellationToken cancellationToken = default)

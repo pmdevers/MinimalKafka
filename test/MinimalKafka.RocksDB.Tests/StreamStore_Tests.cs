@@ -17,7 +17,10 @@ public class StreamStore_Tests
         var services = new ServiceCollection();
         services.AddMinimalKafka(builder =>
         {
-            builder.UseRocksDB(RocksDBHelper.DataPath);
+            builder.UseRocksDB(o =>
+            {
+                o.DataPath = RocksDBHelper.DataPath;
+            });
         });
         var provider = services.BuildServiceProvider();
         var factory = provider.GetRequiredService<IStreamStoreFactory>();
