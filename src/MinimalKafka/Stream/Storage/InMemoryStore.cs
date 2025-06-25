@@ -4,9 +4,19 @@ namespace MinimalKafka.Stream.Storage;
 
 internal sealed class InMemoryStreamStoreFactory : IStreamStoreFactory
 {
+    private readonly List<object> _stores = [];
+
     public IStreamStore<TKey, TValue> GetStreamStore<TKey, TValue>()
         where TKey : notnull
-        => new InMemoryStore<TKey, TValue>();
+    {
+        var item = _stores.OfType<InMemoryStore<TKey, TValue>>().FirstOrDefault();
+        if(item == null)
+        {
+            item = new InMemoryStore<TKey, TValue>();
+            _stores.Add(item);
+        }
+        return item;
+    }
 }
 
 internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
