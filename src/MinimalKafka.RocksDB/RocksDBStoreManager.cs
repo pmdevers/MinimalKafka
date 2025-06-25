@@ -1,13 +1,16 @@
-﻿using RocksDbSharp;
+﻿using Confluent.Kafka;
+using RocksDbSharp;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFactory
 {
     private readonly RocksDb _db;
     private readonly ConcurrentDictionary<string, ColumnFamilyHandle> _columnFamilies = new();
-    
-    public RocksDBStreamStoreFactory(string dbPath)
+    private readonly RocksDBOptions _config;
+
+    public RocksDBStreamStoreFactory(RocksDBOptions config)
     {
         var options = new DbOptions()
             .SetCreateIfMissing(true)
@@ -18,7 +21,7 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
         string[] existingFamilies;
         try
         {
-            existingFamilies = [.. RocksDb.ListColumnFamilies(options, dbPath)];
+            existingFamilies = [.. RocksDb.ListColumnFamilies(options, config.DataPath)];
         }
         catch
         {
@@ -32,7 +35,7 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
             cfDescriptors.Add(name, new ColumnFamilyOptions());
         }
         
-        _db = RocksDb.Open(options, dbPath, cfDescriptors);
+        _db = RocksDb.Open(options, config.DataPath, cfDescriptors);
 
         // Store all handles
         for (int i = 0; i < existingFamilies.Length; i++)
@@ -40,7 +43,7 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
             _columnFamilies[existingFamilies[i]] = _db.GetColumnFamily(existingFamilies[i]);
         }
 
-        
+        _config = config;
     }
 
     public void Dispose()
@@ -59,6 +62,6 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
             _columnFamilies[storeName] = cfHandle;
         }
 
-        return new RocksDBStreamStore<TKey, TValue>(_db, cfHandle, new ByteSerializer());
+        return new RocksDBStreamStore<TKey, TValue>(_db, cfHandle, _config.Serializer);
     }
 }
