@@ -1,12 +1,27 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System.Collections.Concurrent;
 
 namespace MinimalKafka.Stream.Storage;
 
 internal sealed class InMemoryStreamStoreFactory : IStreamStoreFactory
 {
+    private readonly ConcurrentBag<object> _stores = [];
+    private readonly object _lock = new();
+
     public IStreamStore<TKey, TValue> GetStreamStore<TKey, TValue>()
         where TKey : notnull
-        => new InMemoryStore<TKey, TValue>();
+    {
+        lock (_lock)
+        {
+            var item = _stores.OfType<InMemoryStore<TKey, TValue>>().FirstOrDefault();
+            if(item == null)
+            {
+                item = new InMemoryStore<TKey, TValue>();
+                _stores.Add(item);
+            }
+            return item;
+        }
+    }
 }
 
 internal sealed class InMemoryStore<TKey, TValue>() : BackgroundService, IStreamStore<TKey, TValue>
