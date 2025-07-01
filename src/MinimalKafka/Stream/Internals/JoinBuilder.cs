@@ -2,7 +2,7 @@
 
 namespace MinimalKafka.Stream.Internals;
 
-internal sealed class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder, string leftTopic, string rightTopic)
+internal sealed class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder, string leftTopic, string rightTopic, bool innerJoin)
     : IJoinBuilder<K1, V1, K2, V2>
     where K1 : notnull
     where K2 : notnull
@@ -12,5 +12,5 @@ internal sealed class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder, string 
 
     public IIntoBuilder<TKey, (V1?, V2?)> On<TKey>(Func<K1, V1, TKey> leftKey, Func<K2, V2, TKey> rightKey)
         where TKey : notnull
-        => new JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(builder, leftTopic, rightTopic, leftKey, rightKey);
+        => new JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(builder, leftTopic, rightTopic, innerJoin, leftKey, rightKey);
 }

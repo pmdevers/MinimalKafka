@@ -7,6 +7,7 @@ internal sealed class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
         IKafkaBuilder builder,
         string leftTopic,
         string rightTopic,
+        bool innerJoin,
         Func<K1, V1, TKey> leftKey,
         Func<K2, V2, TKey> rightKey) : IIntoBuilder<TKey, (V1?, V2?)>
     where TKey : notnull
@@ -40,7 +41,7 @@ internal sealed class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
 
     public async Task Handle(KafkaContext context, TKey key, (V1?, V2?) value)
     {
-        if (value.Item1 is null || value.Item2 is null)
+        if (value.Item1 is null || (innerJoin && value.Item2 is null))
         {
             return;   
         }
