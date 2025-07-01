@@ -11,7 +11,13 @@ internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string 
     public IJoinBuilder<TKey, TValue, K2, V2> Join<K2, V2>(string topic)
         where K2 : notnull
     {
-        return new JoinBuilder<TKey, TValue, K2, V2>(builder, _topic, topic);
+        return new JoinBuilder<TKey, TValue, K2, V2>(builder, _topic, topic, false);
+    }
+
+    public IJoinBuilder<TKey, TValue, K2, V2> InnerJoin<K2, V2>(string topic)
+        where K2 : notnull
+    {
+        return new JoinBuilder<TKey, TValue, K2, V2>(builder, _topic, topic, true);
     }
 
     public IKafkaConventionBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
