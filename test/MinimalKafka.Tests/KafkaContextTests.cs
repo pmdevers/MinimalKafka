@@ -1,5 +1,4 @@
 ﻿using Confluent.Kafka;
-using MinimalKafka.Internals;
 using System.Text;
 using System.Text.Unicode;
 
@@ -27,7 +26,7 @@ public class KafkaContextTests
         var serviceProvider = Substitute.For<IServiceProvider>();
 
         // Act
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider, []);
 
         // Assert
         context.Should().BeOfType<KafkaContext>();
@@ -54,7 +53,7 @@ public class KafkaContextTests
         };
 
         var serviceProvider = Substitute.For<IServiceProvider>();
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider, []);
 
         // Act & Assert
         context.Key.SequenceEqual(key).Should().BeTrue();

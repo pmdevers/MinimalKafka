@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace MinimalKafka.Stream.Internals;
+﻿namespace MinimalKafka.Stream.Internals;
 
 internal sealed class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
         IKafkaBuilder builder,

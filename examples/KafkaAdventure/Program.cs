@@ -6,7 +6,6 @@ using KafkaAdventure.Features.PlayerLocation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using MinimalKafka;
-using MinimalKafka.Extension;
 using MinimalKafka.Serializers;
 
 var builder = WebApplication.CreateBuilder(args);

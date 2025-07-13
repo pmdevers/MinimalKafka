@@ -1,5 +1,5 @@
-﻿using MinimalKafka.Builders;
-using MinimalKafka.Extension;
+﻿using MinimalKafka;
+using MinimalKafka.Builders;
 
 namespace KafkaAdventure.Extensions;
 

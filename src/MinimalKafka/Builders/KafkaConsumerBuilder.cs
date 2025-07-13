@@ -22,6 +22,7 @@ internal class KafkaConsumerBuilder(KafkaConsumerKey key, IKafkaBuilder builder)
             consumer,
             producer,
             [.. Delegates],
+            [.. builder.MetaData],
             builder.ServiceProvider,
             logger
         );

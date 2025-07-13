@@ -1,7 +1,6 @@
 ﻿using Confluent.Kafka;
 using KafkaAdventure.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using MinimalKafka.Extension;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features.Locations;
@@ -44,7 +43,7 @@ public static class LocationsFeature
 
                 return Task.CompletedTask;
             })
-            .WithOffsetReset(AutoOffsetReset.Earliest)
+            //.WithOffsetReset(AutoOffsetReset.Earliest)
             .AsFeature("Locationstest");
     }
 }

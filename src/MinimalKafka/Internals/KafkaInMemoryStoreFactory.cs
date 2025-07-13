@@ -1,9 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using MinimalKafka.Serializers;
+﻿using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 
 namespace MinimalKafka.Internals;
 
@@ -45,6 +41,8 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStor
     private readonly TimedConcurrentDictionary<byte[], byte[]> _store =
         new(TimeSpan.FromDays(7));
 
+    public IServiceProvider ServiceProvider => serviceProvider;
+
     public ValueTask<byte[]> AddOrUpdate(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         byte[] localKey = new byte[key.Length];
@@ -57,34 +55,18 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStor
             (k, v) => localVal);
     }
 
-    public async ValueTask<TValue?> FindByKey<TKey, TValue>(TKey key)
-    {
-        var keySerializer = serviceProvider.GetRequiredService<IKafkaSerializer<TKey>>();
-        var valueSerializer = serviceProvider.GetRequiredService<IKafkaSerializer<TValue>>();
-
-        var keyVal = keySerializer.Serialize(key);
-        var value = await _store.FindByIdAsync(keyVal) ?? [];
-
-        return valueSerializer.Deserialize(value);
-    }
-
     public void CleanUp()
     {
         _store.CleanUp();
     }
 
-    public async IAsyncEnumerable<TValue> FindAsync<TValue>(Func<TValue, bool> value)
+    public async ValueTask<byte[]> FindByIdAsync(byte[] key)
     {
-        var valueSerializer = serviceProvider.GetRequiredService<IKafkaSerializer<TValue>>();
+        return await _store.FindByIdAsync(key) ?? [];
+    }
 
-        await foreach(var item in _store.GetItems().ToAsyncEnumerable())
-        {
-            var val = valueSerializer.Deserialize(item.Value);
-
-            if (val is not null && value(val))
-            {
-                yield return val;
-            }
-        }
+    public IAsyncEnumerable<byte[]> GetItems()
+    {
+        return _store.GetItems().Values.ToAsyncEnumerable();
     }
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
@@ -41,7 +42,6 @@ public static class KafkaExtensions
             return b;
         });
 
-        services.AddSingleton<IKafkaStoreFactory>(sp => new KafkaInMemoryStoreFactory(sp));
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
 
         services.AddSingleton<IKafkaProducer>(sp =>
@@ -52,7 +52,7 @@ public static class KafkaExtensions
                 .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
                 .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
                 .Build();
-            return new KafkaContextProducer(producer);
+            return new KafkaContextProducer(sp, producer);
         });
 
         services.AddHostedService<KafkaService>();
@@ -285,6 +285,20 @@ public static class KafkaConsumerConfigExtensions
             b.MetaData.RemoveAll(x => x.GetType() == item.GetType());
         });
 
+        return builder;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="create"></param>
+    /// <returns></returns>
+    public static TBuilder UseStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
+        where TBuilder : IKafkaConfigBuilder
+    {
+        builder.Services.AddSingleton<IKafkaStoreFactory>(sp => create(sp));
         return builder;
     }
 }

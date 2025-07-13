@@ -2,25 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
+using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Internals;
-
-/// <summary>
-/// 
-/// </summary>
-/// <param name="TopicName"></param>
-/// <param name="GroupId"></param>
-/// <param name="ClientId"></param>
-public record KafkaConsumerKey(string TopicName, string GroupId, string ClientId)
-{
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="topicName"></param>
-    /// <returns></returns>
-    public static KafkaConsumerKey Random(string topicName)
-        => new(topicName, Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-};
 
 internal class KafkaConsumer(
     KafkaConsumerKey consumerKey,
@@ -28,12 +12,20 @@ internal class KafkaConsumer(
     IConsumer<byte[], byte[]> consumer,
     IKafkaProducer producer,
     KafkaDelegate[] kafkaDelegates,
+    IReadOnlyList<object> metadata,
     IServiceProvider serviceProvider,
     ILogger<KafkaConsumer> logger) : IKafkaConsumer
 {
     public void Subscribe()
     {
-        consumer.Subscribe(consumerKey.TopicName);
+        var topic = consumerKey.TopicName;
+        var topicFormatter = metadata.OfType<ITopicFormaterMetadata>().FirstOrDefault();
+        if (topicFormatter != null)
+        {
+            topic = topicFormatter.TopicFormatter.Invoke(topic);
+        }
+
+        consumer.Subscribe(topic);
         logger.Subscribed(consumerKey.GroupId, consumerKey.ClientId, consumerKey.TopicName);
     }
 
@@ -45,7 +37,7 @@ internal class KafkaConsumer(
 
             var result = consumer.Consume(cancellationToken);
 
-            var context = KafkaContext.Create(consumerKey, result.Message, scope.ServiceProvider);
+            var context = KafkaContext.Create(consumerKey, result.Message, scope.ServiceProvider, metadata);
 
             var store = context.GetTopicStore();
 

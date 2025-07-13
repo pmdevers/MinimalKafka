@@ -6,12 +6,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMinimalKafka(config =>
  {
-     config.WithBootstrapServers("nas:9092");
-           //.WithConfiguration(builder.Configuration.GetSection("Kafka"));
+     config
+           .WithConfiguration(builder.Configuration.GetSection("Kafka"))
+           .WithBootstrapServers("nas:9092")
+           .WithGroupId(AppDomain.CurrentDomain.FriendlyName)
+           .WithClientId(AppDomain.CurrentDomain.FriendlyName)
+           .WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
            //.WithOffsetReset(AutoOffsetReset.Earliest)
            //.WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            //.WithJsonSerializers()
-           //.UseRocksDB();
+           .UseRocksDB();
 
  });
 
@@ -24,7 +28,7 @@ app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
     Console.WriteLine("##################");
     Console.WriteLine("my-topic");
     Console.WriteLine("##################");
-}).WithGroupId("test");
+});
 
 
 app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>

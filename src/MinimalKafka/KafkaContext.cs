@@ -13,11 +13,12 @@ public class KafkaContext
 {
     private readonly Message<byte[], byte[]> _message;
 
-    private KafkaContext(Message<byte[], byte[]> message, KafkaConsumerKey consumerKey, IServiceProvider requestServices)
+    private KafkaContext(Message<byte[], byte[]> message, KafkaConsumerKey consumerKey, IServiceProvider requestServices, IReadOnlyList<object> metadata)
     {
         _message = message;
         ConsumerKey = consumerKey; 
         RequestServices = requestServices;
+        Metadata = metadata;
     }
 
 
@@ -30,6 +31,12 @@ public class KafkaContext
     /// 
     /// </summary>
     public IServiceProvider RequestServices { get;}
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public IReadOnlyList<object> Metadata { get; }
+
     /// <summary>
     /// 
     /// </summary>
@@ -45,8 +52,8 @@ public class KafkaContext
     public IReadOnlyDictionary<string, byte[]> Headers => _message.Headers
         .ToDictionary(x => x.Key, y => y.GetValueBytes());
 
-    internal static KafkaContext Create(KafkaConsumerKey consumerKey, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
-        => new(message, consumerKey, serviceProvider);
+    internal static KafkaContext Create(KafkaConsumerKey consumerKey, Message<byte[], byte[]> message, IServiceProvider serviceProvider, IReadOnlyList<object> metadata)
+        => new(message, consumerKey, serviceProvider, metadata);
 
     /// <summary>
     /// 

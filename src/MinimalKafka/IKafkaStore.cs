@@ -1,5 +1,4 @@
-﻿using MinimalKafka.Internals;
-using System;
+﻿using System;
 
 namespace MinimalKafka;
 
@@ -11,25 +10,29 @@ public interface IKafkaStore
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    ValueTask<byte[]> AddOrUpdate(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value);
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    ValueTask<TValue?> FindByKey<TKey, TValue>(TKey key);
+    IServiceProvider ServiceProvider { get; }
 
     /// <summary>
     /// 
     /// </summary>
-    /// <typeparam name="TValue"></typeparam>
+    /// <param name="key"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    IAsyncEnumerable<TValue> FindAsync<TValue>(Func<TValue, bool> value);
+    ValueTask<byte[]> AddOrUpdate(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    ValueTask<byte[]> FindByIdAsync(byte[] key);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    IAsyncEnumerable<byte[]> GetItems();   
+    
 }
 
 /// <summary>
