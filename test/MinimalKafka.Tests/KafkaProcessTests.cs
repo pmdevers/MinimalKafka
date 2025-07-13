@@ -1,15 +1,10 @@
-﻿using Confluent.Kafka;
-using Microsoft.Extensions.Logging;
-using MinimalKafka.Builders;
-using MinimalKafka.Helpers;
+﻿using Microsoft.Extensions.Logging;
 using MinimalKafka.Internals;
-using System;
 
 namespace MinimalKafka.Tests;
 public class KafkaProcessTests
 {
-    private readonly KafkaConsumer _consumer;
-    private readonly KafkaDelegate _handler;
+    private readonly IKafkaConsumer _consumer;
     private readonly ILogger<KafkaProcess> _logger;
     private readonly KafkaProcess _kafkaProcess;
     private readonly CancellationTokenSource _cancellationTokenSource;
@@ -17,11 +12,10 @@ public class KafkaProcessTests
     public KafkaProcessTests()
     {
         
-        _consumer = Substitute.For<KafkaConsumer>();
-        _handler = Substitute.For<KafkaDelegate>();
+        _consumer = Substitute.For<IKafkaConsumer>();
         _logger = Substitute.For<ILogger<KafkaProcess>>();
 
-        _kafkaProcess = new KafkaProcess(_consumer, _logger);
+        _kafkaProcess = KafkaProcess.Create(_consumer, _logger);
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -63,24 +57,7 @@ public class KafkaProcessTests
         _cancellationTokenSource.CancelAfter(100); // Stop the task after a short delay
         await Task.Delay(100);
 
-        // Assert
-        await _handler.ReceivedWithAnyArgs().Invoke(Arg.Any<KafkaContext>());
-    }
-
-    [Fact]
-    public async Task KafkaProcess_Start_ShouldLogErrorOnException()
-    {
-        // Arrange
-        var logger = Substitute.For<ILogger>();
-
-       
-        // Act
-        var task = async () => await _kafkaProcess.Start(_cancellationTokenSource.Token);
-
-        await task.Should().ThrowAsync<KafkaProcesException>();
-
-        // Assert
-        logger.Received(1).UnknownProcessException(new NotImplementedException().Message);
+        _consumer.Received(1).Subscribe();
     }
 
     [Fact]

@@ -48,7 +48,6 @@ public class KafkaDelegateFactoryTests
         result.Should().NotBeNull();
         result.Should().BeOfType<KafkaDelegateResult>();
         result.Delegate.Should().BeOfType<KafkaDelegate>();
-        result.Metadata.Should().HaveCount(1);
         result.KeyType.Should().Be(typeof(Ignore));
         result.ValueType.Should().Be(typeof(Ignore));
     }

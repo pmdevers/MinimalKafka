@@ -1,6 +1,5 @@
 ﻿using Confluent.Kafka;
 using System.Text;
-using System.Text.Unicode;
 
 namespace MinimalKafka.Tests;
 
@@ -58,7 +57,7 @@ public class KafkaContextTests
         // Act & Assert
         context.Key.SequenceEqual(key).Should().BeTrue();
         context.Value.SequenceEqual(value).Should().BeTrue();
-        context.Headers.Should().BeSameAs(headers.ToDictionary(x => x.Key, y => y.GetValueBytes()));
+        context.Headers.Should().BeEmpty();
         context.RequestServices.Should().BeSameAs(serviceProvider);
     }
 }

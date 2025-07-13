@@ -7,7 +7,7 @@ internal class KafkaProcess(
     IKafkaConsumer consumer, 
     ILogger<KafkaProcess> logger) : IKafkaProcess
 {
-    public static KafkaProcess Create(KafkaConsumer consumer, ILogger<KafkaProcess> logger)
+    public static KafkaProcess Create(IKafkaConsumer consumer, ILogger<KafkaProcess> logger)
         => new(consumer, logger);
 
     public async Task Start(CancellationToken token)
