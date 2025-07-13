@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
-using MinimalKafka.Builders;
+using MinimalKafka.Internals;
 
 namespace MinimalKafka;
 internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
@@ -13,7 +13,7 @@ internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         foreach (var process in Processes)
-        { 
+        {
             var task = Task.Run(async () =>
             {
                 try
@@ -25,12 +25,12 @@ internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
                     await cts.CancelAsync();
                     throw;
                 }
-                
+
             }
             , cts.Token);
             _runningTasks.Add(task);
-        } 
-        
+        }
+
         await Task.WhenAll(_runningTasks);
     }
 

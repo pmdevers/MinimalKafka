@@ -1,13 +1,16 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using MinimalKafka.Builders;
 using MinimalKafka.Helpers;
+using MinimalKafka.Internals;
+using System;
 
 namespace MinimalKafka.Tests;
 public class KafkaProcessTests
 {
     private readonly KafkaConsumer _consumer;
     private readonly KafkaDelegate _handler;
-    private readonly KafkaProcessOptions _options;
+    private readonly ILogger<KafkaProcess> _logger;
     private readonly KafkaProcess _kafkaProcess;
     private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -16,8 +19,9 @@ public class KafkaProcessTests
         
         _consumer = Substitute.For<KafkaConsumer>();
         _handler = Substitute.For<KafkaDelegate>();
-        _options = new KafkaProcessOptions { Consumer = _consumer, Delegate = _handler };
-        _kafkaProcess = KafkaProcess.Create(_options);
+        _logger = Substitute.For<ILogger<KafkaProcess>>();
+
+        _kafkaProcess = new KafkaProcess(_consumer, _logger);
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
@@ -25,7 +29,7 @@ public class KafkaProcessTests
     public void KafkaProcess_Create_ShouldReturnKafkaProcessInstance()
     {
         // Arrange & Act
-        var instance = KafkaProcess.Create(_options);
+        var instance = KafkaProcess.Create(_consumer, _logger);
 
         // Assert
         instance.Should().NotBeNull();
@@ -50,8 +54,8 @@ public class KafkaProcessTests
     public async Task KafkaProcess_Start_ShouldInvokeHandlerWithValidContext()
     {
         // Arrange
-        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>())
-            .Returns(callInfo => callInfo.Arg<KafkaDelegate>().Invoke(new TestKafkaContext()));
+        _consumer.Consume(Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         var task = Task.Run(() => _kafkaProcess.Start(_cancellationTokenSource.Token));
 
@@ -69,24 +73,9 @@ public class KafkaProcessTests
         // Arrange
         var logger = Substitute.For<ILogger>();
 
-        _consumer.Logger.Returns(logger);
-
-
-
-        _consumer.Consume(Arg.Any<KafkaDelegate>(), Arg.Any<CancellationToken>()).Returns(x =>
-        {
-            throw new NotImplementedException();
-        });
-
-        var process = KafkaProcess.Create(new()
-        {
-            Consumer = _consumer,
-            Delegate = (c) => Task.CompletedTask
-        });
-
+       
         // Act
-
-        var task = async () => await process.Start(_cancellationTokenSource.Token);
+        var task = async () => await _kafkaProcess.Start(_cancellationTokenSource.Token);
 
         await task.Should().ThrowAsync<KafkaProcesException>();
 
@@ -102,21 +91,5 @@ public class KafkaProcessTests
 
         // Assert
         _consumer.Received(1).Close();
-    }
-
-
-    public class TestKafkaContext : KafkaContext
-    {
-        public override object? Key => Guid.NewGuid().ToString();
-
-        public override object? Value => Guid.NewGuid().ToString();
-
-        public override Headers Headers => [];
-
-        public override IServiceProvider RequestServices => EmptyServiceProvider.Instance;
-
-        public override IReadOnlyList<object> MetaData => [];
-
-        public override DateTime Timestamp => TimeProvider.System.GetUtcNow().DateTime;
     }
 }

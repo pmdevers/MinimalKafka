@@ -1,43 +1,38 @@
 ﻿using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Builders.Internals;
-using MinimalKafka.Extension;
+using MinimalKafka.Internals;
+using MinimalKafka.Metadata;
+using MinimalKafka.Metadata.Internals;
 using MinimalKafka.Serializers;
+using System.Reflection.Emit;
 
 namespace MinimalKafka;
 
 /// <summary>
-/// Provides extension methods for configuring and using MinimalKafka.
+/// 
 /// </summary>
 public static class KafkaExtensions
 {
     /// <summary>
-    /// Configures and registers Kafka-related services with the specified settings.
+    /// 
     /// </summary>
-    /// <remarks>This method sets up minimal Kafka integration by registering essential services such as
-    /// producers,  a hosted Kafka service, and a builder for further customization. By default, it configures the
-    /// client ID  and group ID to match the application's domain name, disables auto-commit, and uses JSON
-    /// serializers.</remarks>
-    /// <param name="services">The <see cref="IServiceCollection"/> to which the Kafka services will be added.</param>
-    /// <param name="config">A delegate to configure the Kafka settings using an <see cref="IAddKafkaBuilder"/>.  This allows customization
-    /// of client ID, group ID, serializers, topic formatting, and other Kafka-related options.</param>
-    /// <returns>The <see cref="IServiceCollection"/> with the Kafka services registered.</returns>
-    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IAddKafkaBuilder> config)
+    /// <param name="services"></param>
+    /// <param name="config"></param>
+    /// <returns></returns>
+    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IKafkaConfigBuilder>? config = null)
     {
         List<Action<IKafkaBuilder>> conventions = [];
-        var configBuilder = new AddKafkaBuilder(services, conventions);
+        var configBuilder = new KafkaConfigConventionBuilder(services, conventions);
 
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
-        configBuilder.WithAutoCommit(false);
-        configBuilder.WithJsonSerializers();
-        configBuilder.WithTopicFormatter(topic => topic);
-        configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
-        configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithTopicFormatter(s => s);
 
-        config(configBuilder);
+        config?.Invoke(configBuilder);
 
         services.AddSingleton<IKafkaBuilder>(s =>
         {
@@ -45,9 +40,11 @@ public static class KafkaExtensions
             conventions.ForEach(x => x(b));
             return b;
         });
+
+        services.AddSingleton<IKafkaConsumerStore>(new KafkaConsumerStore());
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
         services.AddHostedService<KafkaService>();
 
-        services.AddSingleton(typeof(IProducer<,>), typeof(KafkaProducerFactory<,>));
 
         return services;
     }
@@ -69,6 +66,7 @@ public static class KafkaExtensions
         return tb.MapTopic(topic, handler);
     }
 
+
     /// <summary>
     /// Maps a Kafka topic to a specified handler for processing messages.
     /// </summary>
@@ -80,17 +78,201 @@ public static class KafkaExtensions
     /// <param name="handler">A delegate that processes messages from the specified topic. The delegate must match the expected signature for
     /// handling Kafka messages.</param>
     /// <returns>An <see cref="IKafkaConventionBuilder"/> that allows further configuration of Kafka conventions.</returns>
-    public static IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
+    public static  IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
     {
-        return builder
-            .GetOrAddTopicDataSource()
+        return builder.GetOrAddDatasource()
             .AddTopicDelegate(topic, handler)
             .WithMetaData([.. builder.MetaData]);
     }
 
-    private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
+    private static IKafkaDataSource GetOrAddDatasource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;
+    }
+}
+
+/// <summary>
+/// 
+/// </summary>
+public static class KafkaConsumerConfigExtensions
+{
+    /// <summary>
+    /// Adds configuration metadata from the specified <see cref="IConfiguration"/> to the builder.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="configuration">The configuration source.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithConfiguration<TBuilder>(this TBuilder builder, IConfiguration configuration)
+         where TBuilder : IKafkaConventionBuilder
+    {
+        return builder.WithSingle(ConfigMetadataAttribute.FromConfig(configuration));
+    }
+
+    /// <summary>
+    /// Adds client ID metadata to the builder.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="clientId">The client ID.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithClientId<TBuilder>(this TBuilder builder, string clientId)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.UpdateConsumerConfig(builder => builder.ClientId = clientId);
+        return builder;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="groupId"></param>
+    /// <returns></returns>
+    public static TBuilder WithGroupId<TBuilder>(this TBuilder builder, string groupId)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.UpdateConsumerConfig(x => x.GroupId = groupId);
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds a topic name formatter to the builder.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="topicFormatter">A function to format topic names.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithTopicFormatter<TBuilder>(this TBuilder builder, Func<string, string> topicFormatter)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new TopicFormatterMetadataAttribute(topicFormatter));
+        return builder;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="bootstrapServers"></param>
+    /// <returns></returns>
+    public static TBuilder WithBootstrapServers<TBuilder>(this TBuilder builder, string bootstrapServers)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        return builder.UpdateConsumerConfig(x => x.BootstrapServers = bootstrapServers);
+    }
+
+    /// <summary>
+    /// Adds auto offset reset metadata to the builder.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithOffsetReset<TBuilder>(this TBuilder builder)
+         where TBuilder : IKafkaConventionBuilder
+    {
+        return builder.UpdateConsumerConfig(x => x.AutoOffsetReset = AutoOffsetReset.Earliest);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="transactionalId"></param>
+    /// <returns></returns>
+    public static TBuilder WithTransactionalId<TBuilder>(this TBuilder builder, string transactionalId)
+         where TBuilder : IKafkaConventionBuilder
+    {
+        return builder.UpdateProducerConfig(x => x.TransactionalId = transactionalId);
+    }
+
+    internal static TBuilder UpdateConsumerConfig<TBuilder>(this TBuilder builder, Action<ConsumerConfig> update)
+        where TBuilder: IKafkaConventionBuilder
+    {
+        builder.Add(b => { 
+            var item = b.MetaData.OfType<IConfigMetadata>().FirstOrDefault();
+            if(item is null)
+            {
+                item = new ConfigMetadataAttribute(new Dictionary<string, string>());
+                b.MetaData.Add(item);
+            }
+
+            update?.Invoke(item.ConsumerConfig);
+        });
+        return builder;
+    }
+
+    internal static TBuilder UpdateProducerConfig<TBuilder>(this TBuilder builder, Action<ProducerConfig> update)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => {
+            var item = b.MetaData.OfType<IConfigMetadata>().FirstOrDefault();
+            if (item is null)
+            {
+                item = new ConfigMetadataAttribute(new Dictionary<string, string>());
+                b.MetaData.Add(item);
+            }
+
+            update?.Invoke(item.ProducerConfig);
+        });
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds one or more metadata items to the builder's metadata collection.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="items">The metadata items to add.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithMetaData<TBuilder>(this TBuilder builder, params object[] items)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b =>
+        {
+            foreach (var item in items)
+            {
+                b.MetaData.Add(item);
+            }
+        });
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes any existing metadata of the same type as the provided item, then adds the new metadata item.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="metadata">The metadata item to add (after removing existing items of the same type).</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithSingle<TBuilder>(this TBuilder builder, object metadata)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.RemoveMetaData(metadata);
+        builder.WithMetaData(metadata);
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes all metadata items of the same type as the provided item from the builder's metadata collection.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="item">The metadata item whose type will be used for removal.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder RemoveMetaData<TBuilder>(this TBuilder builder, object item)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b =>
+        {
+            b.MetaData.RemoveAll(x => x.GetType() == item.GetType());
+        });
+
+        return builder;
     }
 }

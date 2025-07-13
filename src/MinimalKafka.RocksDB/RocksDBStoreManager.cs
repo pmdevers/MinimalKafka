@@ -38,7 +38,7 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IStreamStoreFacto
             cfDescriptors.Add(name, new ColumnFamilyOptions());
         }
         
-        _db = RocksDb.Open(options, _config.DataPath, cfDescriptors);
+        db = RocksDb.Open(options, _config.DataPath, cfDescriptors);
 
         // Store all handles
         for (int i = 0; i < existingFamilies.Length; i++)
