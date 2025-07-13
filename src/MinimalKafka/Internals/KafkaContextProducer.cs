@@ -2,8 +2,15 @@
 
 namespace MinimalKafka.Internals;
 
-internal class KafkaContextProducer(IProducer<byte[], byte[]> producer) : IKafkaProducer
+internal class KafkaContextProducer : IKafkaProducer
 {
+    private readonly IProducer<byte[], byte[]> _producer;
+
+    public KafkaContextProducer(IProducer<byte[], byte[]> producer)
+    {
+        _producer = producer;
+        _producer.InitTransactions(TimeSpan.FromSeconds(5));
+    }
     public async Task ProduceAsync(KafkaContext context, CancellationToken cancellationToken)
     {
         if(!context.Messages.Any())
@@ -11,24 +18,22 @@ internal class KafkaContextProducer(IProducer<byte[], byte[]> producer) : IKafka
 
         try
         {
-            producer.InitTransactions(TimeSpan.FromSeconds(5));
-            producer.BeginTransaction();
+            _producer.BeginTransaction();
             foreach (var produce in context.Messages)
             {
-                await producer.ProduceAsync(produce.Topic, new()
+                await _producer.ProduceAsync(produce.Topic, new()
                 {
                     Key = produce.Key,
                     Value = produce.Value,
-                    Headers = produce.GetKafkaHeaders(),
-                    Timestamp = produce.Timestamp,
+                    Headers = produce.GetKafkaHeaders()
                 }, cancellationToken);
             }
 
-            producer.CommitTransaction();
+            _producer.CommitTransaction();
         }
         catch (ProduceException<byte[], byte[]> ex)
         {
-            producer.AbortTransaction();
+            _producer.AbortTransaction();
             throw new KafkaProcesException(ex, ex.Message);
         }
     }

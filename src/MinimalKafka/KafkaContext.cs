@@ -1,37 +1,74 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Internals;
+using MinimalKafka.Serializers;
 
 namespace MinimalKafka;
 
 /// <summary>
 /// 
 /// </summary>
+
 public class KafkaContext
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public required IServiceProvider RequestServices { get; init; }
-    /// <summary>
-    /// 
-    /// </summary>
-    public required byte[] Key { get; init; }
-    /// <summary>
-    /// 
-    /// </summary>
-    public required byte[] Value { get; init; }
+    private readonly Message<byte[], byte[]> _message;
+
+    private KafkaContext(Message<byte[], byte[]> message, KafkaConsumerKey consumerKey, IServiceProvider requestServices)
+    {
+        _message = message;
+        ConsumerKey = consumerKey; 
+        RequestServices = requestServices;
+    }
+
 
     /// <summary>
     /// 
     /// </summary>
-    public required IDictionary<string, byte[]> Headers { get; init; }
+    public KafkaConsumerKey ConsumerKey { get; }
 
-    internal static KafkaContext Create(Message<byte[], byte[]> message, IServiceProvider serviceProvider)
-        => new() { 
-            Key = message.Key, 
-            Value = message.Value, 
-            Headers = message.Headers.ToDictionary(x => x.Key, y => y.GetValueBytes()),
-            RequestServices = serviceProvider };
+    /// <summary>
+    /// 
+    /// </summary>
+    public IServiceProvider RequestServices { get;}
+    /// <summary>
+    /// 
+    /// </summary>
+    public ReadOnlySpan<byte> Key => _message.Key;
+    /// <summary>
+    /// 
+    /// </summary>
+    public ReadOnlySpan<byte> Value => _message.Value;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public IReadOnlyDictionary<string, byte[]> Headers => _message.Headers
+        .ToDictionary(x => x.Key, y => y.GetValueBytes());
+
+    internal static KafkaContext Create(KafkaConsumerKey consumerKey, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
+        => new(message, consumerKey, serviceProvider);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T? GetKey<T>()
+    {
+        var serializer = RequestServices.GetRequiredService<IKafkaSerializer<T>>();
+        return serializer.Deserialize(Key);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T? GetValue<T>()
+    {
+        var serializer = RequestServices.GetRequiredService<IKafkaSerializer<T>>();
+        return serializer.Deserialize(Value);
+    }
 
     /// <summary>
     /// 

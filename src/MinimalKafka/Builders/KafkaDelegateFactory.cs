@@ -133,15 +133,14 @@ internal static class KafkaDelegateFactory
 
             var serializerType = typeof(IKafkaSerializer<>).MakeGenericType(parameter.ParameterType);
             var getSerializerExpr = Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(serializerType), RequestServicesExpr);
-            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(byte[]), typeof(bool)])!;
+            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(ReadOnlySpan<byte>)])!;
             var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Key));
 
 
             return Expression.Call(
                 getSerializerExpr,
                 deserializeMethod,
-                valueExpr,
-                Expression.Constant(false));
+                valueExpr);
 
         }
         if (attributes.OfType<IFromValueMetadata>().FirstOrDefault() is { } ||
@@ -152,15 +151,14 @@ internal static class KafkaDelegateFactory
 
             var serializerType = typeof(IKafkaSerializer<>).MakeGenericType(parameter.ParameterType);
             var getSerializerExpr = Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(serializerType), RequestServicesExpr);
-            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(byte[]), typeof(bool)])!;
+            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(ReadOnlySpan<byte>)])!;
             var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Value));
 
 
             return Expression.Call(
                 getSerializerExpr,
                 deserializeMethod,
-                valueExpr,
-                Expression.Constant(false));
+                valueExpr);
         }
 
         if (parameter.ParameterType == typeof(KafkaContext))

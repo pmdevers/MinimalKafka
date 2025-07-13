@@ -41,8 +41,20 @@ public static class KafkaExtensions
             return b;
         });
 
-        services.AddSingleton<IKafkaConsumerStore>(new KafkaConsumerStore());
+        services.AddSingleton<IKafkaStoreFactory>(sp => new KafkaInMemoryStoreFactory(sp));
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
+
+        services.AddSingleton<IKafkaProducer>(sp =>
+        {
+            var builder = sp.GetRequiredService<IKafkaBuilder>();
+            var config = builder.MetaData.OfType<IConfigMetadata>().First();
+            var producer = new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
+                .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
+                .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
+                .Build();
+            return new KafkaContextProducer(producer);
+        });
+
         services.AddHostedService<KafkaService>();
 
 

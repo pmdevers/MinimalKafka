@@ -5,14 +5,28 @@ using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Internals;
 
-internal record KafkaConsumerKey(string TopicName, string GroupId, string ClientId);
+/// <summary>
+/// 
+/// </summary>
+/// <param name="TopicName"></param>
+/// <param name="GroupId"></param>
+/// <param name="ClientId"></param>
+public record KafkaConsumerKey(string TopicName, string GroupId, string ClientId)
+{
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="topicName"></param>
+    /// <returns></returns>
+    public static KafkaConsumerKey Random(string topicName)
+        => new(topicName, Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+};
 
 internal class KafkaConsumer(
     KafkaConsumerKey consumerKey,
     bool autoCommitEnabled,
     IConsumer<byte[], byte[]> consumer,
     IKafkaProducer producer,
-    IKafkaConsumerStore store,
     KafkaDelegate[] kafkaDelegates,
     IServiceProvider serviceProvider,
     ILogger<KafkaConsumer> logger) : IKafkaConsumer
@@ -31,7 +45,9 @@ internal class KafkaConsumer(
 
             var result = consumer.Consume(cancellationToken);
 
-            var context = KafkaContext.Create(result.Message, scope.ServiceProvider);
+            var context = KafkaContext.Create(consumerKey, result.Message, scope.ServiceProvider);
+
+            var store = context.GetTopicStore();
 
             await store.AddOrUpdate(context.Key, context.Value);
 

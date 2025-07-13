@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using MinimalKafka.Internals;
 using MinimalKafka.Metadata.Internals;
 using MinimalKafka.Serializers;
 using System.Text;
@@ -95,7 +96,7 @@ public class KafkaDelegateFactoryTests
 
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
-        await result.Delegate.Invoke(KafkaContext.Create(new Message<byte[], byte[]>(), serviceProvider));
+        await result.Delegate.Invoke(KafkaContext.Create(KafkaConsumerKey.Random("topic"), new Message<byte[], byte[]>(), serviceProvider));
 
         // Assert
         wasCalled.Should().BeTrue();
@@ -181,7 +182,7 @@ public class KafkaDelegateFactoryTests
             }
         };
 
-        var context = KafkaContext.Create(consumeResult.Message, serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider);
 
         try
         {

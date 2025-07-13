@@ -13,8 +13,7 @@ internal class KafkaConsumerBuilder(KafkaConsumerKey key, IKafkaBuilder builder)
     public IKafkaConsumer Build()
     {
         var consumer = CreateConsumer();
-        var producer = CreateProducer();
-        var store = builder.ServiceProvider.GetRequiredService<IKafkaConsumerStore>();
+        var producer = builder.ServiceProvider.GetRequiredService<IKafkaProducer>();
         var logger = builder.ServiceProvider.GetRequiredService<ILogger<KafkaConsumer>>();
 
         return new KafkaConsumer(
@@ -22,7 +21,6 @@ internal class KafkaConsumerBuilder(KafkaConsumerKey key, IKafkaBuilder builder)
             true,
             consumer,
             producer,
-            store,
             [.. Delegates],
             builder.ServiceProvider,
             logger
@@ -37,17 +35,6 @@ internal class KafkaConsumerBuilder(KafkaConsumerKey key, IKafkaBuilder builder)
             .SetKeyDeserializer(Deserializers.ByteArray)
             .SetValueDeserializer(Deserializers.ByteArray)
             .Build();
-    }
-
-    private KafkaContextProducer CreateProducer()
-    {
-        var config = builder.MetaData.OfType<IConfigMetadata>().First();
-
-        var producer = new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
-            .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
-            .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
-            .Build();
-        return new KafkaContextProducer(producer);
     }
 
     internal void AddDelegate(KafkaDelegate del)

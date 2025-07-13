@@ -17,7 +17,6 @@ public interface IKafkaSerializer<T>
     /// 
     /// </summary>
     /// <param name="value"></param>
-    /// <param name="isNull"></param>
     /// <returns></returns>
-    public T? Deserialize(byte[] value, bool isNull);
+    public T Deserialize(ReadOnlySpan<byte> value);
 }
