@@ -5,7 +5,7 @@ namespace MinimalKafka.Stream.Storage.RocksDB;
 internal sealed class RocksDBStreamStoreFactory : IDisposable, IKafkaStoreFactory
 {
     private readonly RocksDb _db;
-    private readonly ConcurrentDictionary<KafkaConsumerKey, ColumnFamilyHandle> _columnFamilies = new();
+    private readonly ConcurrentDictionary<string, ColumnFamilyHandle> _columnFamilies = new();
 
     public RocksDBStreamStoreFactory(IServiceProvider serviceProvider, RocksDBOptions config)
     {
@@ -40,37 +40,32 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IKafkaStoreFactor
         // Store all handles
         for (int i = 0; i < existingFamilies.Length; i++)
         {
-            _columnFamilies[CreateKey(existingFamilies[i])] = _db.GetColumnFamily(existingFamilies[i]);
+            _columnFamilies[existingFamilies[i]] = _db.GetColumnFamily(existingFamilies[i]);
         }
     }
 
     public IServiceProvider ServiceProvider { get; }
-
-    private static KafkaConsumerKey CreateKey(string columnFamily)
-    {
-        var label = columnFamily.Split("-");
-        if(label.Length == 1 ) 
-        {
-            return KafkaConsumerKey.Random(label[0]);
-        }
-        return new(label[0], label[1], label[2]);
-    }
 
     public void Dispose()
     {
         _db?.Dispose();
     }
 
+    private readonly object _lock = new();
     public IKafkaStore GetStore(KafkaConsumerKey consumerKey)
     {
-        if (!_columnFamilies.TryGetValue(consumerKey, out var cfHandle))
-        {
-            // Create column family if it does not exist
-            cfHandle = _db.CreateColumnFamily(new ColumnFamilyOptions(), 
-                $"{consumerKey.TopicName}-{consumerKey.GroupId}-{consumerKey.ClientId}");
-            _columnFamilies[consumerKey] = cfHandle;
-        }
 
-        return new RocksDBStreamStore(ServiceProvider, _db, cfHandle);
+        lock (_lock)
+        {
+            var key = $"{consumerKey.TopicName}_{consumerKey.GetHashCode()}";
+
+            var cfHandle = _columnFamilies.GetOrAdd(key, key =>
+            {
+                // Only create if truly absent
+                return _db.CreateColumnFamily(new ColumnFamilyOptions(), key);
+            });
+               
+            return new RocksDBStreamStore(ServiceProvider, _db, cfHandle);
+        }
     }
 }

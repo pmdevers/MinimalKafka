@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
-using MinimalKafka.Metadata;
 
 namespace MinimalKafka.Internals;
 
@@ -12,21 +11,16 @@ internal class KafkaConsumer(
     IConsumer<byte[], byte[]> consumer,
     IKafkaProducer producer,
     KafkaDelegate[] kafkaDelegates,
+    KafkaTopicFormatter topicFormatter,
     IReadOnlyList<object> metadata,
     IServiceProvider serviceProvider,
     ILogger<KafkaConsumer> logger) : IKafkaConsumer
 {
     public void Subscribe()
     {
-        var topic = consumerKey.TopicName;
-        var topicFormatter = metadata.OfType<ITopicFormaterMetadata>().FirstOrDefault();
-        if (topicFormatter != null)
-        {
-            topic = topicFormatter.TopicFormatter.Invoke(topic);
-        }
-
+        var topic = topicFormatter(consumerKey.TopicName);
         consumer.Subscribe(topic);
-        logger.Subscribed(consumerKey.GroupId, consumerKey.ClientId, consumerKey.TopicName);
+        logger.Subscribed(consumerKey.GroupId, consumerKey.ClientId, topic);
     }
 
     public async Task Consume(CancellationToken cancellationToken)

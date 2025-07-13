@@ -8,10 +8,10 @@ public interface IKafkaProducer
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="ctx"></param>
+    /// <param name="ct"></param>
     /// <returns></returns>
-    Task ProduceAsync(KafkaContext context, CancellationToken cancellationToken);
+    Task ProduceAsync(KafkaContext ctx, CancellationToken ct);
 
     /// <summary>
     /// 
@@ -21,10 +21,9 @@ public interface IKafkaProducer
     /// <param name="topic"></param>
     /// <param name="key"></param>
     /// <param name="value"></param>
-    /// <param name="headers"></param>
-    /// <param name="token"></param>
+    /// <param name="header"></param>
     /// <returns></returns>
-    Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? headers = null, CancellationToken token = default);
+    Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? header = null);
 }
 
     

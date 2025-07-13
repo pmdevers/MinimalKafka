@@ -8,7 +8,6 @@ using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
 using MinimalKafka.Metadata.Internals;
 using MinimalKafka.Serializers;
-using System.Reflection.Emit;
 
 namespace MinimalKafka;
 
@@ -31,7 +30,7 @@ public static class KafkaExtensions
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName);
-        configBuilder.WithTopicFormatter(s => s);
+        configBuilder.WithTopicFormatter(topic => topic);
 
         config?.Invoke(configBuilder);
 
@@ -44,20 +43,18 @@ public static class KafkaExtensions
 
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
 
-        services.AddSingleton<IKafkaProducer>(sp =>
+        services.AddSingleton(sp =>
         {
             var builder = sp.GetRequiredService<IKafkaBuilder>();
             var config = builder.MetaData.OfType<IConfigMetadata>().First();
-            var producer = new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
+            return new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
                 .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
                 .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
                 .Build();
-            return new KafkaContextProducer(sp, producer);
         });
 
+        services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
         services.AddHostedService<KafkaService>();
-
-
         return services;
     }
 
@@ -157,10 +154,11 @@ public static class KafkaConsumerConfigExtensions
     /// <param name="builder">The builder to configure.</param>
     /// <param name="topicFormatter">A function to format topic names.</param>
     /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
-    public static TBuilder WithTopicFormatter<TBuilder>(this TBuilder builder, Func<string, string> topicFormatter)
-        where TBuilder : IKafkaConventionBuilder
+    public static TBuilder WithTopicFormatter<TBuilder>(this TBuilder builder, KafkaTopicFormatter topicFormatter)
+        where TBuilder : IKafkaConfigBuilder
     {
-        builder.WithSingle(new TopicFormatterMetadataAttribute(topicFormatter));
+        builder.Services.RemoveAll<KafkaTopicFormatter>();
+        builder.Services.AddSingleton(topicFormatter);
         return builder;
     }
 

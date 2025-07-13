@@ -19,7 +19,10 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMinimalKafka(x =>
 {
     x.WithConfiguration(builder.Configuration.GetSection("kafka"));
-    x.WithTopicFormatter(topic => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}");
+    x.WithTopicFormatter((topic) =>
+    {
+        return $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}";
+    });
     x.WithJsonSerializers();
     x.UseRocksDB();
 });

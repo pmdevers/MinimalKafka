@@ -88,6 +88,7 @@ public class KafkaContext
 
     private readonly List<KafkaMessage> _messages = [];
     internal IReadOnlyList<KafkaMessage> Messages => _messages.AsReadOnly();
+    
 }
 
 /// <summary>
@@ -95,3 +96,10 @@ public class KafkaContext
 /// </summary>
 /// <param name="context"></param>
 public delegate Task KafkaDelegate(KafkaContext context);
+
+
+internal sealed class EmptyServiceProvider : IServiceProvider
+{
+    public static EmptyServiceProvider Instance { get; } = new EmptyServiceProvider();
+    public object? GetService(Type serviceType) => null;
+}

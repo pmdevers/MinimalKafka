@@ -1,4 +1,4 @@
-﻿using KafkaAdventure.Extensions;
+﻿using KafkaAdventure.Features.Input;
 using KafkaAdventure.Features.Locations;
 using MinimalKafka;
 using MinimalKafka.Stream;
@@ -24,7 +24,6 @@ public static class PlayerLocations
                     await c.ProduceAsync("game-response", k, new Response("GO", $"{x.Key} : {x.Value}"));
                 }
                               
-            })
-            .AsFeature("PlayerLocations");
+            });
     }
 }
