@@ -1,14 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MinimalKafka.Builders;
+using MinimalKafka.Stream;
+using MinimalKafka.Stream.Internals;
 
 namespace MinimalKafka.Tests.Stream;
 public class StreamBuilderTests
 {
-    public class Join
-    {
+    private const string _mainTopic = "main-topic";
+    private const string _joinTopic = "join-topic";
 
+    [Fact]
+    public void Join_ReturnsJoinBuilder_WithCorrectParams()
+    {
+        var builder = Substitute.For<IKafkaBuilder>();
+        var streamBuilder = new StreamBuilder<string, int>(builder, _mainTopic);
+
+        var join = streamBuilder.Join<long, double>(_joinTopic);
+
+        join.Should().BeOfType<IJoinBuilder<string, int, long,double>>();
+    }
+
+    [Fact]
+    public void InnerJoin_ReturnsJoinBuilder_WithCorrectParams()
+    {
+        var builder = Substitute.For<IKafkaBuilder>();
+        var streamBuilder = new StreamBuilder<string, int>(builder, _mainTopic);
+
+        var join = streamBuilder.InnerJoin<long, double>(_joinTopic);
+
+        join.Should().BeOfType<IJoinBuilder<string, int, long, double>>();
+    }
+
+    [Fact]
+    public void Into_Calls_Builder_MapTopic_And_Delegates_Handler()
+    {
+        var builder = new KafkaBuilder(EmptyServiceProvider.Instance);
+
+        var streamBuilder = new StreamBuilder<string, int>(builder, _mainTopic);
+
+        static Task Handler(KafkaContext ctx, string key, int value)
+        {
+            return Task.CompletedTask;
+        }
+
+        // Act
+        var result = streamBuilder.Into(Handler);
+
+               
     }
 }

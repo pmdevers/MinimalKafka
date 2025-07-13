@@ -2,9 +2,10 @@
 using System.Text.Json;
 
 namespace MinimalKafka.Serializers;
-internal class SystemTextJsonSerializer<T> : IKafkaSerializer<T>
+
+internal class SystemTextJsonSerializer<T>(JsonSerializerOptions? options = null) : IKafkaSerializer<T>
 {
-    private readonly JsonSerializerOptions _jsonOptions = 
+    private readonly JsonSerializerOptions _jsonOptions = options ??
         new(JsonSerializerDefaults.Web);
 
     public T Deserialize(ReadOnlySpan<byte> value)
@@ -51,8 +52,9 @@ public static class AddKafkaBuilderExtensions
     {
         var defaults = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         options?.Invoke(defaults);
-        builder.Services.AddSingleton(defaults);
-        builder.Services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
+
+        builder.Services.AddSingleton<ISerializerFactory>(new SystemTextJsonSerializerFactory(defaults));
+
         return builder;
     }
 }

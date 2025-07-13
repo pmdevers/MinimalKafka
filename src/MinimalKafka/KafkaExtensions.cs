@@ -8,6 +8,7 @@ using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
 using MinimalKafka.Metadata.Internals;
 using MinimalKafka.Serializers;
+using System.Text.Json;
 
 namespace MinimalKafka;
 
@@ -41,8 +42,6 @@ public static class KafkaExtensions
             return b;
         });
 
-        services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
-
         services.AddSingleton(sp =>
         {
             var builder = sp.GetRequiredService<IKafkaBuilder>();
@@ -52,6 +51,8 @@ public static class KafkaExtensions
                 .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
                 .Build();
         });
+
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
 
         services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
         services.AddHostedService<KafkaService>();
@@ -74,7 +75,6 @@ public static class KafkaExtensions
         var tb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
         return tb.MapTopic(topic, handler);
     }
-
 
     /// <summary>
     /// Maps a Kafka topic to a specified handler for processing messages.
@@ -296,7 +296,21 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder UseStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
         where TBuilder : IKafkaConfigBuilder
     {
-        builder.Services.AddSingleton<IKafkaStoreFactory>(sp => create(sp));
+        builder.Services.AddSingleton(sp => create(sp));
+        return builder;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static TBuilder UseJsonSerializer<TBuilder>(this TBuilder builder, Action<JsonSerializerOptions> options)
+        where TBuilder : IKafkaConfigBuilder
+    {
+        builder.Services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
         return builder;
     }
 }
