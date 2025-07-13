@@ -25,7 +25,7 @@ public interface IKafkaStore
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    ValueTask<byte[]> FindByIdAsync(byte[] key);
+    ValueTask<byte[]?> FindByIdAsync(ReadOnlySpan<byte> key);
 
     /// <summary>
     /// 

@@ -45,12 +45,9 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStor
 
     public ValueTask<byte[]> AddOrUpdate(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
-        byte[] localKey = new byte[key.Length];
-        byte[] localVal = new byte[value.Length];
-        key.CopyTo(localKey);
-        value.CopyTo(localVal);
+        byte[] localVal = value.ToArray();
 
-        return _store.AddOrUpdate(localKey, 
+        return _store.AddOrUpdate(key.ToArray(), 
             (k) => localVal, 
             (k, v) => localVal);
     }
@@ -60,9 +57,9 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStor
         _store.CleanUp();
     }
 
-    public async ValueTask<byte[]> FindByIdAsync(byte[] key)
+    public ValueTask<byte[]?> FindByIdAsync(ReadOnlySpan<byte> key)
     {
-        return await _store.FindByIdAsync(key) ?? [];
+        return _store.FindByIdAsync(key.ToArray());
     }
 
     public IAsyncEnumerable<byte[]> GetItems()
