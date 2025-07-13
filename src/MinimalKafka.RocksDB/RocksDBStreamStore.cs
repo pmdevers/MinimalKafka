@@ -1,5 +1,4 @@
 ﻿using RocksDbSharp;
-using System.Threading.Tasks;
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 

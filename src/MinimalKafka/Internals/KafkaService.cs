@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
-using MinimalKafka.Internals;
 
-namespace MinimalKafka;
+namespace MinimalKafka.Internals;
 internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
 {
     public IEnumerable<IKafkaProcess> Processes
