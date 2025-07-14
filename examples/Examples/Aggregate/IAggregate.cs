@@ -6,5 +6,5 @@ public interface IAggregate<TKey, TState, TCommand>
     int Version { get; }
 
     abstract static Result<TState> Apply(TState state, TCommand command);
-    abstract static TState Create(TCommand command);
+    abstract static Result<TState> Create(TCommand command);
 }

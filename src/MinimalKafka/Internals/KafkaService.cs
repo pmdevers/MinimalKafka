@@ -4,7 +4,7 @@ namespace MinimalKafka.Internals;
 internal sealed class KafkaService(IKafkaBuilder builder) : BackgroundService
 {
     public IEnumerable<IKafkaProcess> Processes
-        = builder.DataSource?.GetProceses() ?? [];
+        = builder.DataSource?.GetProcesses() ?? [];
 
     private readonly List<Task> _runningTasks = [];
 

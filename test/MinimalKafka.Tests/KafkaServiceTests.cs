@@ -16,7 +16,7 @@ public class KafkaServiceTests
             Substitute.For<IKafkaProcess>(),
             Substitute.For<IKafkaProcess>()
         ];
-        _datasource.GetProceses().Returns(_processes);
+        _datasource.GetProcesses().Returns(_processes);
         
         _builder.DataSource.Returns(_datasource);
     }

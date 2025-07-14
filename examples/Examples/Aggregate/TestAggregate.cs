@@ -19,8 +19,8 @@ public record Test : IAggregate<Guid, Test, TestCommands>
     public int Version { get; init; }
     public int Counter { get; init; }
 
-    public static Test Create(TestCommands command)
-        => new() { Id = command.Id, Version = 0 };
+    public static Result<Test> Create(TestCommands command)
+        => new Test() { Id = command.Id, Version = 0 };
 
     public static Result<Test> Apply(Test state, TestCommands command)
     {

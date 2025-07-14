@@ -48,7 +48,7 @@ public static class AggregateExtensions
                     return;
                 }
 
-                state ??= TAgrregate.Create(cmd);
+                state ??= TAgrregate.Create(cmd).State;
 
                 if (cmd.Version != state.Version)
                 {

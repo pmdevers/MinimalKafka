@@ -15,7 +15,8 @@ public static class KafkaMetadataExtensions
     /// <param name="metadata"></param>
     /// <returns></returns>
     public static ConsumerConfig ConsumerConfig(this IReadOnlyList<object> metadata) 
-        => metadata.OfType<IConfigMetadata>().First().ConsumerConfig;
+        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.ConsumerConfig
+        ?? throw new InvalidOperationException("No IConfigMetadata found in builder metadata.");
 
     /// <summary>
     /// 
@@ -23,7 +24,8 @@ public static class KafkaMetadataExtensions
     /// <param name="metadata"></param>
     /// <returns></returns>
     public static ProducerConfig ProducerConfig(this IReadOnlyList<object> metadata)
-        => metadata.OfType<IConfigMetadata>().First().ProducerConfig;
+        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.ProducerConfig
+        ?? throw new InvalidOperationException("No IConfigMetadata found in builder metadata.");
 
     /// <summary>
     /// 

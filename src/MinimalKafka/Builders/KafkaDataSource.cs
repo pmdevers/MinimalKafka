@@ -26,7 +26,7 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
         return new KafkaConventionBuilder(conventions, finallyConventions);
     }
 
-    public IEnumerable<IKafkaProcess> GetProceses()
+    public IEnumerable<IKafkaProcess> GetProcesses()
     {
         var process = new Dictionary<KafkaConsumerKey, KafkaConsumerBuilder>();
 

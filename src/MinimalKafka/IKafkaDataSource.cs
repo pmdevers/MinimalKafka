@@ -17,5 +17,5 @@ public interface IKafkaDataSource
     /// Gets the collection of Kafka processes managed by this data source.
     /// </summary>
     /// <returns>An enumerable of <see cref="IKafkaProcess"/> instances.</returns>
-    IEnumerable<IKafkaProcess> GetProceses();
+    IEnumerable<IKafkaProcess> GetProcesses();
 }

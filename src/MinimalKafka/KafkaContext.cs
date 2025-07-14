@@ -24,31 +24,31 @@ public class KafkaContext
 
 
     /// <summary>
-    /// 
+    /// The Unique ConsumerKey
     /// </summary>
     public KafkaConsumerKey ConsumerKey { get; }
 
     /// <summary>
-    /// 
+    /// Thhe service provider.
     /// </summary>
     public IServiceProvider RequestServices { get;}
 
     /// <summary>
-    /// 
+    /// The metadata for this consumer
     /// </summary>
     public IReadOnlyList<object> Metadata { get; }
 
     /// <summary>
-    /// 
+    /// The <see cref="ReadOnlySpan{T}"/> of the message key.
     /// </summary>
     public ReadOnlySpan<byte> Key => _message.Key;
     /// <summary>
-    /// 
+    /// The <see cref="ReadOnlySpan{T}"/> of the message value.
     /// </summary>
     public ReadOnlySpan<byte> Value => _message.Value;
 
     /// <summary>
-    /// 
+    /// The kafka message headers.
     /// </summary>
     public IReadOnlyDictionary<string, string> Headers => _message.Headers
         .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()));
@@ -56,32 +56,6 @@ public class KafkaContext
     internal static KafkaContext Create(KafkaConsumerConfig config, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
         => new(config, message, serviceProvider);
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public T? GetKey<T>()
-    {
-        var serializer = RequestServices.GetRequiredService<IKafkaSerializer<T>>();
-        return serializer.Deserialize(Key);
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public T? GetValue<T>()
-    {
-        var serializer = RequestServices.GetRequiredService<IKafkaSerializer<T>>();
-        return serializer.Deserialize(Value);
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="message"></param>
     internal void Produce(KafkaMessage message)
     {
         _messages.Add(message);
@@ -93,7 +67,7 @@ public class KafkaContext
 }
 
 /// <summary>
-/// /
+/// Delegate for handling kafka messages.
 /// </summary>
 /// <param name="context"></param>
 public delegate Task KafkaDelegate(KafkaContext context);
