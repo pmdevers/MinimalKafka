@@ -1,6 +1,4 @@
-﻿using MinimalKafka.Builders;
-
-namespace MinimalKafka.Stream.Internals;
+﻿namespace MinimalKafka.Stream.Internals;
 
 internal sealed class JoinBuilder<K1, V1, K2, V2>(IKafkaBuilder builder, string leftTopic, string rightTopic, bool innerJoin)
     : IJoinBuilder<K1, V1, K2, V2>

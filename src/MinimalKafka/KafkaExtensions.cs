@@ -1,43 +1,39 @@
 ﻿using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Builders.Internals;
-using MinimalKafka.Extension;
+using MinimalKafka.Internals;
+using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
+using System.Text.Json;
 
 namespace MinimalKafka;
 
 /// <summary>
-/// Provides extension methods for configuring and using MinimalKafka.
+/// 
 /// </summary>
 public static class KafkaExtensions
 {
     /// <summary>
-    /// Configures and registers Kafka-related services with the specified settings.
+    /// 
     /// </summary>
-    /// <remarks>This method sets up minimal Kafka integration by registering essential services such as
-    /// producers,  a hosted Kafka service, and a builder for further customization. By default, it configures the
-    /// client ID  and group ID to match the application's domain name, disables auto-commit, and uses JSON
-    /// serializers.</remarks>
-    /// <param name="services">The <see cref="IServiceCollection"/> to which the Kafka services will be added.</param>
-    /// <param name="config">A delegate to configure the Kafka settings using an <see cref="IAddKafkaBuilder"/>.  This allows customization
-    /// of client ID, group ID, serializers, topic formatting, and other Kafka-related options.</param>
-    /// <returns>The <see cref="IServiceCollection"/> with the Kafka services registered.</returns>
-    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IAddKafkaBuilder> config)
+    /// <param name="services"></param>
+    /// <param name="config"></param>
+    /// <returns></returns>
+    public static IServiceCollection AddMinimalKafka(this IServiceCollection services, Action<IKafkaConfigBuilder>? config = null)
     {
         List<Action<IKafkaBuilder>> conventions = [];
-        var configBuilder = new AddKafkaBuilder(services, conventions);
+        var configBuilder = new KafkaConfigConventionBuilder(services, conventions);
 
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
-        configBuilder.WithAutoCommit(false);
-        configBuilder.WithJsonSerializers();
+        configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
+        configBuilder.WithReportInterval(5);
+        configBuilder.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithTopicFormatter(topic => topic);
-        configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
-        configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
 
-        config(configBuilder);
+        config?.Invoke(configBuilder);
 
         services.AddSingleton<IKafkaBuilder>(s =>
         {
@@ -45,10 +41,21 @@ public static class KafkaExtensions
             conventions.ForEach(x => x(b));
             return b;
         });
+
+        services.AddSingleton(sp =>
+        {
+            var builder = sp.GetRequiredService<IKafkaBuilder>();
+            var config = builder.MetaData.OfType<IConfigMetadata>().First();
+            return new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
+                .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
+                .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
+                .Build();
+        });
+
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+
+        services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
         services.AddHostedService<KafkaService>();
-
-        services.AddSingleton(typeof(IProducer<,>), typeof(KafkaProducerFactory<,>));
-
         return services;
     }
 
@@ -80,17 +87,30 @@ public static class KafkaExtensions
     /// <param name="handler">A delegate that processes messages from the specified topic. The delegate must match the expected signature for
     /// handling Kafka messages.</param>
     /// <returns>An <see cref="IKafkaConventionBuilder"/> that allows further configuration of Kafka conventions.</returns>
-    public static IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
+    public static  IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
     {
-        return builder
-            .GetOrAddTopicDataSource()
+        return builder.GetOrAddDatasource()
             .AddTopicDelegate(topic, handler)
             .WithMetaData([.. builder.MetaData]);
     }
 
-    private static IKafkaDataSource GetOrAddTopicDataSource(this IKafkaBuilder builder)
+    private static IKafkaDataSource GetOrAddDatasource(this IKafkaBuilder builder)
     {
         builder.DataSource ??= new KafkaDataSource(builder.ServiceProvider);
         return builder.DataSource;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="TBuilder"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="create"></param>
+    /// <returns></returns>
+    public static TBuilder UseStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
+        where TBuilder : IKafkaConfigBuilder
+    {
+        builder.Services.AddSingleton(sp => create(sp));
+        return builder;
     }
 }

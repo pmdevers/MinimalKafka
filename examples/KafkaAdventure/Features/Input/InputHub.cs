@@ -1,11 +1,10 @@
-﻿using Confluent.Kafka;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
+using MinimalKafka;
 
-namespace KafkaAdventure.Features;
+namespace KafkaAdventure.Features.Input;
 
 public class InputHub(
-    IProducer<string, Response> response,
-    IProducer<string, Command> command
+    IKafkaProducer command
 ) : Hub
 {
     public async Task JoinGame(string gameId)
@@ -25,12 +24,16 @@ public class InputHub(
         }
 
         var cmd = message.Split(' ');
-        await command.ProduceAsync("game-commands", new()
+
+        try
         {
-            Key = gameId,
-            Value = new Command(cmd.First(), [.. cmd.Skip(1)])
-        });
+            await command.ProduceAsync("game-commands", gameId, new Command(cmd.First(), [.. cmd.Skip(1)]));
+        } catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        
     }
 }
 public record Response(string Command, string Value);
-public record Command(string cmd, string[] Args);
+public record Command(string Cmd, string[] Args);

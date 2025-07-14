@@ -1,7 +1,6 @@
 ﻿using Confluent.Kafka;
 
 namespace MinimalKafka.Metadata.Internals;
-
 internal class ConsumerHandlerMetadata : IConsumerHandlerMetadata
 {
     public Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>>? PartitionsAssignedHandler { get; set; }

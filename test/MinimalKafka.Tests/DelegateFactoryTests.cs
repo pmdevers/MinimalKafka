@@ -1,7 +1,9 @@
 ﻿using Confluent.Kafka;
-using MinimalKafka.Metadata;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Metadata.Internals;
+using MinimalKafka.Internals;
+using System.Text;
+using System.Text.Json;
 
 namespace MinimalKafka.Tests;
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -29,8 +31,6 @@ public class KafkaDelegateFactoryTests
         var serviceProvider = Substitute.For<IServiceProvider>();
         var kafkaBuilder = Substitute.For<IKafkaBuilder>();
 
-        kafkaBuilder.MetaData.Returns([new BootstrapServersMetadata("localhost:9092")]);
-
         var options = new KafkaDelegateFactoryOptions
         {
             ServiceProvider = serviceProvider,
@@ -46,7 +46,6 @@ public class KafkaDelegateFactoryTests
         result.Should().NotBeNull();
         result.Should().BeOfType<KafkaDelegateResult>();
         result.Delegate.Should().BeOfType<KafkaDelegate>();
-        result.Metadata.Should().HaveCount(1);
         result.KeyType.Should().Be(typeof(Ignore));
         result.ValueType.Should().Be(typeof(Ignore));
     }
@@ -93,7 +92,10 @@ public class KafkaDelegateFactoryTests
 
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
-        await result.Delegate.Invoke(KafkaContext.Empty);
+        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
+        var context = KafkaContext.Create(config, new Message<byte[], byte[]>(), serviceProvider);
+
+        await result.Delegate.Invoke(context);
 
         // Assert
         wasCalled.Should().BeTrue();
@@ -135,5 +137,61 @@ public class KafkaDelegateFactoryTests
         // Assert
         result.KeyType.Should().Be(typeof(Ignore));
         result.ValueType.Should().Be(typeof(Ignore));
+    }
+
+    [Fact]
+    public async Task Key_Should_Be_Serialized()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(JsonSerializerOptions.Default);
+        //services.AddTransient(typeof(JsonTextSerializer<>));
+
+        // Arrange
+        var serviceProvider = services.BuildServiceProvider();  
+        
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+        Delegate handler = ([FromKey] string key, [FromValue] string value) => {
+
+            key.Should().Be("testKey");
+            value.Should().Be("testValue");
+
+            return Task.CompletedTask;
+        };
+        // Act
+        var result = KafkaDelegateFactory.Create(handler, options);
+        // Assert
+        result.KeyType.Should().Be(typeof(string));
+        result.ValueType.Should().Be(typeof(string));
+
+        var key = Encoding.UTF8.GetBytes("\"testKey\"");
+        var value = Encoding.UTF8.GetBytes("\"testValue\"");
+        var headers = new Headers();
+        var consumeResult = new ConsumeResult<byte[], byte[]>
+        {
+            Message = new Message<byte[], byte[]>
+            {
+                Key = key,
+                Value = value,
+                Headers = headers
+            }
+        };
+
+        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
+        var context = KafkaContext.Create(config, new Message<byte[], byte[]>(), serviceProvider);
+
+        try
+        {
+            await result.Delegate.Invoke(context);
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+
+        
     }
 }

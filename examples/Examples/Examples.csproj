@@ -8,11 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="InnerJoin.cs" />
-    <Compile Remove="LeftJoin.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\src\MinimalKafka.Aggregates\MinimalKafka.Aggregates.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka.RocksDB\MinimalKafka.RocksDB.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
   </ItemGroup>

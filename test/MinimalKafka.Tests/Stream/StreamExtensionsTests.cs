@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Builders.Internals;
 using MinimalKafka.Stream;
 using MinimalKafka.Stream.Internals;
 
@@ -13,7 +12,7 @@ public class StreamExtensionsTests
         [Fact]
         public void On_KafkaBuilder_Should_return_StreamBuilder()
         {
-            var kafkaBuilder  = new KafkaBuilder(EmptyServiceProvider.Instance);
+            var kafkaBuilder = new KafkaBuilder(EmptyServiceProvider.Instance);
             var result = StreamExtensions.MapStream<Guid, string>(kafkaBuilder, "topic-name");
             result.Should().BeOfType<StreamBuilder<Guid, string>>();
         }
@@ -24,7 +23,7 @@ public class StreamExtensionsTests
             var serviceCollection = new ServiceCollection();
             var kafkaBuilder = new KafkaBuilder(EmptyServiceProvider.Instance);
             serviceCollection.AddSingleton<IKafkaBuilder>(kafkaBuilder);
-                       
+
             var app = Substitute.For<IApplicationBuilder>();
             app.ApplicationServices.Returns(serviceCollection.BuildServiceProvider());
 

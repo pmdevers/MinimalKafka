@@ -12,11 +12,4 @@ public class RocksDBOptions
     /// </summary>
     public string DataPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "RocksDB");
-
-    /// <summary>
-    /// Gets or sets the serializer used for converting objects to and from byte arrays.
-    /// </summary>
-    /// <remarks>The serializer can be customized to use different serialization formats or settings,
-    /// depending on the implementation of <see cref="IByteSerializer"/>.</remarks>
-    public IByteSerializer Serializer { get; set; } = new ByteSerializer(JsonSerializerOptions.Default);
 }

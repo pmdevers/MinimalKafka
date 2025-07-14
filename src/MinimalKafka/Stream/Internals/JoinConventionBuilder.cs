@@ -1,9 +1,7 @@
-﻿using MinimalKafka.Builders;
-
-namespace MinimalKafka.Stream.Internals;
+﻿namespace MinimalKafka.Stream.Internals;
 
 internal sealed class JoinConventionBuilder(
-    IKafkaConventionBuilder left, 
+    IKafkaConventionBuilder left,
     IKafkaConventionBuilder right) : IKafkaConventionBuilder
 {
     public void Add(Action<IKafkaBuilder> convention)

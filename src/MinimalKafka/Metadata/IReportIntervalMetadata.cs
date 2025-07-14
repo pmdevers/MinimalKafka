@@ -1,5 +1,4 @@
 ﻿namespace MinimalKafka.Metadata;
-
 /// <summary>
 /// Represents metadata for specifying the report interval configuration for a Kafka client.
 /// </summary>

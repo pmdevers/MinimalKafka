@@ -1,8 +1,5 @@
-﻿using MinimalKafka.Builders;
-
-namespace MinimalKafka.Stream.Internals;
-
-internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic) 
+﻿namespace MinimalKafka.Stream.Internals;
+internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string topic)
     : IStreamBuilder<TKey, TValue>
     where TKey : notnull
 {
@@ -22,4 +19,13 @@ internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string 
 
     public IKafkaConventionBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
         => builder.MapTopic(_topic, (KafkaContext c, TKey key, TValue value) => handler(c, key, value));
+
+    public IKafkaConventionBuilder Into(KafkaDelegate handler)
+       => builder.MapTopic(_topic, handler);
 }
+
+
+internal record Branch<TKey, TValue>(
+    Func<TKey, TValue, bool> Predicate,
+    Func<KafkaContext, TKey, TValue, Task> BranchAction
+);

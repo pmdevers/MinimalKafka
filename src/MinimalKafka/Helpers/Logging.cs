@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
 namespace MinimalKafka.Helpers;
-
 internal static partial class Logging
 {
 

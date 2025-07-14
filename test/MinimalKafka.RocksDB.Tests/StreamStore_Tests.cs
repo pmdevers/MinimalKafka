@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using MinimalKafka.Stream;
+using System.Text;
 
 namespace MinimalKafka.RocksDB.Tests;
 
@@ -23,16 +23,17 @@ public class StreamStore_Tests
             });
         });
         var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IStreamStoreFactory>();
-        var streamStore = factory.GetStreamStore<string, string>();
+        var factory = provider.GetRequiredService<IKafkaStoreFactory>();
+        var streamStore = factory.GetStore(KafkaConsumerKey.Random("test"));
+        var key = Encoding.UTF8.GetBytes("key");
+        var value = Encoding.UTF8.GetBytes("value");
+
         // Test adding new key
-        await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
-        var value = await streamStore.FindByIdAsync("key");
-        Assert.Equal("value", value);
-        // Test updating existing key
-        await streamStore.AddOrUpdate("key", _ => "value", (_, _) => "value2");
-        var updatedValue = await streamStore.FindByIdAsync("key");
-        Assert.Equal("value2", updatedValue);
+        await streamStore.AddOrUpdate(key, value);
+
+        var val = await streamStore.FindByIdAsync(key);
+
+        Assert.Equal(val,  value);
     }
 }
 

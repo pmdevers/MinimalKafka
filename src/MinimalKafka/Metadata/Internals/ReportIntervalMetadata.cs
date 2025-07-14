@@ -1,12 +1,8 @@
-﻿using MinimalKafka.Helpers;
+﻿namespace MinimalKafka.Metadata.Internals;
 
-namespace MinimalKafka.Metadata.Internals;
 
-internal class ReportIntervalMetadata(int reportInterval) : IReportIntervalMetadata
+[AttributeUsage(AttributeTargets.Method)]
+internal class ReportIntervalMetadataAttribute(int interval) : Attribute, IReportIntervalMetadata
 {
-    public int ReportInterval { get; } = reportInterval;
-
-    /// <inheritdoc/>
-    public override string ToString()
-        => DebuggerHelpers.GetDebugText(nameof(ReportInterval), ReportInterval);
+    public int ReportInterval => interval;
 }

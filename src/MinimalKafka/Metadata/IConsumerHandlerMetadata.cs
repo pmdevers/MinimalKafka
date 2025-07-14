@@ -1,7 +1,6 @@
 ﻿using Confluent.Kafka;
 
 namespace MinimalKafka.Metadata;
-
 /// <summary>
 /// Represents metadata for configuring various event handlers on a Kafka consumer.
 /// </summary>

@@ -1,6 +1,5 @@
-﻿using KafkaAdventure.Extensions;
-using KafkaAdventure.Features.Locations;
-using MinimalKafka.Extension;
+﻿using KafkaAdventure.Features.Locations;
+using MinimalKafka;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features.Movement;
@@ -16,7 +15,7 @@ public static class MovementFeature
             .Join<string, Location>("game-player-position").OnKey()
             .Into(async (c, k, v) =>
             {
-                if (v.Item1 is null || c.Value?.GetType() == typeof(Location))
+                if (v.Item1 is null || c.ConsumerKey.TopicName == "game-player-position")
                 {
                     return;
                 }
@@ -41,8 +40,7 @@ public static class MovementFeature
                 {
                     await c.ProduceAsync("game-response", k, new Response("LOCATION", $"You can't go that way."));
                 }
-            })
-            .AsFeature("Movement");
+            });
     }
     public record Position(int X, int Y);
 

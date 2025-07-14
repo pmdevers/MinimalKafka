@@ -1,12 +1,6 @@
 ﻿using Confluent.Kafka;
-using Microsoft.Extensions.Logging;
 using MinimalKafka.Serializers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace MinimalKafka.Tests.Serializers;
 public class JsonTextSerializerTests
@@ -15,7 +9,7 @@ public class JsonTextSerializerTests
     public void Constructor_ShouldInitializeWithDefaultJsonOptionsAndNullLogger()
     {
         // Arrange & Act
-        var serializer = new JsonTextSerializer<string>(null);
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Assert
         serializer.Should().NotBeNull();
@@ -24,11 +18,8 @@ public class JsonTextSerializerTests
     [Fact]
     public void Constructor_ShouldUseProvidedJsonOptions()
     {
-        // Arrange
-        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
         // Act
-        var serializer = new JsonTextSerializer<string>(jsonOptions);
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Assert
         serializer.Should().NotBeNull();
@@ -39,11 +30,10 @@ public class JsonTextSerializerTests
     {
         // Arrange
         var data = "test";
-        var serializer = new JsonTextSerializer<string>(null);
-        var context = new SerializationContext();
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Act
-        var result = serializer.Serialize(data, context);
+        var result = serializer.Serialize(data);
 
         // Assert
         result.Should().NotBeNull();
@@ -56,11 +46,10 @@ public class JsonTextSerializerTests
         // Arrange
         var data = "test";
         var jsonData = JsonSerializer.SerializeToUtf8Bytes(data);
-        var serializer = new JsonTextSerializer<string>(null);
-        var context = new SerializationContext();
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Act
-        var result = serializer.Deserialize(jsonData, false, context);
+        var result = serializer.Deserialize(jsonData);
 
         // Assert
         result.Should().Be(data);
@@ -70,11 +59,10 @@ public class JsonTextSerializerTests
     public void Deserialize_ShouldHandleNullData()
     {
         // Arrange
-        var serializer = new JsonTextSerializer<string>(null);
-        var context = new SerializationContext();
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Act
-        var result = serializer.Deserialize([], true, context);
+        var result = serializer.Deserialize([]);
 
         // Assert
         result.Should().BeNull();
@@ -84,11 +72,10 @@ public class JsonTextSerializerTests
     public void Deserialize_ShouldHandleIgnoreType()
     {
         // Arrange
-        var serializer = new JsonTextSerializer<Ignore>(null);
-        var context = new SerializationContext();
+        var serializer = new SystemTextJsonSerializer<Ignore>();
 
         // Act
-        var result = serializer.Deserialize([], false, context);
+        var result = serializer.Deserialize([]);
 
         // Assert
         result.Should().BeNull();
@@ -99,13 +86,12 @@ public class JsonTextSerializerTests
     {
         // Arrange
         var invalidJson = new byte[] { 0x01, 0x02, 0x03 };
-        var serializer = new JsonTextSerializer<string>(null);
-        var context = new SerializationContext();
+        var serializer = new SystemTextJsonSerializer<string>();
 
         // Act
         Action act = () =>
         {
-            _ = serializer.Deserialize(invalidJson, false, context);
+            _ = serializer.Deserialize(invalidJson);
         };
 
         // Assert

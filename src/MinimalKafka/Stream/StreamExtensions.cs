@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using MinimalKafka.Builders;
 using MinimalKafka.Stream.Internals;
 
 namespace MinimalKafka.Stream;
@@ -41,4 +40,3 @@ public static class StreamExtensions
         return sb;
     }
 }
-

@@ -1,4 +1,4 @@
-﻿using MinimalKafka.Builders;
+﻿using MinimalKafka.Internals;
 
 namespace MinimalKafka.Tests;
 
@@ -16,7 +16,7 @@ public class KafkaServiceTests
             Substitute.For<IKafkaProcess>(),
             Substitute.For<IKafkaProcess>()
         ];
-        _datasource.GetProceses().Returns(_processes);
+        _datasource.GetProcesses().Returns(_processes);
         
         _builder.DataSource.Returns(_datasource);
     }
@@ -72,8 +72,6 @@ public class KafkaServiceTests
     {
         // Arrange
         var builder = Substitute.For<IKafkaBuilder>();
-        builder.DataSource.GetProceses().Returns([]);
-
         // Act
         var processes =  new KafkaService(builder).Processes;
 

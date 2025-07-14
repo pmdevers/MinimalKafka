@@ -1,5 +1,4 @@
-﻿using KafkaAdventure.Extensions;
-using MinimalKafka.Extension;
+﻿using MinimalKafka;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features.CommandProcessor;
@@ -16,7 +15,7 @@ public static class ProcessorFeature
                 x.Branch(
                     (k, v) => v.IsCommand("HELP"),
                     (c,k,v) => c.ProduceAsync("game-response", k, 
-                    new Response(v.Cmd, "Commands: go [north/south/east/west], look, take [item], inventory"))
+                        new Response(v.Cmd, "Commands: go [north/south/east/west], look, take [item], inventory"))
                 );
 
                 x.Branch(
@@ -45,9 +44,8 @@ public static class ProcessorFeature
 
                 x.DefaultBranch((c, k, v) 
                     => c.ProduceAsync("game-response", k, 
-                    new Response(v.Cmd, $"The command '{v.Cmd}' is invalid!")));
-            })
-            .AsFeature("Commands");
+                        new Response(v.Cmd, $"The command '{v.Cmd}' is invalid!")));
+            });
     }
 
     public record Command(string Cmd, string[] Args)

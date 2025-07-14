@@ -1,8 +1,6 @@
-﻿using KafkaAdventure.Extensions;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MinimalKafka;
-using MinimalKafka.Metadata;
 
 namespace KafkaAdventure.Features.Input;
 
@@ -13,8 +11,7 @@ public static class InputFeature
     {
         Console.WriteLine("Starting Up InputFeature");
         app.MapHub<InputHub>("/input");
-        app.MapTopic("game-response", HandleAsync)
-            .AsFeature("Input");
+        app.MapTopic("game-response", HandleAsync);
     }
 
     public static async Task HandleAsync([FromServices] IHubContext<InputHub> hub, [FromKey] string gameId, [FromValue] Response response)
