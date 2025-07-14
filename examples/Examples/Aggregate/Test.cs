@@ -43,7 +43,9 @@ public record Test : IAggregate<Guid, Test, TestCommands>
             nameof(Create) => Create(command),
             nameof(Increment) => state.Increment(),
             nameof(Decrement) => state.Decrement(),
-            nameof(SetCounter) => state.SetCounter(command.SetCounter!),
+            nameof(SetCounter) => command.SetCounter != null
+                ? state.SetCounter(command.SetCounter)
+                : Result.Failed(state, "SetCounter command data is null"),
             _ => Result.Failed(state, "Unknown command: " + command.CommandName)
         };
 
