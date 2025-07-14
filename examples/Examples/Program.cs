@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Examples;
 using Examples.Aggregate;
 using MinimalKafka;
+using MinimalKafka.Aggregates;
 using MinimalKafka.Stream;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,7 @@ builder.Services.AddMinimalKafka(config =>
 var app = builder.Build();
 
 
-app.MapAggregate<Guid, TestCommands, Test>("tests");
+app.MapAggregate<Test, Guid, TestCommands>("tests");
 
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
