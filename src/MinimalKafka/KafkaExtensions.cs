@@ -28,6 +28,8 @@ public static class KafkaExtensions
 
         configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
+        configBuilder.WithReportInterval(5);
         configBuilder.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithTopicFormatter(topic => topic);
 
