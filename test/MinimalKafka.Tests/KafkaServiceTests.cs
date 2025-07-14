@@ -1,4 +1,6 @@
-﻿namespace MinimalKafka.Tests;
+﻿using MinimalKafka.Internals;
+
+namespace MinimalKafka.Tests;
 
 
 public class KafkaServiceTests

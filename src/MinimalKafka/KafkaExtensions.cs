@@ -111,18 +111,4 @@ public static class KafkaExtensions
         builder.Services.AddSingleton(sp => create(sp));
         return builder;
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <typeparam name="TBuilder"></typeparam>
-    /// <param name="builder"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
-    public static TBuilder UseJsonSerializer<TBuilder>(this TBuilder builder, Action<JsonSerializerOptions> options)
-        where TBuilder : IKafkaConfigBuilder
-    {
-        builder.Services.AddTransient(typeof(IKafkaSerializer<>), typeof(SystemTextJsonSerializer<>));
-        return builder;
-    }
 }
