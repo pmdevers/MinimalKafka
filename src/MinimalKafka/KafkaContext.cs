@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
+using System.Text;
 
 namespace MinimalKafka;
 
@@ -13,12 +14,12 @@ public class KafkaContext
 {
     private readonly Message<byte[], byte[]> _message;
 
-    private KafkaContext(Message<byte[], byte[]> message, KafkaConsumerKey consumerKey, IServiceProvider requestServices, IReadOnlyList<object> metadata)
+    private KafkaContext(KafkaConsumerConfig config, Message<byte[], byte[]> message, IServiceProvider requestServices)
     {
-        _message = message;
-        ConsumerKey = consumerKey; 
+        ConsumerKey = config.Key; 
+        Metadata = config.Metadata;
         RequestServices = requestServices;
-        Metadata = metadata;
+        _message = message;
     }
 
 
@@ -49,11 +50,11 @@ public class KafkaContext
     /// <summary>
     /// 
     /// </summary>
-    public IReadOnlyDictionary<string, byte[]> Headers => _message.Headers
-        .ToDictionary(x => x.Key, y => y.GetValueBytes());
+    public IReadOnlyDictionary<string, string> Headers => _message.Headers
+        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()));
 
-    internal static KafkaContext Create(KafkaConsumerKey consumerKey, Message<byte[], byte[]> message, IServiceProvider serviceProvider, IReadOnlyList<object> metadata)
-        => new(message, consumerKey, serviceProvider, metadata);
+    internal static KafkaContext Create(KafkaConsumerConfig config, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
+        => new(config, message, serviceProvider);
 
     /// <summary>
     /// 

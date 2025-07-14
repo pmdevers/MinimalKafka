@@ -11,23 +11,23 @@ public class StreamBuilderTests
     [Fact]
     public void Join_ReturnsJoinBuilder_WithCorrectParams()
     {
-        var builder = Substitute.For<IKafkaBuilder>();
+        var builder = new KafkaBuilder(EmptyServiceProvider.Instance);
         var streamBuilder = new StreamBuilder<string, int>(builder, _mainTopic);
 
         var join = streamBuilder.Join<long, double>(_joinTopic);
 
-        join.Should().BeOfType<IJoinBuilder<string, int, long,double>>();
+        join.Should().BeAssignableTo<IJoinBuilder<string, int, long, double>>();
     }
 
     [Fact]
     public void InnerJoin_ReturnsJoinBuilder_WithCorrectParams()
     {
-        var builder = Substitute.For<IKafkaBuilder>();
+        var builder = new KafkaBuilder(EmptyServiceProvider.Instance);
         var streamBuilder = new StreamBuilder<string, int>(builder, _mainTopic);
 
         var join = streamBuilder.InnerJoin<long, double>(_joinTopic);
 
-        join.Should().BeOfType<IJoinBuilder<string, int, long, double>>();
+        join.Should().BeAssignableTo<IJoinBuilder<string, int, long, double>>();
     }
 
     [Fact]

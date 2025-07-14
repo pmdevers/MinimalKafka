@@ -5,22 +5,38 @@ using MinimalKafka.Helpers;
 
 namespace MinimalKafka.Internals;
 
+internal class KafkaConsumerConfig
+{
+    public required KafkaConsumerKey Key { get; init; }
+    public required IReadOnlyList<KafkaDelegate> Delegates { get; init; }
+    public required IReadOnlyList<object> Metadata { get; init; }
+
+    internal static KafkaConsumerConfig Create(KafkaConsumerKey key, List<KafkaDelegate> delegates, List<object> metaData)
+        => new()
+        {
+            Key = key,
+            Delegates = [.. delegates],
+            Metadata = [.. metaData]
+        };
+}
+
 internal class KafkaConsumer(
-    KafkaConsumerKey consumerKey,
-    bool autoCommitEnabled,
-    IConsumer<byte[], byte[]> consumer,
+    KafkaConsumerConfig config,
     IKafkaProducer producer,
-    KafkaDelegate[] kafkaDelegates,
     KafkaTopicFormatter topicFormatter,
-    IReadOnlyList<object> metadata,
     IServiceProvider serviceProvider,
     ILogger<KafkaConsumer> logger) : IKafkaConsumer
 {
+    private long _recordsConsumed;
+    private readonly int _reportInterval = config.Metadata.ReportInterval();
+    private readonly bool _autoCommitEnabled = config.Metadata.AutoCommitEnabled();
+    private readonly IConsumer<byte[], byte[]> _consumer = CreateConsumer(config.Metadata);
+
     public void Subscribe()
     {
-        var topic = topicFormatter(consumerKey.TopicName);
-        consumer.Subscribe(topic);
-        logger.Subscribed(consumerKey.GroupId, consumerKey.ClientId, topic);
+        var topic = topicFormatter(config.Key.TopicName);
+        _consumer.Subscribe(topic);
+        logger.Subscribed(config.Key.GroupId, config.Key.ClientId, topic);
     }
 
     public async Task Consume(CancellationToken cancellationToken)
@@ -29,15 +45,20 @@ internal class KafkaConsumer(
         {
             await using var scope = serviceProvider.CreateAsyncScope();
 
-            var result = consumer.Consume(cancellationToken);
+            var result = _consumer.Consume(cancellationToken);
 
-            var context = KafkaContext.Create(consumerKey, result.Message, scope.ServiceProvider, metadata);
+            if (++_recordsConsumed % _reportInterval == 0)
+            {
+                logger.RecordsConsumed(config.Key.GroupId, config.Key.ClientId, _recordsConsumed, result.Topic);
+            }
+
+            var context = KafkaContext.Create(config, result.Message, scope.ServiceProvider);
 
             var store = context.GetTopicStore();
 
             await store.AddOrUpdate(context.Key, context.Value);
 
-            foreach (var kafkaDelegate in kafkaDelegates)
+            foreach (var kafkaDelegate in config.Delegates)
             {
                 await kafkaDelegate.Invoke(context);
             }
@@ -50,7 +71,7 @@ internal class KafkaConsumer(
         when(ex.CancellationToken == cancellationToken)
         {
             
-            logger.OperatonCanceled(consumerKey.GroupId, consumerKey.ClientId);
+            logger.OperatonCanceled(config.Key.GroupId, config.Key.ClientId);
         }
     }
 
@@ -58,28 +79,45 @@ internal class KafkaConsumer(
     {
         if (_isClosed)
         {
-            logger.ConsumerAlreadyClosed(consumerKey.GroupId, consumerKey.ClientId);
+            logger.ConsumerAlreadyClosed(config.Key.GroupId, config.Key.ClientId);
             return;
         }
 
         _isClosed = true;
 
-        consumer.Close();
-        consumer.Dispose();
-        logger.ConsumerClosed(consumerKey.GroupId, consumerKey.ClientId);
+        _consumer.Close();
+        _consumer.Dispose();
+        logger.ConsumerClosed(config.Key.GroupId, config.Key.ClientId);
     }
 
     private bool _isClosed;
 
     private void Commit(ConsumeResult<byte[], byte[]> result)
     {
-        if (!autoCommitEnabled)
+        if (!_autoCommitEnabled)
         {
-            logger.Committing(consumerKey.GroupId, consumerKey.ClientId);
+            logger.Committing(config.Key.GroupId, config.Key.ClientId);
 
-            consumer.StoreOffset(result);
-            consumer.Commit();
+            _consumer.StoreOffset(result);
+            _consumer.Commit();
         }
+    }
+
+    private static IConsumer<byte[], byte[]> CreateConsumer(IReadOnlyList<object> metadata)
+    {
+        var config = metadata.ConsumerConfig();
+        var handlers = metadata.ConsumerHandlers();
+
+        return new ConsumerBuilder<byte[], byte[]>(config)
+            .SetKeyDeserializer(Deserializers.ByteArray)
+            .SetValueDeserializer(Deserializers.ByteArray)
+            .SetStatisticsHandler(handlers?.StatisticsHandler)
+            .SetErrorHandler(handlers?.ErrorHandler)
+            .SetLogHandler(handlers?.LogHandler)
+            .SetPartitionsAssignedHandler(handlers?.PartitionsAssignedHandler)
+            .SetPartitionsLostHandler(handlers?.PartitionsLostHandler)
+            .SetPartitionsRevokedHandler(handlers?.PartitionsRevokedHandler)
+            .Build();
     }
 }
 

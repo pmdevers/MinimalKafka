@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
-
-namespace Examples.Aggregate;
+﻿namespace Examples.Aggregate;
 
 public class TestCommands : IAggregateCommands<Guid>
 {
@@ -8,7 +6,13 @@ public class TestCommands : IAggregateCommands<Guid>
     public required int Version { get; init; }
     public required string CommandName { get; init; }
 
+    public SetCounter? SetCounter { get; set; }
+
 }
+
+public record SetCounter(int Counter);
+
+
 public record Test : IAggregate<Guid, Test, TestCommands>
 {
     public Guid Id { get; init; }
@@ -25,6 +29,7 @@ public record Test : IAggregate<Guid, Test, TestCommands>
             nameof(Create) => Create(command),
             nameof(Increment) => state.Increment(),
             nameof(Decrement) => state.Decrement(),
+            nameof(SetCounter) => state.SetCounter(command.SetCounter!),
             _ => Result.Failed(state, "Unknown command: " + command.CommandName)
         };
 
@@ -59,6 +64,24 @@ public record Test : IAggregate<Guid, Test, TestCommands>
         return this with
         {
             Counter = Counter - 1
+        };
+    }
+
+    public Result<Test> SetCounter(SetCounter cmd) 
+    {
+        if(cmd.Counter < 0)
+        {
+            return Result.Failed(this, "Counter cannot be less than 0.");
+        }
+
+        if(cmd.Counter > 100)
+        {
+            return Result.Failed(this, "Counter connot be more then 100.");
+        }
+
+        return this with
+        {
+            Counter = cmd.Counter
         };
     }
 }

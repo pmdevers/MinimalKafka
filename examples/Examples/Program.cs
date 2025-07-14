@@ -1,3 +1,4 @@
+using Confluent.Kafka;
 using Examples;
 using Examples.Aggregate;
 using MinimalKafka;
@@ -9,12 +10,12 @@ builder.Services.AddMinimalKafka(config =>
  {
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           //.WithBootstrapServers("nas:9092")
+           .WithBootstrapServers("nas:9092")
            .WithGroupId(AppDomain.CurrentDomain.FriendlyName)
            .WithClientId(AppDomain.CurrentDomain.FriendlyName)
            .WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
-           //.WithOffsetReset(AutoOffsetReset.Earliest)
-           //.WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
+           .WithOffsetReset(AutoOffsetReset.Earliest)
+           .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            .WithJsonSerializers()
            .UseRocksDB(x =>
            {

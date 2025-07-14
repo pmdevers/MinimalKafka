@@ -19,6 +19,9 @@ internal sealed class StreamBuilder<TKey, TValue>(IKafkaBuilder builder, string 
 
     public IKafkaConventionBuilder Into(Func<KafkaContext, TKey, TValue, Task> handler)
         => builder.MapTopic(_topic, (KafkaContext c, TKey key, TValue value) => handler(c, key, value));
+
+    public IKafkaConventionBuilder Into(KafkaDelegate handler)
+       => builder.MapTopic(_topic, handler);
 }
 
 

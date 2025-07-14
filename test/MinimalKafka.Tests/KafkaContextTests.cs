@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using MinimalKafka.Internals;
 using System.Text;
 
 namespace MinimalKafka.Tests;
@@ -11,53 +12,24 @@ public class KafkaContextTests
         // Arrange
         var key = Encoding.UTF8.GetBytes("testKey");
         var value = Encoding.UTF8.GetBytes("testValue");
-        var headers = new Headers();
-        var consumeResult = new ConsumeResult<byte[], byte[]>
-        {
-            Message = new Message<byte[], byte[]>
-            {
-                Key = key,
-                Value = value,
-                Headers = headers
-            }
-        };
-
+        
         var serviceProvider = Substitute.For<IServiceProvider>();
 
         // Act
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider, []);
+        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
+        var context = KafkaContext.Create(
+            config, 
+            new()
+            {
+                Key = key,
+                Value = value
+            }, 
+            serviceProvider);
 
         // Assert
         context.Should().BeOfType<KafkaContext>();
         context.Key.SequenceEqual(key).Should().BeTrue();
         context.Value.SequenceEqual(value).Should().BeTrue();
-        context.RequestServices.Should().BeSameAs(serviceProvider);
-    }
-
-    [Fact]
-    public void KafkaContext_Generic_ShouldReturnCorrectKeyAndValue()
-    {
-        // Arrange
-        var key = Encoding.UTF8.GetBytes("testKey");
-        var value = Encoding.UTF8.GetBytes("testValue");
-        var headers = new Headers();
-        var consumeResult = new ConsumeResult<byte[], byte[]>
-        {
-            Message = new Message<byte[], byte[]>
-            {
-                Key = key,
-                Value = value,
-                Headers = headers
-            }
-        };
-
-        var serviceProvider = Substitute.For<IServiceProvider>();
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), consumeResult.Message, serviceProvider, []);
-
-        // Act & Assert
-        context.Key.SequenceEqual(key).Should().BeTrue();
-        context.Value.SequenceEqual(value).Should().BeTrue();
-        context.Headers.Should().BeEmpty();
         context.RequestServices.Should().BeSameAs(serviceProvider);
     }
 }

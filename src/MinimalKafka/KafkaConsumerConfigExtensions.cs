@@ -89,12 +89,14 @@ public static class KafkaConsumerConfigExtensions
     /// </summary>
     /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
     /// <param name="builder">The builder to configure.</param>
+    /// <param name="offsetReset"></param>
     /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
-    public static TBuilder WithOffsetReset<TBuilder>(this TBuilder builder)
+    public static TBuilder WithOffsetReset<TBuilder>(this TBuilder builder, AutoOffsetReset offsetReset)
          where TBuilder : IKafkaConventionBuilder
     {
-        return builder.UpdateConsumerConfig(x => x.AutoOffsetReset = AutoOffsetReset.Earliest);
+        return builder.UpdateConsumerConfig(x => x.AutoOffsetReset = offsetReset);
     }
+
 
     /// <summary>
     /// 
@@ -196,6 +198,23 @@ public static class KafkaConsumerConfigExtensions
     }
 
     /// <summary>
+    /// Ensures that a metadata object of type <typeparamref name="TMetadata"/> exists in the builder's metadata collection,
+    /// and applies the specified assignment action to each instance.
+    /// </summary>
+    /// <typeparam name="TMetadata">The type of metadata to ensure and assign.</typeparam>
+    /// <param name="b">The Kafka builder.</param>
+    /// <param name="assign">The action to apply to each metadata instance.</param>
+    public static void Ensure<TMetadata>(this IKafkaBuilder b, Action<TMetadata> assign)
+        where TMetadata : new()
+    {
+        if (!b.MetaData.OfType<TMetadata>().Any())
+            b.MetaData.Add(new TMetadata());
+
+        foreach (var ch in b.MetaData.OfType<TMetadata>())
+            assign(ch);
+    }
+
+    /// <summary>
     /// Configures the specified <see cref="IKafkaConfigBuilder"/> to use JSON-based serializers and deserializers for
     /// Kafka message keys and values.
     /// </summary>
@@ -214,6 +233,104 @@ public static class KafkaConsumerConfigExtensions
 
         builder.Services.AddSingleton<ISerializerFactory>(new SystemTextJsonSerializerFactory(defaults));
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a handler for the partition assigned event on the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The handler to invoke when partitions are assigned.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithPartitionAssignedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsAssignedHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a handler for the partition revoked event on the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The handler to invoke when partitions are revoked.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Action<object, List<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsRevokedHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a handler for the partition lost event on the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The handler to invoke when partitions are lost.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithPartitionLostHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsLostHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an error handler for the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The error handler delegate.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithErrorHandler<TBuilder>(this TBuilder builder, Action<object, Error> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.ErrorHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a statistics handler for the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The statistics handler delegate.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithStatisticsHandler<TBuilder>(this TBuilder builder, Action<object, string> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.StatisticsHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers a log handler for the consumer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The log handler delegate.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithLogHandler<TBuilder>(this TBuilder builder, Action<object, LogMessage> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.LogHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds report interval metadata to the builder.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="reportInterval">The report interval in milliseconds.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithReportInterval<TBuilder>(this TBuilder builder, int reportInterval)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.WithSingle(new ReportIntervalMetadataAttribute(reportInterval));
         return builder;
     }
 }
