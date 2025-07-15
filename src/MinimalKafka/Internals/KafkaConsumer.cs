@@ -47,6 +47,11 @@ internal class KafkaConsumer(
 
             var result = _consumer.Consume(cancellationToken);
 
+            if(result == null) 
+            {
+                return;
+            }
+
             if (++_recordsConsumed % _reportInterval == 0)
             {
                 logger.RecordsConsumed(config.Key.GroupId, config.Key.ClientId, _recordsConsumed, result.Topic);
@@ -66,6 +71,11 @@ internal class KafkaConsumer(
             await producer.ProduceAsync(context, cancellationToken);
 
             Commit(result);
+        }
+        catch (KafkaException ex) 
+        when (ex.Error.Code == ErrorCode.Local_NoOffset)
+        {
+            logger.NoOffsetStored(config.Key.GroupId, config.Key.ClientId, config.Key.TopicName);
         }
         catch (OperationCanceledException ex)
         when(ex.CancellationToken == cancellationToken)
