@@ -30,7 +30,7 @@ public static class AggregateExtensions
         string commandErrorSuffix = "-errors")
         where TKey : notnull
         where TAggregate : IAggregate<TKey, TAggregate, TCommand>
-        where TCommand : IAggregateCommands<TKey>
+        where TCommand : ICommand<TKey>
     {
         var sb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
         return sb.MapAggregate<TAggregate, TKey, TCommand>(topicName, commandSuffix, commandErrorSuffix);
@@ -58,7 +58,7 @@ public static class AggregateExtensions
     )
         where TKey : notnull
         where TAggregate : IAggregate<TKey, TAggregate, TCommand>
-        where TCommand : IAggregateCommands<TKey>
+        where TCommand : ICommand<TKey>
     {
         return builder.MapStream<TKey, TCommand>($"{topicName}{commandSuffix}")
             .Join<TKey, TAggregate>(topicName).OnKey()
@@ -73,7 +73,7 @@ public static class AggregateExtensions
                 }
 
                 // If state is null, initialize aggregate from command
-                state ??= TAggregate.Create(cmd).State;
+                state ??= TAggregate.Create(key);
 
                 // Version check
                 if (cmd.Version != state.Version)
@@ -81,7 +81,7 @@ public static class AggregateExtensions
                     await c.ProduceAsync(
                         $"{topicName}{commandErrorSuffix}", 
                         key, 
-                        CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state.Version}"), cmd));
+                        CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
                     return;
                 }
 

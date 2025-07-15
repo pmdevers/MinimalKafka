@@ -2,6 +2,14 @@
 
 namespace Examples.Aggregate;
 
+public enum Commands
+{
+    Create,
+    Increment,
+    Decrement,
+    SetCounter
+}
+
 /// <summary>
 /// Example aggregate for testing purposes. Supports increment, decrement, and set operations on a counter.
 /// </summary>
@@ -27,8 +35,8 @@ public record Test : IAggregate<Guid, Test, TestCommands>
     /// </summary>
     /// <param name="command">The command to initialize the aggregate.</param>
     /// <returns>A new <see cref="Test"/> aggregate wrapped in a <see cref="Result{Test}"/>.</returns>
-    public static Result<Test> Create(TestCommands command)
-        => new Test() { Id = command.Id, Version = 0 };
+    public static Test Create(Guid id)
+        => new() { Id = id };
 
     /// <summary>
     /// Applies a command to the current state and returns the resulting state.
@@ -38,15 +46,15 @@ public record Test : IAggregate<Guid, Test, TestCommands>
     /// <returns>The new state as a <see cref="Result{Test}"/>.</returns>
     public static Result<Test> Apply(Test state, TestCommands command)
     {
-        var result = command.CommandName switch
+        var result = command.Command switch
         {
-            nameof(Create) => Create(command),
-            nameof(Increment) => state.Increment(),
-            nameof(Decrement) => state.Decrement(),
-            nameof(SetCounter) => command.SetCounter != null
+            Commands.Create => state.Create(),
+            Commands.Increment => state.Increment(),
+            Commands.Decrement => state.Decrement(),
+            Commands.SetCounter => command.SetCounter != null
                 ? state.SetCounter(command.SetCounter)
                 : Result.Failed(state, "SetCounter command data is null"),
-            _ => Result.Failed(state, "Unknown command: " + command.CommandName)
+            _ => Result.Failed(state, "Unknown command: " + command.Command)
         };
 
         if (result.IsSuccess)
@@ -55,6 +63,13 @@ public record Test : IAggregate<Guid, Test, TestCommands>
         }
 
         return result;
+    }
+
+    public Result<Test> Create()
+    {
+        return this with { 
+            Counter = 0 
+        };
     }
 
     /// <summary>

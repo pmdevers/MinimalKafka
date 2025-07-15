@@ -2,12 +2,12 @@
 
 /// <summary>
 /// Represents a command for an aggregate in a domain-driven design context,
-/// providing identification, versioning, and command naming metadata.
+/// providing identification, versioning.
 /// </summary>
 /// <typeparam name="TKey">
 /// The type used for the aggregate's unique identifier.
 /// </typeparam>
-public interface IAggregateCommands<out TKey>
+public interface ICommand<out TKey>
 {
     /// <summary>
     /// Gets the unique identifier of the aggregate for which this command is intended.
@@ -19,9 +19,4 @@ public interface IAggregateCommands<out TKey>
     /// Used for optimistic concurrency checks.
     /// </summary>
     int Version { get; }
-
-    /// <summary>
-    /// Gets the name of the command, typically used for logging, auditing, or dispatching purposes.
-    /// </summary>
-    string CommandName { get; }
 }
