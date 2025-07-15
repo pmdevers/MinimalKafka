@@ -57,7 +57,7 @@ internal class KafkaConsumer(
                 logger.RecordsConsumed(config.Key.GroupId, config.Key.ClientId, _recordsConsumed, result.Topic);
             }
 
-            var context = KafkaContext.Create(config, result.Message, scope.ServiceProvider);
+            var context = KafkaContext.Create(config.Key.TopicName, config.Metadata, result.Message, scope.ServiceProvider);
 
             var store = context.GetTopicStore();
 

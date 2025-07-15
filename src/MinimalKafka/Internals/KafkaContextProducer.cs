@@ -40,8 +40,7 @@ internal class KafkaContextProducer(
 
     public async Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? header = null)
     {
-        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random(Guid.NewGuid().ToString()), [], []);
-        var context = KafkaContext.Create(config, new() { Key = [], Value = [] }, serviceProvider);
+        var context = KafkaContext.Create(topic, [], new() { Key = [], Value = [] }, serviceProvider);
         await context.ProduceAsync(topic, key, value, header);
         await ProduceAsync(context, CancellationToken.None);
     }

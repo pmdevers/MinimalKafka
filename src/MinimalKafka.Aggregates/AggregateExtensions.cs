@@ -67,7 +67,7 @@ public static class AggregateExtensions
                 var (cmd, state) = join;
 
                 // Ignore null commands or recursive processing of state topic
-                if (cmd is null || c.ConsumerKey.TopicName == topicName)
+                if (cmd is null || c.TopicName == topicName)
                 {
                     return;
                 }

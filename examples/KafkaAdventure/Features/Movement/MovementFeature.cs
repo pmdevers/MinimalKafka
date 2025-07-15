@@ -15,7 +15,7 @@ public static class MovementFeature
             .Join<string, Location>("game-player-position").OnKey()
             .Into(async (c, k, v) =>
             {
-                if (v.Item1 is null || c.ConsumerKey.TopicName == "game-player-position")
+                if (v.Item1 is null || c.TopicName == "game-player-position")
                 {
                     return;
                 }

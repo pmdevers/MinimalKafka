@@ -16,9 +16,7 @@ public class KafkaContextTests
         var serviceProvider = Substitute.For<IServiceProvider>();
 
         // Act
-        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
-        var context = KafkaContext.Create(
-            config, 
+        var context = KafkaContext.Create("topic", [],
             new()
             {
                 Key = key,
