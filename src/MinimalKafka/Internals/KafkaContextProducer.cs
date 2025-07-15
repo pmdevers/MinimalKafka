@@ -13,7 +13,7 @@ internal class KafkaContextProducer : IKafkaProducer
     private readonly IServiceProvider _serviceProvider;
     private readonly KafkaTopicFormatter _formatter;
     private readonly ILogger<KafkaContextProducer> _logger;
-
+    private readonly object _lock = new();
     public KafkaContextProducer(
         IServiceProvider serviceProvider,
         KafkaTopicFormatter formatter,
@@ -24,50 +24,54 @@ internal class KafkaContextProducer : IKafkaProducer
         _logger = logger;
     }
 
-    public async Task ProduceAsync(KafkaContext ctx, CancellationToken ct)
+    public Task ProduceAsync(KafkaContext ctx, CancellationToken ct)
     {
         if(!ctx.Messages.Any())
-            return;
+            return Task.CompletedTask;
 
-        var config = ctx.Metadata.ProducerConfig();
-        var producer = new ProducerBuilder<byte[], byte[]>(config)
-            .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
-            .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
-            .Build();
+        lock (_lock) { 
 
-        producer.InitTransactions(TimeSpan.FromSeconds(5));
+            var config = ctx.Metadata.ProducerConfig();
+            var producer = new ProducerBuilder<byte[], byte[]>(config)
+                .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
+                .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
+                .Build();
 
-        try
-        {
-            producer.BeginTransaction();
+            producer.InitTransactions(TimeSpan.FromSeconds(5));
 
-            foreach (var msg in ctx.Messages)
+            try
             {
-                var formmattedTopic = _formatter(msg.Topic);
-                await producer.ProduceAsync(formmattedTopic, new Message<byte[], byte[]>()
-                {
-                    Key = msg.Key,
-                    Value = msg.Value
-                }, ct);
-            }
+                producer.BeginTransaction();
 
-            producer.CommitTransaction();
+                foreach (var msg in ctx.Messages)
+                {
+                    var formmattedTopic = _formatter(msg.Topic);
+                    producer.Produce(formmattedTopic, new Message<byte[], byte[]>()
+                    {
+                        Key = msg.Key,
+                        Value = msg.Value
+                    });
+                }
+
+                producer.CommitTransaction();
+            }
+            catch (KafkaException ex) when (ex.Error.IsFatal)
+            {
+                _logger.LogCritical(ex, ex.Message);
+                producer.AbortTransaction();
+                throw new InvalidOperationException("Producer fenced/invalid", ex);
+            }
+            catch
+            {
+                producer.AbortTransaction();
+                throw;
+            }
+            finally
+            {
+                producer.Dispose();
+            }
         }
-        catch (KafkaException ex) when (ex.Error.IsFatal)
-        {
-            _logger.LogCritical(ex, ex.Message);
-            producer.AbortTransaction();
-            throw new InvalidOperationException("Producer fenced/invalid", ex);
-        }
-        catch
-        {
-            producer.AbortTransaction();
-            throw;
-        }
-        finally
-        {
-            producer.Dispose();
-        }
+        return Task.CompletedTask;
     }
 
     public async Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? header = null)
