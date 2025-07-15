@@ -23,12 +23,12 @@ public static class JoinExample
                 var store = c.GetTopicStore("aanvragers");
 
                 var eersteAanvrager = await store.FindByKey<string, Aanvrager>(uitgangspunt.EersteAanvragerId);
-                var tweedeAamvrager = await store.FindByKey<string, Aanvrager>(uitgangspunt.TweedeAanvragerId);
+                var tweedeAanvrager = await store.FindByKey<string, Aanvrager>(uitgangspunt.TweedeAanvragerId);
 
                 await c.ProduceAsync("uitgangspunten-met-aanvragers", uitgangspunt.Id, uitgangspunt with
                 {
                     EersteAanvrager = eersteAanvrager,
-                    TweedeAanvrager = tweedeAamvrager
+                    TweedeAanvrager = tweedeAanvrager
                 });
             });
     }
