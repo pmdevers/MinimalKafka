@@ -3,6 +3,7 @@ using Examples.Aggregate;
 using Examples.Join;
 using MinimalKafka;
 using MinimalKafka.Aggregates;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,10 @@ builder.Services.AddMinimalKafka(config =>
            //.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
-           .WithJsonSerializers()
+           .WithJsonSerializers(x =>
+           {
+               x.Converters.Add(new JsonStringEnumConverter());
+           })
            .UseRocksDB(x =>
            {
                x.DataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RocksDB");
@@ -27,8 +31,8 @@ builder.Services.AddMinimalKafka(config =>
 var app = builder.Build();
 
 
-app.MapJoinExample();
-//app.MapAggregate<Test, Guid, TestCommands>("tests");
+//app.MapJoinExample();
+app.MapAggregate<Test, Guid, TestCommands>("tests");
 
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
