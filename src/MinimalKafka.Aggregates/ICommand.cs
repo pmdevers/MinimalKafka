@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Represents a command for an aggregate in a domain-driven design context,
-/// providing identification, versioning, and command naming metadata.
+/// providing identification, versioning.
 /// </summary>
 /// <typeparam name="TKey">
 /// The type used for the aggregate's unique identifier.

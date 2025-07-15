@@ -33,8 +33,7 @@ public interface IAggregate<TKey, TState, TCommand>
     abstract static Result<TState> Apply(TState state, TCommand command);
 
     /// <summary>
-    /// Creates a new aggregate state by applying the specified command.
-    /// Typically used for initializing a new aggregate instance.
+    /// Creates a new instance of an aggregate with the specified identifier
     /// </summary>
     /// <returns>
     /// A <see cref="Result{TState}"/> containing the initial state and success/error information.
