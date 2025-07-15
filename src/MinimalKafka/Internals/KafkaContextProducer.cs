@@ -23,7 +23,7 @@ internal class KafkaContextProducer(
 
             try
             {
-                var result = await producer.ProduceAsync(formmattedTopic, new Message<byte[], byte[]>()
+                await producer.ProduceAsync(formmattedTopic, new Message<byte[], byte[]>()
                 {
                     Key = msg.Key,
                     Value = msg.Value
