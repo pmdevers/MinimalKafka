@@ -33,7 +33,7 @@ jobs:
           arrTag=(${GITHUB_REF//\// })
           VERSION="${arrTag[2]}"
           echo Version: $VERSION
-          VERSION="${VERSION//v}"
+          VERSION="${VERSION##v}"
           echo Clean Version: $VERSION
           dotnet pack -v normal --no-restore -p:PackageVersion=$VERSION --configuration Release --output packages
    
