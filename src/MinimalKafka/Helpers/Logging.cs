@@ -56,9 +56,9 @@ internal static partial class Logging
     [LoggerMessage(
         EventId = 7,
         Level = LogLevel.Error,
-        Message = "Consumer returned an Exception!. {message}"
+        Message = "Consumer for topic: '{topic}' returned an Exception!. {message}"
     )]
-    public static partial void UnknownProcessException(this ILogger logger, string message);
+    public static partial void UnknownProcessException(this ILogger logger, string topic, string message);
 
     [LoggerMessage(
         EventId = 8,
