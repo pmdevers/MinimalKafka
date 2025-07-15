@@ -26,9 +26,9 @@ public static class KafkaStoreExtensions
         var valueSerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TValue>>();
 
         var keyVal = keySerializer.Serialize(key);
-        var value = await store.FindByIdAsync(keyVal) ?? [];
 
-        return valueSerializer.Deserialize(value);
+        var value = await store.FindByIdAsync(keyVal);
+        return value == null ? default : valueSerializer.Deserialize(value);
     }
 
     /// <summary>
