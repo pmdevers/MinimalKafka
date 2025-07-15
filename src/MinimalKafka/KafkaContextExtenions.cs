@@ -17,10 +17,7 @@ public static class KafkaContextExtenions
     public static IKafkaStore GetTopicStore(this KafkaContext context, string topicName)
     {
         return context.GetStoreFactory()
-            .GetStore(context.ConsumerKey with
-        {
-            TopicName = topicName
-        });
+            .GetStore(topicName);
     }
 
     /// <summary>
@@ -31,7 +28,7 @@ public static class KafkaContextExtenions
     public static IKafkaStore GetTopicStore(this KafkaContext context)
     {
         return context.GetStoreFactory()
-            .GetStore(context.ConsumerKey);
+            .GetStore(context.TopicName);
     }
 
     private static IKafkaStoreFactory GetStoreFactory(this KafkaContext context)

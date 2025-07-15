@@ -52,14 +52,12 @@ internal sealed class RocksDBStreamStoreFactory : IDisposable, IKafkaStoreFactor
     }
 
     private readonly object _lock = new();
-    public IKafkaStore GetStore(KafkaConsumerKey consumerKey)
+    public IKafkaStore GetStore(string topicName)
     {
 
         lock (_lock)
         {
-            var key = $"{consumerKey.TopicName}_{consumerKey.GetHashCode()}";
-
-            var cfHandle = _columnFamilies.GetOrAdd(key, key =>
+            var cfHandle = _columnFamilies.GetOrAdd(topicName, key =>
             {
                 // Only create if truly absent
                 return _db.CreateColumnFamily(new ColumnFamilyOptions(), key);

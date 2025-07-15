@@ -43,8 +43,8 @@ public interface IKafkaStoreFactory
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="consumerKey"></param>
+    /// <param name="topicName"></param>
     /// <returns></returns>
-    public IKafkaStore GetStore(KafkaConsumerKey consumerKey);
+    public IKafkaStore GetStore(string topicName);
 }
     

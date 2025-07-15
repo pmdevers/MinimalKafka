@@ -92,8 +92,7 @@ public class KafkaDelegateFactoryTests
 
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
-        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
-        var context = KafkaContext.Create(config, new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create("topic", [], new Message<byte[], byte[]>(), serviceProvider);
 
         await result.Delegate.Invoke(context);
 
@@ -181,8 +180,7 @@ public class KafkaDelegateFactoryTests
             }
         };
 
-        var config = KafkaConsumerConfig.Create(KafkaConsumerKey.Random("topic"), [], []);
-        var context = KafkaContext.Create(config, new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create("topic", [], new Message<byte[], byte[]>(), serviceProvider);
 
         try
         {

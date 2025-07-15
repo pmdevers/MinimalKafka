@@ -1,21 +1,22 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace MinimalKafka.Internals;
 
 internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : BackgroundService, IKafkaStoreFactory
 {
-    private readonly ConcurrentDictionary<KafkaConsumerKey, KafkaInMemoryStore> _stores = [];
+    private readonly ConcurrentDictionary<string, KafkaInMemoryStore> _stores = [];
     private readonly object _lock = new();
 
-    public IKafkaStore GetStore(KafkaConsumerKey consumerKey)
+    public IKafkaStore GetStore(string topicName)
     {
         lock (_lock)
         {
-            if (!_stores.TryGetValue(consumerKey, out KafkaInMemoryStore? store))
+            if (!_stores.TryGetValue(topicName, out KafkaInMemoryStore? store))
             {
                 store = new KafkaInMemoryStore(serviceProvider);
-                _stores.TryAdd(consumerKey, store);
+                _stores.TryAdd(topicName, store);
 
             }
             return store;

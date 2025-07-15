@@ -14,10 +14,10 @@ public class KafkaContext
 {
     private readonly Message<byte[], byte[]> _message;
 
-    private KafkaContext(KafkaConsumerConfig config, Message<byte[], byte[]> message, IServiceProvider requestServices)
+    private KafkaContext(string topic, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider requestServices)
     {
-        ConsumerKey = config.Key; 
-        Metadata = config.Metadata;
+        TopicName = topic; 
+        Metadata = metadata;
         RequestServices = requestServices;
         _message = message;
     }
@@ -26,7 +26,7 @@ public class KafkaContext
     /// <summary>
     /// The Unique ConsumerKey
     /// </summary>
-    public KafkaConsumerKey ConsumerKey { get; }
+    public string TopicName { get; }
 
     /// <summary>
     /// Thhe service provider.
@@ -53,8 +53,8 @@ public class KafkaContext
     public IReadOnlyDictionary<string, string> Headers => _message.Headers
         .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()));
 
-    internal static KafkaContext Create(KafkaConsumerConfig config, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
-        => new(config, message, serviceProvider);
+    internal static KafkaContext Create(string topic, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
+        => new(topic, metadata, message, serviceProvider);
 
     internal void Produce(KafkaMessage message)
     {

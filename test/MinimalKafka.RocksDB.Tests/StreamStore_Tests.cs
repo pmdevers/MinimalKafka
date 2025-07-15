@@ -24,7 +24,7 @@ public class StreamStore_Tests
         });
         var provider = services.BuildServiceProvider();
         var factory = provider.GetRequiredService<IKafkaStoreFactory>();
-        var streamStore = factory.GetStore(KafkaConsumerKey.Random("test"));
+        var streamStore = factory.GetStore("test");
         var key = Encoding.UTF8.GetBytes("key");
         var value = Encoding.UTF8.GetBytes("value");
 
