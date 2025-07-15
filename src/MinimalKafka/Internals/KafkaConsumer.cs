@@ -92,6 +92,8 @@ internal class KafkaConsumer(
 
     private bool _isClosed;
 
+    public string TopicName => config.Key.TopicName;
+
     private void Commit(ConsumeResult<byte[], byte[]> result)
     {
         if (!_autoCommitEnabled)

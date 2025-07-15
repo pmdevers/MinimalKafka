@@ -23,7 +23,7 @@ internal class KafkaProcess(
         } 
         catch (Exception ex) 
         {
-            logger.UnknownProcessException(ex.Message);
+            logger.UnknownProcessException(consumer.TopicName, ex.Message);
             throw new KafkaProcesException(ex, "Unknown Process error.");
         }
         finally

@@ -11,6 +11,11 @@ public interface IKafkaConsumer
     /// <summary>
     /// 
     /// </summary>
+    string TopicName { get; }
+
+    /// <summary>
+    /// 
+    /// </summary>
     void Subscribe();
     /// <summary>
     /// 
