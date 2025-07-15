@@ -29,7 +29,6 @@ public static class KafkaExtensions
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
         configBuilder.WithReportInterval(5);
-        configBuilder.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithTopicFormatter(topic => topic);
 
         config?.Invoke(configBuilder);
@@ -42,6 +41,16 @@ public static class KafkaExtensions
         });
 
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+
+        services.AddSingleton(sp =>
+        {
+            var builder = sp.GetRequiredService<IKafkaBuilder>();
+            var config = builder.MetaData.ProducerConfig();
+            return new ProducerBuilder<byte[], byte[]>(config)
+                .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
+                .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
+                .Build();
+        });
 
         services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
         services.AddHostedService<KafkaService>();

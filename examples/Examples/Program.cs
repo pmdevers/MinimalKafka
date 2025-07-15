@@ -13,7 +13,7 @@ builder.Services.AddMinimalKafka(config =>
            .WithBootstrapServers("nas:9092")
            .WithGroupId(AppDomain.CurrentDomain.FriendlyName)
            .WithClientId(AppDomain.CurrentDomain.FriendlyName)
-           .WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
+           //.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            .WithJsonSerializers()

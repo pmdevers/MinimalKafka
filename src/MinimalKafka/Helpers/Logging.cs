@@ -73,4 +73,11 @@ internal static partial class Logging
        Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' committing offset."
        )]
     public static partial void Committing(this ILogger logger, string groupId, string clientId);
+
+    [LoggerMessage(
+       EventId = 10,
+       Level = LogLevel.Information,
+       Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' no offset stored for topic: {Topic}"
+       )]
+    public static partial void NoOffsetStored(this ILogger logger, string groupId, string clientId, string topic);
 }
