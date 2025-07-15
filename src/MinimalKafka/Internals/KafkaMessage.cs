@@ -9,7 +9,6 @@ internal record KafkaMessage()
     public required byte[] Key { get; init; }
     public required byte[] Value { get; init; }
     public required Dictionary<string, string> Headers { get; init; }
-    public required long Timestamp { get; init; }
     internal static Headers GetKafkaHeaders() => [];
         
 };
