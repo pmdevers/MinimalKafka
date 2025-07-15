@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace MinimalKafka.Internals;
 
@@ -10,49 +11,62 @@ public delegate string KafkaTopicFormatter(string topic);
 internal class KafkaContextProducer : IKafkaProducer
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IProducer<byte[], byte[]> _producer;
     private readonly KafkaTopicFormatter _formatter;
+    private readonly ILogger<KafkaContextProducer> _logger;
 
     public KafkaContextProducer(
         IServiceProvider serviceProvider,
-        IProducer<byte[], byte[]> producer,
-        KafkaTopicFormatter formatter)
+        KafkaTopicFormatter formatter,
+        ILogger<KafkaContextProducer> logger)
     {
         _serviceProvider = serviceProvider;
-        _producer = producer;
         _formatter = formatter;
-
-        _producer.InitTransactions(TimeSpan.FromSeconds(5));
+        _logger = logger;
     }
+
     public async Task ProduceAsync(KafkaContext ctx, CancellationToken ct)
     {
         if(!ctx.Messages.Any())
             return;
 
+        var config = ctx.Metadata.ProducerConfig();
+        var producer = new ProducerBuilder<byte[], byte[]>(config)
+            .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
+            .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
+            .Build();
+
+        producer.InitTransactions(TimeSpan.FromSeconds(5));
+
         try
         {
-            _producer.BeginTransaction();
+            producer.BeginTransaction();
+
             foreach (var msg in ctx.Messages)
             {
                 var formmattedTopic = _formatter(msg.Topic);
-                await _producer.ProduceAsync(formmattedTopic, new Message<byte[], byte[]>()
+                await producer.ProduceAsync(formmattedTopic, new Message<byte[], byte[]>()
                 {
                     Key = msg.Key,
                     Value = msg.Value
                 }, ct);
             }
 
-            _producer.CommitTransaction();
+            producer.CommitTransaction();
         }
         catch (KafkaException ex) when (ex.Error.IsFatal)
         {
-            _producer.AbortTransaction();
+            _logger.LogCritical(ex, ex.Message);
+            producer.AbortTransaction();
             throw new InvalidOperationException("Producer fenced/invalid", ex);
         }
         catch
         {
-            _producer.AbortTransaction();
+            producer.AbortTransaction();
             throw;
+        }
+        finally
+        {
+            producer.Dispose();
         }
     }
 

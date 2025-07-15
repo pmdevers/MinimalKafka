@@ -6,7 +6,6 @@ using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
-using System.Text.Json;
 
 namespace MinimalKafka;
 
@@ -40,16 +39,6 @@ public static class KafkaExtensions
             var b = new KafkaBuilder(s);
             conventions.ForEach(x => x(b));
             return b;
-        });
-
-        services.AddSingleton(sp =>
-        {
-            var builder = sp.GetRequiredService<IKafkaBuilder>();
-            var config = builder.MetaData.OfType<IConfigMetadata>().First();
-            return new ProducerBuilder<byte[], byte[]>(config.ProducerConfig.AsEnumerable())
-                .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
-                .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
-                .Build();
         });
 
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
