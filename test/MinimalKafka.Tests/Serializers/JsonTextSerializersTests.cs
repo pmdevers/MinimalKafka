@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
 using System.Text.Json;
 
@@ -95,6 +96,6 @@ public class JsonTextSerializerTests
         };
 
         // Assert
-        act.Should().Throw<JsonException>();
+        act.Should().Throw<KafkaProcesException>();
     }
 }

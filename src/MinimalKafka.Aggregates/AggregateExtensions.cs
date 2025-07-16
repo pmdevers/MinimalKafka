@@ -91,7 +91,7 @@ public static class AggregateExtensions
                 // produce if command was succesfull
                 if (result.IsSuccess)
                 {
-                    await c.ProduceAsync(topicName, key, result.State);
+                    await c.ProduceAsync(topicName, result.State.Id, result.State);
                 }
                 else
                 {
