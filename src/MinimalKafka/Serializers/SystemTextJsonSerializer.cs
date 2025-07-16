@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using MinimalKafka.Internals;
+using System.Text;
+using System.Text.Json;
 
 namespace MinimalKafka.Serializers;
 
@@ -17,9 +19,16 @@ internal class SystemTextJsonSerializer<T>(JsonSerializerOptions? options = null
             return default!;
         }
 
-        var result = JsonSerializer.Deserialize<T>(value, _jsonOptions);
-
-        return (result ?? default)!;
+        try
+        {
+            // Attempt to deserialize directly from the span
+            return JsonSerializer.Deserialize<T>(value, _jsonOptions) ?? default!;
+        }
+        catch (JsonException ex)
+        {
+            // If deserialization fails, try to convert to string first
+            throw new KafkaProcesException(ex, $"Failed to deserialize value: '{Encoding.UTF8.GetString(value)}' to '{typeof(T).FullName}'");
+        }
     }
 
     public byte[] Serialize(T value)
