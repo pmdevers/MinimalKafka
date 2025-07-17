@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
+using MinimalKafka.Aggregates.Helpers;
 using MinimalKafka.Stream;
 
 namespace MinimalKafka.Aggregates;
@@ -24,7 +27,7 @@ public static class AggregateExtensions
     /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
     /// </returns>
     public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IApplicationBuilder builder, 
+        this IApplicationBuilder builder,
         string topicName,
         string commandSuffix = "-commands",
         string commandErrorSuffix = "-errors")
@@ -51,7 +54,7 @@ public static class AggregateExtensions
     /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
     /// </returns>
     public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IKafkaBuilder builder, 
+        this IKafkaBuilder builder,
         string topicName,
         string commandSuffix = "-commands",
         string commandErrorSuffix = "-errors"
@@ -62,44 +65,63 @@ public static class AggregateExtensions
     {
         return builder.MapStream<TKey, TCommand>($"{topicName}{commandSuffix}")
             .Join<TKey, TAggregate>(topicName).OnKey()
-            .Into(async (c, key, join) =>
+            .Into((c, k, r) => HandleAsync(c, k, r, commandErrorSuffix));
+    }
+
+    private static async Task HandleAsync<Tkey, TCommand, TAggregate>(KafkaContext context, Tkey key, (TCommand?, TAggregate?) join, string errorSuffix)
+            where Tkey : notnull
+            where TCommand : ICommand<Tkey>
+            where TAggregate : IAggregate<Tkey, TAggregate, TCommand>
+    {
+        var (cmd, state) = join;
+
+        var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
+
+        // Ignore null commands or recursive processing of state topic
+        if (cmd is null || context.TopicName == typeof(TAggregate).Name)
+        {
+            return;
+        }
+
+        // If state is null, initialize aggregate from command
+        state ??= TAggregate.Create(key);
+        
+        // Version check
+        if (cmd.Version != state.Version)
+        {
+            logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
+
+            await context.ProduceAsync(
+                $"{typeof(TAggregate).Name}{errorSuffix}",
+                key,
+                CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
+            return;
+        }
+
+        // Apply command
+        var result = TAggregate.Apply(state, cmd);
+        
+        // produce if command was succesfull
+        if (result.IsSuccess)
+        {
+            if (state.Version > cmd.Version)
             {
-                var (cmd, state) = join;
+                logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                await context.ProduceAsync(typeof(TAggregate).Name, result.State.Id, result.State);
+            }
+            else
+            {
+                logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+            }
+        }
+        else
+        {
+            logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
 
-                // Ignore null commands or recursive processing of state topic
-                if (cmd is null || c.TopicName == topicName)
-                {
-                    return;
-                }
-
-                // If state is null, initialize aggregate from command
-                state ??= TAggregate.Create(key);
-
-                // Version check
-                if (cmd.Version != state.Version)
-                {
-                    await c.ProduceAsync(
-                        $"{topicName}{commandErrorSuffix}", 
-                        key, 
-                        CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
-                    return;
-                }
-
-                // Apply command
-                var result = TAggregate.Apply(state, cmd);
-
-                // produce if command was succesfull
-                if (result.IsSuccess)
-                {
-                    await c.ProduceAsync(topicName, result.State.Id, result.State);
-                }
-                else
-                {
-                    await c.ProduceAsync(
-                        $"{topicName}{commandErrorSuffix}", 
-                        key,
-                        CommandResult.Create(result, cmd));
-                }
-            });
+            await context.ProduceAsync(
+                $"{typeof(TAggregate).Name}{errorSuffix}",
+                key,
+                CommandResult.Create(result, cmd));
+        }
     }
 }
