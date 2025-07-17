@@ -8,11 +8,11 @@ public static class CommandResult
     /// <summary>
     /// Creates a <see cref="CommandResult{TState, TCommand}"/> from a <see cref="Result{T}"/> and a command.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <typeparam name="TCmd"></typeparam>
-    /// <param name="result"></param>
-    /// <param name="command"></param>
-    /// <returns></returns>
+    /// <typeparam name="T">The type of the state.</typeparam>
+    /// <typeparam name="TCmd">The type of the command.</typeparam>
+    /// <param name="result">The result containing the state and execution outcome.</param>
+    /// <param name="command">The command that was executed.</param>
+    /// <returns>A new CommandResult instance wrapping the result and command.</returns>
     public static CommandResult<T, TCmd> Create<T, TCmd>(Result<T> result, TCmd command)
         => new()
         {
