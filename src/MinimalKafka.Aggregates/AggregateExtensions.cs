@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MinimalKafka.Aggregates.Helpers;
 using MinimalKafka.Stream;
 
 namespace MinimalKafka.Aggregates;
@@ -24,7 +26,7 @@ public static class AggregateExtensions
     /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
     /// </returns>
     public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IApplicationBuilder builder, 
+        this IApplicationBuilder builder,
         string topicName,
         string commandSuffix = "-commands",
         string commandErrorSuffix = "-errors")
@@ -51,7 +53,7 @@ public static class AggregateExtensions
     /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
     /// </returns>
     public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IKafkaBuilder builder, 
+        this IKafkaBuilder builder,
         string topicName,
         string commandSuffix = "-commands",
         string commandErrorSuffix = "-errors"
@@ -60,14 +62,19 @@ public static class AggregateExtensions
         where TAggregate : IAggregate<TKey, TAggregate, TCommand>
         where TCommand : ICommand<TKey>
     {
-        return builder.MapStream<TKey, TCommand>($"{topicName}{commandSuffix}")
+        var commandTopic = $"{topicName}{commandSuffix}";
+        var commandErrorTopic = $"{topicName}{commandErrorSuffix}";
+
+        return builder.MapStream<TKey, TCommand>(commandTopic)
             .Join<TKey, TAggregate>(topicName).OnKey()
-            .Into(async (c, key, join) =>
+            .Into(async (context, key, joinResult) =>
             {
-                var (cmd, state) = join;
+                var (cmd, state) = joinResult;
+
+                var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
 
                 // Ignore null commands or recursive processing of state topic
-                if (cmd is null || c.TopicName == topicName)
+                if (cmd is null || context.TopicName == topicName)
                 {
                     return;
                 }
@@ -78,10 +85,13 @@ public static class AggregateExtensions
                 // Version check
                 if (cmd.Version != state.Version)
                 {
-                    await c.ProduceAsync(
-                        $"{topicName}{commandErrorSuffix}", 
-                        key, 
+                    logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
+
+                    await context.ProduceAsync(
+                        commandErrorTopic,
+                        key,
                         CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
+
                     return;
                 }
 
@@ -91,15 +101,27 @@ public static class AggregateExtensions
                 // produce if command was succesfull
                 if (result.IsSuccess)
                 {
-                    await c.ProduceAsync(topicName, result.State.Id, result.State);
+
+                    if (result.State.Version == cmd.Version)
+                    {
+                        logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                        return;
+                    }
+
+                    logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                    await context.ProduceAsync(topicName, result.State.Id, result.State);
+
                 }
                 else
                 {
-                    await c.ProduceAsync(
-                        $"{topicName}{commandErrorSuffix}", 
+                    logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+
+                    await context.ProduceAsync(
+                        commandErrorTopic,
                         key,
                         CommandResult.Create(result, cmd));
                 }
             });
     }
+            
 }
