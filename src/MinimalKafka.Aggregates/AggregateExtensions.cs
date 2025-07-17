@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
 using MinimalKafka.Aggregates.Helpers;
 using MinimalKafka.Stream;
 
@@ -63,12 +62,15 @@ public static class AggregateExtensions
         where TAggregate : IAggregate<TKey, TAggregate, TCommand>
         where TCommand : ICommand<TKey>
     {
-        return builder.MapStream<TKey, TCommand>($"{topicName}{commandSuffix}")
+        var commandTopic = $"{topicName}{commandSuffix}";
+        var commandErrorTopic = $"{topicName}{commandErrorSuffix}";
+
+        return builder.MapStream<TKey, TCommand>(commandTopic)
             .Join<TKey, TAggregate>(topicName).OnKey()
-            .Into((c, k, r) => HandleAsync(c, k, r, commandErrorSuffix));
+            .Into((c, k, r) => HandleAsync(c, k, r, topicName, commandErrorTopic));
     }
 
-    private static async Task HandleAsync<Tkey, TCommand, TAggregate>(KafkaContext context, Tkey key, (TCommand?, TAggregate?) join, string errorSuffix)
+    private static async Task HandleAsync<Tkey, TCommand, TAggregate>(KafkaContext context, Tkey key, (TCommand?, TAggregate?) join, string successTopic, string errorTopic)
             where Tkey : notnull
             where TCommand : ICommand<Tkey>
             where TAggregate : IAggregate<Tkey, TAggregate, TCommand>
@@ -78,7 +80,7 @@ public static class AggregateExtensions
         var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
 
         // Ignore null commands or recursive processing of state topic
-        if (cmd is null || context.TopicName == typeof(TAggregate).Name)
+        if (cmd is null || context.TopicName == successTopic)
         {
             return;
         }
@@ -92,9 +94,10 @@ public static class AggregateExtensions
             logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
 
             await context.ProduceAsync(
-                $"{typeof(TAggregate).Name}{errorSuffix}",
+                errorTopic,
                 key,
                 CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
+
             return;
         }
 
@@ -104,22 +107,23 @@ public static class AggregateExtensions
         // produce if command was succesfull
         if (result.IsSuccess)
         {
-            if (state.Version > cmd.Version)
-            {
-                logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                await context.ProduceAsync(typeof(TAggregate).Name, result.State.Id, result.State);
-            }
-            else
+            
+            if (result.State.Version == cmd.Version)
             {
                 logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                return;
             }
+            
+            logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+            await context.ProduceAsync(successTopic, result.State.Id, result.State);
+            
         }
         else
         {
             logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
 
             await context.ProduceAsync(
-                $"{typeof(TAggregate).Name}{errorSuffix}",
+                errorTopic,
                 key,
                 CommandResult.Create(result, cmd));
         }
