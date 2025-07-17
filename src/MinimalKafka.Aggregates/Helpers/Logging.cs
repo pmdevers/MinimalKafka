@@ -21,7 +21,7 @@ internal static partial class Logging
     [LoggerMessage(
         EventId = 502,
         Level = LogLevel.Information,
-        Message = "Command {CommandType} with version {Version} did not succeed sucessfull {AggregateType}."
+        Message = "Command {CommandType} with version {Version} failed to execute successfully on aggregate {AggregateType}."
     )]
     public static partial void CommandError(this ILogger logger, string commandType, int version, string aggregateType);
 
