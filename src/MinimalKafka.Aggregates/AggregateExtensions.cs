@@ -67,65 +67,61 @@ public static class AggregateExtensions
 
         return builder.MapStream<TKey, TCommand>(commandTopic)
             .Join<TKey, TAggregate>(topicName).OnKey()
-            .Into((c, k, r) => HandleAsync(c, k, r, topicName, commandErrorTopic));
-    }
-
-    private static async Task HandleAsync<Tkey, TCommand, TAggregate>(KafkaContext context, Tkey key, (TCommand?, TAggregate?) join, string successTopic, string errorTopic)
-            where Tkey : notnull
-            where TCommand : ICommand<Tkey>
-            where TAggregate : IAggregate<Tkey, TAggregate, TCommand>
-    {
-        var (cmd, state) = join;
-
-        var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
-
-        // Ignore null commands or recursive processing of state topic
-        if (cmd is null || context.TopicName == successTopic)
-        {
-            return;
-        }
-
-        // If state is null, initialize aggregate from command
-        state ??= TAggregate.Create(key);
-        
-        // Version check
-        if (cmd.Version != state.Version)
-        {
-            logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
-
-            await context.ProduceAsync(
-                errorTopic,
-                key,
-                CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
-
-            return;
-        }
-
-        // Apply command
-        var result = TAggregate.Apply(state, cmd);
-        
-        // produce if command was succesfull
-        if (result.IsSuccess)
-        {
-            
-            if (result.State.Version == cmd.Version)
+            .Into(async (context, key, joinResult) =>
             {
-                logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                return;
-            }
-            
-            logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-            await context.ProduceAsync(successTopic, result.State.Id, result.State);
-            
-        }
-        else
-        {
-            logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                var (cmd, state) = joinResult;
 
-            await context.ProduceAsync(
-                errorTopic,
-                key,
-                CommandResult.Create(result, cmd));
-        }
+                var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
+
+                // Ignore null commands or recursive processing of state topic
+                if (cmd is null || context.TopicName == topicName)
+                {
+                    return;
+                }
+
+                // If state is null, initialize aggregate from command
+                state ??= TAggregate.Create(key);
+
+                // Version check
+                if (cmd.Version != state.Version)
+                {
+                    logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
+
+                    await context.ProduceAsync(
+                        commandErrorTopic,
+                        key,
+                        CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
+
+                    return;
+                }
+
+                // Apply command
+                var result = TAggregate.Apply(state, cmd);
+
+                // produce if command was succesfull
+                if (result.IsSuccess)
+                {
+
+                    if (result.State.Version == cmd.Version)
+                    {
+                        logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                        return;
+                    }
+
+                    logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                    await context.ProduceAsync(topicName, result.State.Id, result.State);
+
+                }
+                else
+                {
+                    logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+
+                    await context.ProduceAsync(
+                        commandErrorTopic,
+                        key,
+                        CommandResult.Create(result, cmd));
+                }
+            });
     }
+            
 }
