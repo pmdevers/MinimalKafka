@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using Examples.Aggregate;
+using Examples.Branch;
 using Examples.Join;
 using MinimalKafka;
 using MinimalKafka.Aggregates;
@@ -33,6 +34,8 @@ var app = builder.Build();
 
 //app.MapJoinExample();
 app.MapAggregate<Test, Guid, TestCommands>("tests");
+
+app.MapBranchExample();
 
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
