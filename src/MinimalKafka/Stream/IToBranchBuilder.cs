@@ -10,9 +10,9 @@
 public interface IToBranchBuilder<TKey, TValue>
 {
     /// <summary>
-    /// 
+    /// Specifies the target topic for this branch in the stream processing topology.
     /// </summary>
-    /// <param name="topicName"></param>
-    /// <returns></returns>
+    /// <param name="topicName">The name of the Kafka topic where matching records will be routed.</param>
+    /// <returns>An <see cref="IBranchBuilder{TKey, TValue}"/> to continue building the stream topology.</returns>
     IBranchBuilder<TKey, TValue> To(string topicName);
 }
