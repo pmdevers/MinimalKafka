@@ -1,2 +1,4 @@
 - name: Getting Started
   href: getting-started.md
+- name: Stream Branching
+  href: stream-branching.md
