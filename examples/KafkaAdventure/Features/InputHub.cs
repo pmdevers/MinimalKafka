@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using KafkaAdventure.Domain;
+using Microsoft.AspNetCore.SignalR;
 using MinimalKafka;
 
-namespace KafkaAdventure.Features.Input;
+namespace KafkaAdventure.Features;
 
 public class InputHub(
-    IKafkaProducer command
+    IKafkaProducer producer
 ) : Hub
 {
     public async Task JoinGame(string gameId)
@@ -27,7 +28,9 @@ public class InputHub(
 
         try
         {
-            await command.ProduceAsync("game-commands", gameId, new Command(cmd.First(), [.. cmd.Skip(1)]));
+            var command = Enum.Parse<Commands>(cmd.First(), true);
+            await producer.ProduceAsync("game-commands", gameId, 
+                new AppCommand(command, [.. cmd.Skip(1)]));
         } catch(Exception ex)
         {
             Console.WriteLine(ex.Message);
@@ -35,5 +38,3 @@ public class InputHub(
         
     }
 }
-public record Response(string Command, string Value);
-public record Command(string Cmd, string[] Args);

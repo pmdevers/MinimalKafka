@@ -6,5 +6,7 @@ internal class ToBranchBuilder<TKey, TValue>(
     : IToBranchBuilder<TKey, TValue>
 {
     public IBranchBuilder<TKey, TValue> To(string topicName) =>
-        builder.Branch(selector, async (c, k, v) => await c.ProduceAsync(topicName, k, v));
+        builder.Branch(selector, async (c, k, v) => {
+            await c.ProduceAsync(topicName, k, v);
+        });
 }
