@@ -8,10 +8,10 @@ Content-Type: application/json
         "name": "Chained Monastery",
         "description": "A ruined place of worship, its halls lined with rusted chains. An ominous altar rests at the center of a secret chamber, whispering dark truths.",
         "exits": {
-            "north": "Monastery Library",
-            "south": "Underground Cells",
-            "east": "Abandoned Courtyard",
-            "west": "Hall of Chains"
+            "north": 4,
+            "south": 5,
+            "east": 3,
+            "west": 2
         }
     },
     {
@@ -19,7 +19,7 @@ Content-Type: application/json
         "name": "Hall of Chains",
         "description": "A corridor where shackles still hang from the walls.",
         "exits": {
-            "east": "Chained Monastery"
+            "east": 1
         }
     },
     {
@@ -27,8 +27,8 @@ Content-Type: application/json
         "name": "Abandoned Courtyard",
         "description": "Overgrown with weeds, an old statue of a forgotten deity stands here.",
         "exits": {
-            "west": "Chained Monastery",
-            "north": "Silent Chapel"
+            "west": 1,
+            "north": 6
         }
     },
     {
@@ -36,8 +36,8 @@ Content-Type: application/json
         "name": "Monastery Library",
         "description": "Ancient texts warn of something beneath the land.",
         "exits": {
-            "south": "Chained Monastery",
-            "north": "Bell Tower"
+            "south": 1,
+            "north": 7
         }
     },
     {
@@ -45,8 +45,8 @@ Content-Type: application/json
         "name": "Underground Cells",
         "description": "Holding cells filled with skeletal remains.",
         "exits": {
-            "north": "Chained Monastery",
-            "south": "The Hidden Crypt"
+            "north": 1,
+            "south": 8
         }
     },
     {
@@ -54,8 +54,8 @@ Content-Type: application/json
         "name": "Silent Chapel",
         "description": "Stained-glass windows depict a forgotten ritual.",
         "exits": {
-            "south": "Abandoned Courtyard",
-            "east": "Cloister Garden"
+            "south": 3,
+            "east": 9
         }
     },
     {
@@ -63,7 +63,7 @@ Content-Type: application/json
         "name": "Bell Tower",
         "description": "The bell is missing, but something moves in the shadows above.",
         "exits": {
-            "south": "Monastery Library"
+            "south": 4
         }
     },
     {
@@ -71,8 +71,8 @@ Content-Type: application/json
         "name": "The Hidden Crypt",
         "description": "Something is scratching from inside a sealed tomb.",
         "exits": {
-            "north": "Underground Cells",
-            "east": "Graveyard"
+            "north": 5,
+            "east": 10
         }
     },
     {
@@ -80,7 +80,7 @@ Content-Type: application/json
         "name": "Cloister Garden",
         "description": "A once-beautiful garden, now decayed.",
         "exits": {
-            "west": "Silent Chapel"
+            "west": 6
         }
     },
     {
@@ -88,8 +88,8 @@ Content-Type: application/json
         "name": "Graveyard",
         "description": "Graves are disturbed, with claw marks on some coffins.",
         "exits": {
-            "west": "The Hidden Crypt",
-            "south": "Broken Bridge"
+            "west": 8,
+            "south": 11
         }
     },
     {
@@ -97,8 +97,8 @@ Content-Type: application/json
         "name": "Broken Bridge",
         "description": "The way forward has collapsed, but a rope dangles nearby.",
         "exits": {
-            "north": "Graveyard",
-            "south": "Cave Entrance"
+            "north": 10,
+            "south": 12
         }
     },
     {
@@ -106,8 +106,8 @@ Content-Type: application/json
         "name": "Cave Entrance",
         "description": "A hidden tunnel leading beneath the monastery.",
         "exits": {
-            "north": "Broken Bridge",
-            "east": "Flooded Passage"
+            "north": 11,
+            "east": 13
         }
     },
     {
@@ -115,8 +115,8 @@ Content-Type: application/json
         "name": "Flooded Passage",
         "description": "Water rises up to your knees.",
         "exits": {
-            "west": "Cave Entrance",
-            "south": "The Labyrinthine Corridors"
+            "west": 12,
+            "south": 14
         }
     },
     {
@@ -124,8 +124,8 @@ Content-Type: application/json
         "name": "The Labyrinthine Corridors",
         "description": "Twisting passages with no clear way forward.",
         "exits": {
-            "north": "Flooded Passage",
-            "south": "The Chained Monastery (Secret Room)"
+            "north": 13,
+            "south": 15
         }
     },
     {
@@ -133,8 +133,8 @@ Content-Type: application/json
         "name": "The Chained Monastery (Secret Room)",
         "description": "A secret room with an ominous altar at its center.",
         "exits": {
-            "north": "The Labyrinthine Corridors",
-            "south": "The Abyssal Rift"
+            "north": 14,
+            "south": 16
         }
     },
     {
@@ -142,7 +142,7 @@ Content-Type: application/json
         "name": "The Abyssal Rift",
         "description": "A bottomless pit, whispering your name.",
         "exits": {
-            "north": "The Chained Monastery (Secret Room)"
+            "north": 15
         }
     },
     {
@@ -150,7 +150,7 @@ Content-Type: application/json
         "name": "The Ruined Stable",
         "description": "Old horseshoes litter the ground.",
         "exits": {
-            "east": "The Old Well"
+            "east": 18
         }
     },
     {
@@ -158,7 +158,7 @@ Content-Type: application/json
         "name": "The Old Well",
         "description": "A faint voice calls from below.",
         "exits": {
-            "west": "The Ruined Stable"
+            "west": 17
         }
     },
     {
@@ -166,7 +166,7 @@ Content-Type: application/json
         "name": "The Whispering Woods",
         "description": "Trees murmur in unknown tongues.",
         "exits": {
-            "north": "The Fog-Covered Path"
+            "north": 20
         }
     },
     {
@@ -174,8 +174,8 @@ Content-Type: application/json
         "name": "The Fog-Covered Path",
         "description": "Visibility is near zero.",
         "exits": {
-            "south": "The Whispering Woods",
-            "east": "The Ruined Chapel"
+            "south": 19,
+            "east": 21
         }
     },
     {
@@ -183,8 +183,8 @@ Content-Type: application/json
         "name": "The Ruined Chapel",
         "description": "Candles burn, though the place is deserted.",
         "exits": {
-            "west": "The Fog-Covered Path",
-            "north": "The Shadow Grove"
+            "west": 20,
+            "north": 22
         }
     },
     {
@@ -192,7 +192,7 @@ Content-Type: application/json
         "name": "The Shadow Grove",
         "description": "Sunlight never reaches this place.",
         "exits": {
-            "south": "The Ruined Chapel"
+            "south": 21
         }
     },
     {
@@ -200,7 +200,7 @@ Content-Type: application/json
         "name": "The Forbidden Staircase",
         "description": "A path leading underground.",
         "exits": {
-            "north": "The Endless Hallway"
+            "north": 24
         }
     },
     {
@@ -208,8 +208,8 @@ Content-Type: application/json
         "name": "The Endless Hallway",
         "description": "No matter how far you walk, the doors remain the same.",
         "exits": {
-            "south": "The Forbidden Staircase",
-            "east": "The Hidden Observatory"
+            "south": 23,
+            "east": 25
         }
     },
     {
@@ -217,7 +217,7 @@ Content-Type: application/json
         "name": "The Hidden Observatory",
         "description": "A celestial map points to an ancient power.",
         "exits": {
-            "west": "The Endless Hallway"
+            "west": 24
         }
     },
     {
@@ -225,7 +225,7 @@ Content-Type: application/json
         "name": "The Chamber of Echoes",
         "description": "Voices repeat your every word.",
         "exits": {
-            "north": "The Eldritch Altar"
+            "north": 27
         }
     },
     {
@@ -233,8 +233,8 @@ Content-Type: application/json
         "name": "The Eldritch Altar",
         "description": "The culmination of the monastery\u2019s dark history.",
         "exits": {
-            "south": "The Chamber of Echoes",
-            "east": "The Door of Chains"
+            "south": 26,
+            "east": 28
         }
     },
     {
@@ -242,8 +242,8 @@ Content-Type: application/json
         "name": "The Door of Chains",
         "description": "Sealed with runes, it requires something\u2026 or someone.",
         "exits": {
-            "west": "The Eldritch Altar",
-            "north": "The Final Chamber"
+            "west": 27,
+            "north": 29
         }
     },
     {
@@ -251,7 +251,7 @@ Content-Type: application/json
         "name": "The Final Chamber",
         "description": "A choice must be made: seal the darkness or embrace it?",
         "exits": {
-            "south": "The Door of Chains"
+            "south": 28
         }
     }
 ]

@@ -17,7 +17,7 @@ builder.MapPost("/movies", async (
 builder.MapStream<Guid, Movie>("movies")
     .SplitInto(x => {
         x.Branch((k, v) => v.Genre == Genre.Drama).To("drama-movies");
-        x.Branch((k, v) => v.Genre == Genre.Horror).To("horor-movies");
+        x.Branch((k, v) => v.Genre == Genre.Horror).To("horror-movies");
         x.Branch((k, v) => v.Genre == Genre.Fantasy).To("fantasy-movies");
         x.DefaultBranch("unknown-movies");
     });
@@ -33,7 +33,7 @@ flowchart TD
     C --> D1{Genre == Drama?}
     D1 -- Yes --> E1[To drama-movies]
     D1 -- No --> D2{Genre == Horror?}
-    D2 -- Yes --> E2[To horor-movies]
+    D2 -- Yes --> E2[To horror-movies]
     D2 -- No --> D3{Genre == Fantasy?}
     D3 -- Yes --> E3[To fantasy-movies]
     D3 -- No --> E4[To unknown-movies]

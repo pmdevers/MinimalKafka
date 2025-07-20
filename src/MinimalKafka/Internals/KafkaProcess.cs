@@ -16,10 +16,8 @@ internal class KafkaProcess(
 
         try
         {
-            while (!token.IsCancellationRequested)
-            {
-                await consumer.Consume(token);
-            }
+            
+            await consumer.Consume(token);
         } 
         catch (Exception ex) 
         {
@@ -28,6 +26,7 @@ internal class KafkaProcess(
         }
         finally
         {
+            consumer.Close();
             logger.DropOutOfConsumeLoop();
         }
     }

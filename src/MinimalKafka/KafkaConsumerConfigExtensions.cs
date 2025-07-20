@@ -97,6 +97,23 @@ public static class KafkaConsumerConfigExtensions
         return builder.UpdateConsumerConfig(x => x.AutoOffsetReset = offsetReset);
     }
 
+    /// <summary>
+    /// Configures the Kafka consumer to enable debug logging with the specified debug options.
+    /// </summary>
+    /// <remarks>The <paramref name="value"/> parameter specifies the debug options to enable for the Kafka
+    /// consumer. Valid options depend on the Kafka client library being used. Common values include "all", "protocol",
+    /// "consumer", and others. Refer to the Kafka client documentation for a complete list of supported debug
+    /// options.</remarks>
+    /// <typeparam name="TBuilder">The type of the builder implementing <see cref="IKafkaConventionBuilder"/>.</typeparam>
+    /// <param name="builder">The builder instance to configure.</param>
+    /// <param name="value">The debug options to enable. Defaults to <see langword="all"/> if not specified.</param>
+    /// <returns>The updated builder instance.</returns>
+    public static TBuilder WithDebug<TBuilder>(this TBuilder builder, string value = "all")
+        where TBuilder : IKafkaConventionBuilder
+    {
+        return builder.UpdateConsumerConfig(x => x.Debug = value);
+    }
+
 
     /// <summary>
     /// 

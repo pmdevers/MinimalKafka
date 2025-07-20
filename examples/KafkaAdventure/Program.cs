@@ -1,30 +1,35 @@
-using KafkaAdventure.Features.CommandProcessor;
-using KafkaAdventure.Features.Input;
-using KafkaAdventure.Features.Locations;
-using KafkaAdventure.Features.Movement;
-using KafkaAdventure.Features.PlayerLocation;
+using Confluent.Kafka;
+using KafkaAdventure.Domain;
+using KafkaAdventure.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using MinimalKafka;
-using MinimalKafka.Serializers;
+using MinimalKafka.Stream;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddSingleton<LocationContext>();
 builder.Services.AddSignalR();
 builder.Services.AddMemoryCache();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddMinimalKafka(x =>
 {
-    x.WithConfiguration(builder.Configuration.GetSection("kafka"));
-    x.WithTopicFormatter((topic) =>
-    {
-        return $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}";
-    });
-    x.WithJsonSerializers();
-    x.UseRocksDB();
+    x//.WithConfiguration(builder.Configuration.GetSection("Kafka"))
+     .WithBootstrapServers("localhost:19092")
+     //.WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
+     .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
+     .WithClientId(AppDomain.CurrentDomain.FriendlyName + "-test")
+     .WithOffsetReset(AutoOffsetReset.Earliest)
+     //.WithDebug()
+     
+     .WithJsonSerializers(x =>
+     {
+         x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+         x.Converters.Add(new JsonStringEnumConverter());
+     })
+     .UseRocksDB();
 });
 
 builder.Services.AddResponseCompression(opts =>
@@ -49,14 +54,20 @@ app.UseHealthChecks("/startup");
 app.UseHealthChecks("/liveness");
 app.UseHealthChecks("/ready");
 
-app.MapInput();
-app.MapProcessor();
-app.MapMovement();
-app.MapPlayerLocations();
+
+
+app.MapLocationsApi();
+
 app.MapLocations();
+app.MapInputProccessor();
+app.MapCommandProcessor();
+app.MapGoProcessor();
+app.MapHelpProccessor();
+app.MapLookProcessor();
+app.MapOutputProcessor();
 
 
 Console.WriteLine("Starting Up");
 
-app.Run();
+await app.RunAsync();
 

@@ -10,11 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Features\Locations\Locations.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Features\Locations\Locations.json" />
+    <EmbeddedResource Include="Locations.json" />
   </ItemGroup>
 
   <ItemGroup>

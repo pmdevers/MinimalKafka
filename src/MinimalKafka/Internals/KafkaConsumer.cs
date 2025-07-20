@@ -41,47 +41,47 @@ internal class KafkaConsumer(
 
     public async Task Consume(CancellationToken cancellationToken)
     {
-        try
+        await using var scope = serviceProvider.CreateAsyncScope();
+        
+        while (!cancellationToken.IsCancellationRequested)
         {
-            await using var scope = serviceProvider.CreateAsyncScope();
-
-            var result = _consumer.Consume(cancellationToken);
-
-            if(result == null) 
+            try
             {
-                return;
-            }
+                var result = _consumer.Consume(cancellationToken);
 
-            if (++_recordsConsumed % _reportInterval == 0)
+                if(result == null) 
+                    continue;
+
+                if (++_recordsConsumed % _reportInterval == 0)
+                {
+                    logger.RecordsConsumed(config.Key.GroupId, config.Key.ClientId, _recordsConsumed, result.Topic);
+                }
+
+                var context = KafkaContext.Create(config.Key.TopicName, config.Metadata, result.Message, scope.ServiceProvider);
+
+                var store = context.GetTopicStore();
+
+                await store.AddOrUpdate(context.Key, context.Value);
+
+                foreach (var kafkaDelegate in config.Delegates)
+                {
+                    await kafkaDelegate.Invoke(context);
+                }
+
+                await producer.ProduceAsync(context, cancellationToken);
+
+                Commit(result);
+            }
+            catch (KafkaException ex) 
+            when (ex.Error.Code == ErrorCode.Local_NoOffset)
             {
-                logger.RecordsConsumed(config.Key.GroupId, config.Key.ClientId, _recordsConsumed, result.Topic);
+                logger.NoOffsetStored(config.Key.GroupId, config.Key.ClientId, config.Key.TopicName);
             }
-
-            var context = KafkaContext.Create(config.Key.TopicName, config.Metadata, result.Message, scope.ServiceProvider);
-
-            var store = context.GetTopicStore();
-
-            await store.AddOrUpdate(context.Key, context.Value);
-
-            foreach (var kafkaDelegate in config.Delegates)
-            {
-                await kafkaDelegate.Invoke(context);
+            catch (OperationCanceledException ex)
+            when(ex.CancellationToken == cancellationToken)
+            {   
+                logger.OperatonCanceled(config.Key.GroupId, config.Key.ClientId);
             }
-
-            await producer.ProduceAsync(context, cancellationToken);
-
-            Commit(result);
-        }
-        catch (KafkaException ex) 
-        when (ex.Error.Code == ErrorCode.Local_NoOffset)
-        {
-            logger.NoOffsetStored(config.Key.GroupId, config.Key.ClientId, config.Key.TopicName);
-        }
-        catch (OperationCanceledException ex)
-        when(ex.CancellationToken == cancellationToken)
-        {
-            
-            logger.OperatonCanceled(config.Key.GroupId, config.Key.ClientId);
         }
     }
 

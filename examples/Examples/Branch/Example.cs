@@ -28,7 +28,7 @@ public static class Example
         builder.MapStream<Guid, Movie>("movies")
             .SplitInto(x => {
                 x.Branch((k, v) => v.Genre == Genre.Drama).To("drama-movies");
-                x.Branch((k, v) => v.Genre == Genre.Horror).To("horor-movies");
+                x.Branch((k, v) => v.Genre == Genre.Horror).To("horror-movies");
                 x.Branch((k, v) => v.Genre == Genre.Fantasy).To("fantasy-movies");
                 x.DefaultBranch("unknown-movies");
             });
