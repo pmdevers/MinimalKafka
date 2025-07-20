@@ -1,10 +1,8 @@
 using Confluent.Kafka;
-using KafkaAdventure.Domain;
 using KafkaAdventure.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using MinimalKafka;
-using MinimalKafka.Stream;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -16,14 +14,11 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddMinimalKafka(x =>
 {
-    x//.WithConfiguration(builder.Configuration.GetSection("Kafka"))
-     .WithBootstrapServers("localhost:19092")
-     //.WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
+    x.WithBootstrapServers("localhost:19092")
+     .WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithClientId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithOffsetReset(AutoOffsetReset.Earliest)
-     //.WithDebug()
-     
      .WithJsonSerializers(x =>
      {
          x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
@@ -59,12 +54,14 @@ app.UseHealthChecks("/ready");
 app.MapLocationsApi();
 
 app.MapLocations();
-app.MapInputProccessor();
-app.MapCommandProcessor();
-app.MapGoProcessor();
-app.MapHelpProccessor();
-app.MapLookProcessor();
-app.MapOutputProcessor();
+
+app.MapInput();
+app.MapCommand();
+app.MapGo();
+app.MapHelp();
+app.MapLook();
+
+app.MapOutput();
 
 
 Console.WriteLine("Starting Up");

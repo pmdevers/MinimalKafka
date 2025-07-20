@@ -3,9 +3,9 @@ using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
 
-public static class ProcessorFeature
+public static class CommandProcessor
 {
-    public static void MapCommandProcessor<TBuilder>(this TBuilder builder)
+    public static void MapCommand<TBuilder>(this TBuilder builder)
         where TBuilder : IApplicationBuilder
     {
         builder.MapStream<Guid, AppCommand>("game-commands")

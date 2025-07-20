@@ -3,7 +3,7 @@ using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
 
-public static class LocationFeature
+public static class LocationProcessor
 {
     public static void MapLocations<TBuilder>(this TBuilder builder)
         where TBuilder : IApplicationBuilder

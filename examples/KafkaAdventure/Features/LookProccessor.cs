@@ -6,7 +6,7 @@ namespace KafkaAdventure.Features;
 
 public static class LookProccessor
 {
-    public static void MapLookProcessor<TBuilder>(this TBuilder builder)
+    public static void MapLook<TBuilder>(this TBuilder builder)
         where TBuilder : IApplicationBuilder
     {
         builder.MapStream<Guid, AppCommand>("game-look")

@@ -6,7 +6,7 @@ namespace KafkaAdventure.Features;
 
 public static class GoProcessor
 {
-    public static void MapGoProcessor<TBuilder>(this TBuilder builder)
+    public static void MapGo<TBuilder>(this TBuilder builder)
         where TBuilder : IApplicationBuilder
     {
         builder.MapStream<Guid, AppCommand>("game-go")

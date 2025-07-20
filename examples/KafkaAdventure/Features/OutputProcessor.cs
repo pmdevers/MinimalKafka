@@ -6,7 +6,7 @@ namespace KafkaAdventure.Features;
 
 public static class OutputProcessor
 {
-    public static void MapOutputProcessor<T>(this T app)
+    public static void MapOutput<T>(this T app)
         where T: IApplicationBuilder
     {
         app.MapStream<Guid, AppResponse>("game-response")

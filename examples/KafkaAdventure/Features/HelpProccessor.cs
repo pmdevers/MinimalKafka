@@ -1,12 +1,11 @@
 ﻿using KafkaAdventure.Domain;
 using MinimalKafka;
-using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
 
-public static class HelpCommandProccessor
+public static class HelpProcessor
 {
-    public static void MapHelpProccessor<TBuilder>(this TBuilder builder)
+    public static void MapHelp<TBuilder>(this TBuilder builder)
         where TBuilder : IApplicationBuilder
     {
         builder.MapTopic("game-help", async (KafkaContext context, Guid key, AppCommand value) =>
