@@ -16,7 +16,6 @@ internal class KafkaProcess(
 
         try
         {
-            
             await consumer.Consume(token);
         } 
         catch (Exception ex) 
