@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Examples.Aggregate;
 using Examples.Branch;
+using Examples.EventSourced;
 using Examples.Join;
 using MinimalKafka;
 using MinimalKafka.Aggregates;
@@ -12,7 +13,7 @@ builder.Services.AddMinimalKafka(config =>
  {
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithBootstrapServers("nas:9092")
+           //.WithBootstrapServers("nas:9092")
            .WithGroupId(AppDomain.CurrentDomain.FriendlyName)
            .WithClientId(AppDomain.CurrentDomain.FriendlyName)
            //.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
@@ -33,10 +34,10 @@ var app = builder.Build();
 
 
 //app.MapJoinExample();
-app.MapAggregate<Test, Guid, TestCommands>("tests");
+//app.MapAggregate<Test, Guid, TestCommands>("tests");
 
-app.MapBranchExample();
-
+//app.MapBranchExample();
+app.MapEventSourcedExample();
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
 //{
