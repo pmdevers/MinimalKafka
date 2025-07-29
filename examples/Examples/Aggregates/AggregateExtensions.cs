@@ -6,7 +6,7 @@ using MinimalKafka.Stream;
 
 namespace Examples.Aggregates;
 
-public static class AggregatesExtensions
+public static class AggregateExtensions
 {
     public static IServiceCollection InMemoryAggregateStore(this IServiceCollection services)
     {
