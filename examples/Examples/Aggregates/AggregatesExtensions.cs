@@ -31,9 +31,13 @@ public static class AggregatesExtensions
         where TEvent : IEvent<TKey>
     {
         var builder = new ApplierBuilder<TKey, TState, TEvent>();
+        
         TApplier.Configure(builder);
-        Func<KafkaContext, TKey, TEvent, Task> func = builder.Build();
-        return appBuilder.MapStream<TKey, TEvent>(eventTopic)
+        
+        var func = builder.Build();
+        
+        return appBuilder
+            .MapStream<TKey, TEvent>(eventTopic)
             .Into(func);
     }
 
@@ -56,9 +60,13 @@ public static class AggregatesExtensions
         where TEvent : IEvent<TKey>
     {
         var builder = new CommanderBuilder<TKey, TState, TCommand, TEvent>(eventTopic);
+
         TCommander.Configure(builder);
-        Func<KafkaContext, TKey, TCommand, Task> func = builder.Build();
-        return appBuilder.MapStream<TKey, TCommand>(commandTopic)
+
+        var func = builder.Build();
+        
+        return appBuilder
+            .MapStream<TKey, TCommand>(commandTopic)
             .Into(func);
     }
 }
