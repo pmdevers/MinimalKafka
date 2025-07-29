@@ -1,39 +1,113 @@
-﻿namespace Examples.Aggregates;
+﻿using Examples.Aggregates.Applier;
+using Examples.Aggregates.Commander;
+using Examples.Aggregates.Storage;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using MinimalKafka;
+
+namespace Examples.Aggregates;
 
 public static class MapAggregate
 {
-
-    public static void Map()
+    public record CreateRequest(string Name);
+    public static void MapAggregate2<TBuilder>(this TBuilder builder)
+        where TBuilder : IApplicationBuilder, IEndpointRouteBuilder
     {
-        var builder = new AggregateBuilder<>
+        builder.MapPost("/command", async (
+            [FromServices] IKafkaProducer producer,
+            [FromBody] CreateRequest request) =>
+        {
+            var cmd = new Command() 
+            { 
+                Type = CommandTypes.Create, 
+                Create = new(request.Name)
+            };
+            await producer.ProduceAsync("commands", cmd.Key, cmd);
+        });
+
+        builder.MapCommander<AggCommander, Guid, Agg, Command, Event>("commands", "events");
+        builder.MapApplier<AggApplier, Guid, Agg, Event>("events");
+
+        builder.MapGet("/test/{id}", GetAggregate);
     }
+
+    private static async Task<Results<Ok<Agg>, NotFound<Guid>>> GetAggregate(
+            [FromServices] IAggregateStore<Guid, Agg> store,
+            [FromRoute(Name = "id")] Guid id)
+        {
+            var result = await store.FindByIdAsync(id);
+
+            if(result is null)
+            {
+                return TypedResults.NotFound(id);
+            }
+
+            return TypedResults.Ok(result);
+        }
 }
 
-
-public class Event : IEvent<Guid>
+public enum EventTypes
 {
-    public Guid Key { get; }
-    public string Type { get; }
+    Created,
+    Deleted
+}
 
-    public CreatedEvent? Created { get; }
+public class Event : ITypedEvent<Guid, EventTypes>
+{
+    public Guid Key { get; set; }
+    public EventTypes Type { get; set; }
+    public CreatedEvent? Created { get; set; }
 }
 
 public record CreatedEvent(string Name);
 
-public record Agg : IAggregate<Guid, Agg, Event>
+public class AggApplier : IEventApplier<Guid, Agg, Event>
 {
-    public required  Guid Key { get; init; }
+    public static void Configure(IApplierBuilder<Guid, Agg, Event> builder)
+    {
+        builder
+            .When(EventTypes.Created).Then((a, e) => a.Created(e))
+            .When(EventTypes.Deleted).Then((s, e) => s.Deleted(e));
+    }
+}
+
+public enum CommandTypes
+{
+    Create,
+    Delete
+}
+
+public class Command : ITypedCommand<Guid, CommandTypes>
+{
+    public Guid Key { get; init; } = Guid.NewGuid();
+    public required CommandTypes Type { get; init; }
+    public CreateCommand? Create { get; set; }
+}
+
+public record CreateCommand(string Name);
+
+public class AggCommander : ICommander<Guid, Agg, Command, Event>
+{
+    public static void Configure(ICommanderBuilder<Guid, Agg, Command, Event> builder)
+    {
+        builder.When(CommandTypes.Create).Then((s, c) => s.Create(c));
+    }
+}
+
+public record Agg() : IAggregate<Guid>
+{
+    public Guid Key { get; init; }
 
     public int Version { get; init; }
 
     public string Name { get; private set; } = string.Empty;
 
-    public static void Configure(IAggregateBuilder<Guid, Event, Agg> builder)
+    internal Result<Agg> Deleted(Event e)
     {
-        builder.When(x => x.Type == "Created").Then((a, e) => a.Created(e));
+        throw new NotImplementedException();
     }
 
-    private Result<Agg> Created(Event e)
+    internal Result<Agg> Created(Event e)
     {
         if (e.Created is null)
             return Result.Failed(this, "EventBody missing.");
@@ -46,4 +120,20 @@ public record Agg : IAggregate<Guid, Agg, Event>
 
     public static Agg Create(Guid key)
         => new() { Key = key };
+
+    internal Result<Event[]> Create(Command c)
+    {
+        if(c.Create is null)
+        {
+            return Result.Failed(Array.Empty<Event>(), "Command");
+        }
+        var @event = new Event()
+        {
+            Key = Key,
+            Type = EventTypes.Created,
+            Created = new CreatedEvent(c.Create.Name)
+        };
+
+        return new Event[] { @event };
+    }
 }
