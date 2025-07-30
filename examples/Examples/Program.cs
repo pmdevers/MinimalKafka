@@ -1,7 +1,5 @@
 using Confluent.Kafka;
-using Examples.Aggregate;
-using Examples.Aggregates;
-using Examples.Branch;
+using Examples.Eventsourced;
 using MinimalKafka;
 using MinimalKafka.Aggregates;
 using System.Text.Json.Serialization;
@@ -39,7 +37,7 @@ var app = builder.Build();
 
 //app.MapBranchExample();
 
-app.MapAggregate2();
+app.MapEventSourced();
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
 //{

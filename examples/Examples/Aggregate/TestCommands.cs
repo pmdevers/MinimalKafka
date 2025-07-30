@@ -1,12 +1,13 @@
-﻿using MinimalKafka.Aggregates;
+﻿using MinimalKafka.Aggregates.Commander;
 
 namespace Examples.Aggregate;
 
-public class TestCommands : ICommand<Guid>
+public class TestCommands : ITypedCommand<Guid, Commands>
 {
     public required Guid Id { get; init; } = Guid.NewGuid();
+    public required Guid StreamId { get; init; } = Guid.NewGuid();
     public required int Version { get; init; }
-    public required Commands Command { get; init; }
+    public required Commands Type { get; init; }
     public SetCounter? SetCounter { get; set; }
 
 }

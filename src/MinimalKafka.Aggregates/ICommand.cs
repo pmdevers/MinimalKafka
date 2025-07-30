@@ -1,22 +1,19 @@
 ﻿namespace MinimalKafka.Aggregates;
 
 /// <summary>
-/// Represents a command for an aggregate in a domain-driven design context,
-/// providing identification, versioning.
+/// This interface represents a command that can be sent to an aggregate.
 /// </summary>
-/// <typeparam name="TKey">
-/// The type used for the aggregate's unique identifier.
-/// </typeparam>
+/// <typeparam name="TKey"></typeparam>
 public interface ICommand<out TKey>
+    where TKey : notnull
 {
     /// <summary>
-    /// Gets the unique identifier of the aggregate for which this command is intended.
+    /// The unique identifier for the command, typically a GUID.
     /// </summary>
-    TKey Id { get; }
+    Guid Id { get; }
 
     /// <summary>
-    /// Gets the expected version of the aggregate at the time the command should be applied.
-    /// Used for optimistic concurrency checks.
+    /// The identifier of the event stream that this command is intended for.
     /// </summary>
-    int Version { get; }
+    TKey StreamId { get; }
 }

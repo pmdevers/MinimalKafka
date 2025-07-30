@@ -1,127 +1,124 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using MinimalKafka.Aggregates.Helpers;
+using MinimalKafka.Aggregates.Applier;
+using MinimalKafka.Aggregates.Commander;
+using MinimalKafka.Aggregates.Storage;
 using MinimalKafka.Stream;
 
 namespace MinimalKafka.Aggregates;
 
-
 /// <summary>
-/// 
+/// this class contains extension methods for registering and mapping aggregates in a Kafka-based application.
 /// </summary>
 public static class AggregateExtensions
 {
     /// <summary>
-    /// Maps an aggregate command stream to an aggregate state stream using the specified topic,
+    /// this method registers the in-memory aggregate store as the default aggregate store.
     /// </summary>
-    /// <typeparam name="TKey">The type of the aggregate key (identifier).</typeparam>
-    /// <typeparam name="TCommand">The type of command applied to the aggregate.</typeparam>
-    /// <typeparam name="TAggregate">The type representing the aggregate, which implements <see cref="IAggregate{TKey, TAggregate, TCommand}"/>.</typeparam>
-    /// <param name="builder">The application builder providing access to the service container.</param>
-    /// <param name="topicName">The name of the Kafka topic for aggregate commands and states.</param>
-    /// <param name="commandSuffix">The suffix that is appended to the name for use of the command topic.</param>
-    /// <param name="commandErrorSuffix">The suffix that is appended to the name for use of the command error topic.</param>
-    /// <returns>
-    /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
-    /// </returns>
-    public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IApplicationBuilder builder,
-        string topicName,
-        string commandSuffix = "-commands",
-        string commandErrorSuffix = "-errors")
-        where TKey : notnull
-        where TAggregate : IAggregate<TKey, TAggregate, TCommand>
-        where TCommand : ICommand<TKey>
+    /// <param name="services"></param>
+    /// <returns></returns>
+    public static IServiceCollection InMemoryAggregateStore(this IServiceCollection services)
     {
-        var sb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
-        return sb.MapAggregate<TAggregate, TKey, TCommand>(topicName, commandSuffix, commandErrorSuffix);
+        services.AddSingleton(typeof(IAggregateStore<,>), typeof(InMemoryStateStore<,>));
+        return services;
     }
 
     /// <summary>
-    /// Maps an aggregate command stream to an aggregate state stream for the specified aggregate type.
-    /// Handles aggregate initialization, version checking, state updates, and error publishing.
+    /// this method maps an event topic to an applier for a specific aggregate type.
     /// </summary>
-    /// <typeparam name="TKey">The type of the aggregate key (identifier).</typeparam>
-    /// <typeparam name="TCommand">The type of command applied to the aggregate.</typeparam>
-    /// <typeparam name="TAggregate">The type representing the aggregate, which implements <see cref="IAggregate{TKey, TAggregate, TCommand}"/>.</typeparam>
-    /// <param name="builder">The Kafka builder used to configure the stream processing topology.</param>
-    /// <param name="topicName">The logical topicName for the aggregate; used to derive topic names.</param>
-    /// <param name="commandSuffix">The suffix that is appended to the topicName for use of the command topic.</param>
-    /// <param name="commandErrorSuffix">The suffix that is appended to the topicName for use of the command error topic.</param>
-    /// <returns>
-    /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
-    /// </returns>
-    public static IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-        this IKafkaBuilder builder,
-        string topicName,
-        string commandSuffix = "-commands",
-        string commandErrorSuffix = "-errors"
-    )
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <typeparam name="TState"></typeparam>
+    /// <param name="appBuilder"></param>
+    /// <param name="eventTopic"></param>
+    /// <returns></returns>
+    public static IKafkaConventionBuilder MapApplier<TKey, TEvent, TState>(
+        this IApplicationBuilder appBuilder, string eventTopic)
         where TKey : notnull
-        where TAggregate : IAggregate<TKey, TAggregate, TCommand>
-        where TCommand : ICommand<TKey>
+        where TState : IAggregate<TKey>, IEventApplier<TKey, TState, TEvent>, new()
+        where TEvent : IEvent<TKey>
     {
-        var commandTopic = $"{topicName}{commandSuffix}";
-        var commandErrorTopic = $"{topicName}{commandErrorSuffix}";
-
-        return builder.MapStream<TKey, TCommand>(commandTopic)
-            .Join<TKey, TAggregate>(topicName).OnKey()
-            .Into(async (context, key, joinResult) =>
-            {
-                var (cmd, state) = joinResult;
-
-                var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
-
-                // Ignore null commands or recursive processing of state topic
-                if (cmd is null || context.TopicName == topicName)
-                {
-                    return;
-                }
-
-                // If state is null, initialize aggregate from command
-                state ??= TAggregate.Create(key);
-
-                // Version check
-                if (cmd.Version != state.Version)
-                {
-                    logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
-
-                    await context.ProduceAsync(
-                        commandErrorTopic,
-                        key,
-                        CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
-
-                    return;
-                }
-
-                // Apply command
-                var result = TAggregate.Apply(state, cmd);
-
-                // produce if command was succesfull
-                if (result.IsSuccess)
-                {
-
-                    if (result.State.Version == cmd.Version)
-                    {
-                        logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                        return;
-                    }
-
-                    logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                    await context.ProduceAsync(topicName, result.State.Id, result.State);
-
-                }
-                else
-                {
-                    logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-
-                    await context.ProduceAsync(
-                        commandErrorTopic,
-                        key,
-                        CommandResult.Create(result, cmd));
-                }
-            });
+        return appBuilder.MapApplier<TState, TKey, TState, TEvent>(eventTopic);
     }
-            
+
+    /// <summary>
+    /// this method maps an event topic to an applier for a specific aggregate type.
+    /// </summary>
+    /// <typeparam name="TApplier"></typeparam>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TState"></typeparam>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <param name="appBuilder"></param>
+    /// <param name="eventTopic"></param>
+    /// <returns></returns>
+    public static IKafkaConventionBuilder MapApplier<TApplier, TKey, TState, TEvent>(
+        this IApplicationBuilder appBuilder, string eventTopic)
+        where TKey : notnull
+        where TApplier : IEventApplier<TKey, TState, TEvent>
+        where TState : IAggregate<TKey>, new()
+        where TEvent : IEvent<TKey>
+    {
+        var builder = new ApplierBuilder<TKey, TState, TEvent>();
+        
+        TApplier.Configure(builder);
+        
+        var func = builder.Build();
+        
+        return appBuilder
+            .MapStream<TKey, TEvent>(eventTopic)
+            .Into(func);
+    }
+
+    /// <summary>
+    /// this method maps a command topic to a commander for a specific aggregate type.
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TState"></typeparam>
+    /// <typeparam name="TCommand"></typeparam>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <param name="appBuilder"></param>
+    /// <param name="commandTopic"></param>
+    /// <param name="eventTopic"></param>
+    /// <returns></returns>
+    public static IKafkaConventionBuilder MapCommander<TKey, TState, TCommand, TEvent>(
+        this IApplicationBuilder appBuilder, string commandTopic, string eventTopic)
+        where TKey : notnull
+        where TState : IAggregate<TKey>, ICommander<TKey, TState, TCommand, TEvent>, new()
+        where TCommand : ICommand<TKey>
+        where TEvent : IEvent<TKey>
+    {
+        return appBuilder.MapCommander<TState, TKey, TState, TCommand, TEvent>(commandTopic, eventTopic);
+    }
+
+    /// <summary>
+    /// this method maps a command topic to a commander for a specific aggregate type.
+    /// </summary>
+    /// <typeparam name="TCommander"></typeparam>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TState"></typeparam>
+    /// <typeparam name="TCommand"></typeparam>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <param name="appBuilder"></param>
+    /// <param name="commandTopic"></param>
+    /// <param name="eventTopic"></param>
+    /// <returns></returns>
+    public static IKafkaConventionBuilder MapCommander<TCommander, TKey, TState, TCommand, TEvent>(
+        this IApplicationBuilder appBuilder, string commandTopic, string eventTopic)
+        where TKey : notnull
+        where TCommander : ICommander<TKey, TState, TCommand, TEvent>
+        where TState : IAggregate<TKey>, new()
+        where TCommand : ICommand<TKey>
+        where TEvent : IEvent<TKey>
+    {
+        var builder = new CommanderBuilder<TKey, TState, TCommand, TEvent>(eventTopic);
+
+        TCommander.Configure(builder);
+
+        var func = builder.Build();
+        
+        return appBuilder
+            .MapStream<TKey, TCommand>(commandTopic)
+            .Into(func);
+    }
 }
+

@@ -1,42 +1,20 @@
 ﻿namespace MinimalKafka.Aggregates;
 
-
 /// <summary>
-/// Defines the contract for an aggregate in a domain-driven design (DDD) context,
-/// with support for applying commands to produce new aggregate states.
+/// interface representing an aggregate root in the domain model.
 /// </summary>
-/// <typeparam name="TKey">The type of the aggregate's unique identifier.</typeparam>
-/// <typeparam name="TState">The type representing the aggregate's state.</typeparam>
-/// <typeparam name="TCommand">The type representing a command that can be applied to the aggregate.</typeparam>
-public interface IAggregate<TKey, TState, TCommand>
-    where TCommand : ICommand<TKey>
+/// <typeparam name="TKey"></typeparam>
+public interface IAggregate<TKey>
+    where TKey : notnull
 {
     /// <summary>
-    /// Gets the unique identifier of the aggregate instance.
+    /// The unique identifier for the aggregate.
     /// </summary>
     TKey Id { get; init; }
 
     /// <summary>
-    /// Gets the current version of the aggregate.
-    /// Used for optimistic concurrency and event sourcing.
+    /// The version of the aggregate, used for concurrency control.
     /// </summary>
     int Version { get; init; }
-
-    /// <summary>
-    /// Applies the specified command to the given state and returns the resulting state.
-    /// </summary>
-    /// <param name="state">The current state of the aggregate.</param>
-    /// <param name="command">The command to apply.</param>
-    /// <returns>
-    /// A <see cref="Result{TState}"/> containing the new state and success/error information.
-    /// </returns>
-    abstract static Result<TState> Apply(TState state, TCommand command);
-
-    /// <summary>
-    /// Creates a new instance of an aggregate with the specified identifier
-    /// </summary>
-    /// <returns>
-    /// A <see cref="Result{TState}"/> containing the initial state and success/error information.
-    /// </returns>
-    abstract static TState Create(TKey id);
 }
+

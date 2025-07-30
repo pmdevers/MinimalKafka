@@ -1,4 +1,6 @@
 ﻿using MinimalKafka.Aggregates;
+using MinimalKafka.Aggregates.Applier;
+using MinimalKafka.Aggregates.Commander;
 
 namespace Examples.Aggregate;
 
@@ -10,65 +12,51 @@ public enum Commands
     SetCounter
 }
 
+public enum Events
+{
+    Created,
+    Incremented,
+    Decremented,
+    CounterSet
+}
+
+
+public class TestEvents : ITypedEvent<Guid, Events>
+{
+    public Guid Id { get; init; }
+    public Guid StreamId { get; init; }
+    public Events Type { get; init; }
+    public int? Increment { get; set; }
+    public int? Decrement { get; set; }
+    public int? Counter { get; set; }
+}
+
 /// <summary>
 /// Example aggregate for testing purposes. Supports increment, decrement, and set operations on a counter.
 /// </summary>
-public record Test : IAggregate<Guid, Test, TestCommands>
+public record Test : IAggregate<Guid>, 
+    ICommander<Guid, Test, TestCommands, TestEvents>,
+    IEventApplier<Guid, Test, TestEvents>
 {
     /// <summary>
     /// Gets the aggregate identifier.
     /// </summary>
     public Guid Id { get; init; }
 
-    /// <summary>
-    /// Gets the aggregate version.
-    /// </summary>
     public int Version { get; init; }
-
     /// <summary>
     /// Gets the current counter value.
     /// </summary>
-    public int Counter { get; init; }
+    public int Counter { get; private set; }
 
-    /// <summary>
-    /// Creates a new instance of <see cref="Test"/> aggregate from a command.
-    /// </summary>
-    /// <param name="command">The command to initialize the aggregate.</param>
-    /// <returns>A new <see cref="Test"/> aggregate wrapped in a <see cref="Result{Test}"/>.</returns>
-    public static Test Create(Guid id)
-        => new() { Id = id };
-
-    /// <summary>
-    /// Applies a command to the current state and returns the resulting state.
-    /// </summary>
-    /// <param name="state">The current aggregate state.</param>
-    /// <param name="command">The command to apply.</param>
-    /// <returns>The new state as a <see cref="Result{Test}"/>.</returns>
-    public static Result<Test> Apply(Test state, TestCommands command)
+    public static Result<TestEvents[]> Create(Test state, TestCommands command)
     {
-        var result = command.Command switch
-        {
-            Commands.Create => state.Create(),
-            Commands.Increment => state.Increment(),
-            Commands.Decrement => state.Decrement(),
-            Commands.SetCounter => command.SetCounter != null
-                ? state.SetCounter(command.SetCounter)
-                : Result.Failed(state, "SetCounter command data is null"),
-            _ => Result.Failed(state, "Unknown command: " + command.Command)
-        };
-
-        if (result.IsSuccess)
-        {
-            return result.State with { Version = state.Version + 1 };
-        }
-
-        return result;
-    }
-
-    public Result<Test> Create()
-    {
-        return this with { 
-            Counter = 0 
+        return new TestEvents[] {
+            new()
+            {
+                StreamId = command.StreamId,
+                Type = Events.Created
+            }
         };
     }
 
@@ -76,28 +64,42 @@ public record Test : IAggregate<Guid, Test, TestCommands>
     /// Increments the counter by one.
     /// </summary>
     /// <returns>New state if successful, or failed result if out of bounds.</returns>
-    public Result<Test> Increment()
+    public static Result<TestEvents[]> Increment(Test state, TestCommands command)
     {
-        if (Counter >= 100)
+        if (state.Counter >= 100)
         {
-            return Result.Failed(this, "Counter cannot exceed 100.");
+            return Result.Failed(Array.Empty<TestEvents>(), "Counter cannot exceed 100.");
         }
 
-        return this with { Counter = Counter + 1 };
+        return new TestEvents[] {
+            new()
+            {
+                StreamId = command.StreamId,
+                Type = Events.Incremented,
+                Increment = state.Counter + 1
+            }
+        };
     }
 
     /// <summary>
     /// Decrements the counter by one.
     /// </summary>
     /// <returns>New state if successful, or failed result if out of bounds.</returns>
-    public Result<Test> Decrement()
+    public static Result<TestEvents[]> Decrement(Test state, TestCommands command)
     {
-        if (Counter <= 0)
+        if (state.Counter <= 0)
         {
-            return Result.Failed(this, "Counter cannot be less than 0.");
+            return Result.Failed(Array.Empty<TestEvents>(), "Counter cannot be less than 0.");
         }
 
-        return this with { Counter = Counter - 1 };
+        return new TestEvents[] {
+            new()
+            {
+                StreamId = command.StreamId,
+                Type = Events.Decremented,
+                Decrement = state.Counter - 1
+            }
+        };
     }
 
     /// <summary>
@@ -105,18 +107,95 @@ public record Test : IAggregate<Guid, Test, TestCommands>
     /// </summary>
     /// <param name="cmd">The command containing the new counter value.</param>
     /// <returns>New state if within bounds, or failed result otherwise.</returns>
-    public Result<Test> SetCounter(SetCounter cmd)
+    public static Result<TestEvents[]> SetCounter(Test state, TestCommands command)
     {
-        if (cmd.Counter < 0)
+        if(command.SetCounter is null)
         {
-            return Result.Failed(this, "Counter cannot be less than 0.");
+            return Result.Failed(Array.Empty<TestEvents>(), "SetCounter command data is null");
         }
 
-        if (cmd.Counter > 100)
+        if (command.SetCounter.Counter < 0)
         {
-            return Result.Failed(this, "Counter cannot be more than 100.");
+            return Result.Failed(Array.Empty<TestEvents>(), "Counter cannot be less than 0.");
         }
 
-        return this with { Counter = cmd.Counter };
+        if (command.SetCounter.Counter > 100)
+        {
+            return Result.Failed(Array.Empty<TestEvents>(), "Counter cannot be more than 100.");
+        }
+
+        return new TestEvents[] {
+            new()
+            {
+                StreamId = command.StreamId,
+                Type = Events.Decremented,
+                Counter = command.SetCounter.Counter    
+            }
+        };
+    }
+
+    public static void Configure(ICommanderBuilder<Guid, Test, TestCommands, TestEvents> builder)
+    {
+        builder.When(Commands.Create).Then(Create)
+               .When(Commands.Increment).Then(Increment)
+               .When(Commands.Decrement).Then(Decrement)
+               .When(Commands.SetCounter).Then(SetCounter);
+    }
+
+    public static void Configure(IApplierBuilder<Guid, Test, TestEvents> builder)
+    {
+        builder.When(Events.Created).Then(Created)
+            .When(Events.Incremented).Then(Incemented)
+            .When(Events.Decremented).Then(Decremented)
+            .When(Events.CounterSet).Then(CounterSet);
+
+    }
+
+    private static Result<Test> CounterSet(Test test, TestEvents events)
+    {
+        if (events.Counter is null)
+        {
+            return Result.Failed(test, "CounterSet event does not contain a valid counter value.");
+        }
+
+        return test with
+        {
+            Counter = events.Counter.Value,
+        };
+    }
+
+    private static Result<Test> Decremented(Test test, TestEvents events)
+    {
+        if(events.Decrement is null)
+        {
+            return Result.Failed(test, "Decrement event does not contain a valid decrement value.");
+        }
+
+        return test with
+        {
+            Counter = events.Decrement.Value,
+        };
+    }
+
+    private static Result<Test> Incemented(Test test, TestEvents events)
+    {
+        if (events.Increment is null)
+        {
+            return Result.Failed(test, "Incremented event does not contain a valid Incremented value.");
+        }
+
+        return test with
+        {
+            Counter = events.Increment ?? 0,
+        };
+    }
+
+    private static Result<Test> Created(Test test, TestEvents events)
+    {
+        return test with
+        {
+            Id = events.StreamId,
+            Counter = 0,
+        };
     }
 }

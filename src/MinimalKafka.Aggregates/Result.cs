@@ -32,7 +32,7 @@ public class Result<T>
     /// <summary>
     /// Gets or sets the state value associated with the result.
     /// </summary>
-    public required T State { get; init;  }
+    public required T State { get; init; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the operation was successful.
