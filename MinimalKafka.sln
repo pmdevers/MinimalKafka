@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka.RocksDB.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalKafka.Aggregates", "src\MinimalKafka.Aggregates\MinimalKafka.Aggregates.csproj", "{C96993B7-7A2E-4F79-8D05-357E72AABADF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qowaiv.DomainModel.Kafka", "examples\Qowaiv.DomainModel.Kafka\Qowaiv.DomainModel.Kafka.csproj", "{67056500-A7BC-4790-8551-47917731F232}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,10 @@ Global
 		{C96993B7-7A2E-4F79-8D05-357E72AABADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C96993B7-7A2E-4F79-8D05-357E72AABADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C96993B7-7A2E-4F79-8D05-357E72AABADF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67056500-A7BC-4790-8551-47917731F232}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67056500-A7BC-4790-8551-47917731F232}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67056500-A7BC-4790-8551-47917731F232}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67056500-A7BC-4790-8551-47917731F232}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,6 +101,7 @@ Global
 		{36D263AF-C209-437D-9528-2DD7BF78B0D8} = {FF927BA2-E4C3-4D02-ACD4-251E68C149E4}
 		{AFF59BB3-8ECD-AC56-2421-5251AD2F50E1} = {1C8F1D9A-608B-4F46-8A59-3CF48AA4AF9D}
 		{C96993B7-7A2E-4F79-8D05-357E72AABADF} = {A09FD86F-4832-467D-96BD-74DDD5066B2E}
+		{67056500-A7BC-4790-8551-47917731F232} = {FF927BA2-E4C3-4D02-ACD4-251E68C149E4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3EFB6EF-B785-4560-A9DB-E5BB7DADBFF4}
