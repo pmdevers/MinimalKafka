@@ -4,11 +4,11 @@
     "net8.0": {
       "Confluent.Kafka": {
         "type": "Direct",
-        "requested": "[2.11.0, )",
-        "resolved": "2.11.0",
-        "contentHash": "LlGynxX1lkylZkVJ6GqZGeDNs2pRLjmjJ1VAWiybKmabGlVFKitidOEkohdFpz2qsrFQnAvB+fBZIurBsSj7hw==",
+        "requested": "[2.12.0, )",
+        "resolved": "2.12.0",
+        "contentHash": "UAiz9Xogy9Xqo6Y1ogKesH0tzk03ilw5UmwkVMFqZXQvf/1vFyTyVbzed22xS231UP43Z2aib6hzgruErM74lw==",
         "dependencies": {
-          "librdkafka.redist": "2.11.0"
+          "librdkafka.redist": "2.12.0"
         }
       },
       "Microsoft.AspNetCore.Http.Abstractions": {
@@ -81,8 +81,8 @@
       },
       "librdkafka.redist": {
         "type": "Transitive",
-        "resolved": "2.11.0",
-        "contentHash": "+CMp3EuJSuDhOZZbjdcWgB2McrqJnjMvi8GsaCecnDEmfVRJzOP55CoT92uJxATrztq4F0daFFyPWaKS1nsoxA=="
+        "resolved": "2.12.0",
+        "contentHash": "CZpY6RW/RVWtVUiwHIQCWHeyXHjt1cSlwdxJapx1jlr3z3T1Jwk/RdtEo2FyRL6PvELDO4NhZvaWs6BXdwCVDw=="
       },
       "Microsoft.AspNetCore.Http.Features": {
         "type": "Transitive",
