@@ -17,7 +17,6 @@ builder.Services.AddMinimalKafka(x =>
     x.WithBootstrapServers("localhost:19092")
      .WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
-     .WithClientId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithOffsetReset(AutoOffsetReset.Earliest)
      .WithJsonSerializers(x =>
      {

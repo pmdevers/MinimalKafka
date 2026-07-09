@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
 
 namespace MinimalKafka;
@@ -32,7 +33,8 @@ public static class KafkaContextExtenions
     }
 
     private static IKafkaStoreFactory GetStoreFactory(this KafkaContext context)
-        => context.RequestServices.GetRequiredService<IKafkaStoreFactory>();
+        => context.RequestServices.GetService<IKafkaStoreFactory>()
+        ?? context.RequestServices.GetRequiredService<KafkaInMemoryStoreFactory>();
 
     /// <summary>
     /// 

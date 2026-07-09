@@ -1,4 +1,5 @@
 ﻿using KafkaAdventure.Domain;
+using Microsoft.AspNetCore.SignalR;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
@@ -16,7 +17,11 @@ public static class CommandProcessor
                 x.Branch((k, v) => v.Command == Commands.Look).To("game-look");
                 x.Branch((k, v) => v.Command == Commands.Inventory).To("game-inventory");
                 x.Branch((k, v) => v.Command == Commands.Echo).To("game-echo");
-                x.DefaultBranch("game-unknown");
+                x.DefaultBranch(async (c, k, v) =>
+                {
+                    var hub = c.RequestServices.GetRequiredService<IHubContext<InputHub>>();
+                    await hub.Clients.Group(k.ToString()).SendAsync("ReceiveMessage", "Unknown Command");
+                });
             });
     }
 }

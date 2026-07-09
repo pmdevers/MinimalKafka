@@ -1,7 +1,6 @@
 using Confluent.Kafka;
 using Examples.Aggregate;
 using Examples.Branch;
-using Examples.Join;
 using MinimalKafka;
 using MinimalKafka.Aggregates;
 using System.Text.Json.Serialization;
@@ -12,10 +11,7 @@ builder.Services.AddMinimalKafka(config =>
  {
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithBootstrapServers("nas:9092")
-           .WithGroupId(AppDomain.CurrentDomain.FriendlyName)
-           .WithClientId(AppDomain.CurrentDomain.FriendlyName)
-           //.WithTransactionalId(AppDomain.CurrentDomain.FriendlyName)
+           .WithBootstrapServers("localhost:19092")
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            .WithJsonSerializers(x =>

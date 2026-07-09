@@ -1,10 +1,8 @@
 ﻿using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
-using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
 
 namespace MinimalKafka;
@@ -25,7 +23,7 @@ public static class KafkaExtensions
         List<Action<IKafkaBuilder>> conventions = [];
         var configBuilder = new KafkaConfigConventionBuilder(services, conventions);
 
-        configBuilder.WithClientId(AppDomain.CurrentDomain.FriendlyName);
+        configBuilder.WithClientId(Environment.MachineName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
         configBuilder.WithReportInterval(5);
@@ -53,6 +51,7 @@ public static class KafkaExtensions
         });
 
         services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
+        services.AddSingleton<KafkaInMemoryStoreFactory>();
         services.AddHostedService<KafkaService>();
         return services;
     }
@@ -85,7 +84,7 @@ public static class KafkaExtensions
     /// <param name="handler">A delegate that processes messages from the specified topic. The delegate must match the expected signature for
     /// handling Kafka messages.</param>
     /// <returns>An <see cref="IKafkaConventionBuilder"/> that allows further configuration of Kafka conventions.</returns>
-    public static  IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
+    public static IKafkaConventionBuilder MapTopic(this IKafkaBuilder builder, string topic, Delegate handler)
     {
         return builder.GetOrAddDatasource()
             .AddTopicDelegate(topic, handler)
