@@ -10,19 +10,19 @@ env:
   GITHUB_USER: pmdevers
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NUGET_FEED: https://api.nuget.org/v3/index.json
-  NUGET_KEY: ${{ secrets.NUGET_KEY }}
+  NUGET_USER: pmdevers
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.x.x'
+        uses: actions/setup-dotnet@v5
+
       - name: Build
         run: dotnet build -c Release
       - name: Test
@@ -39,12 +39,35 @@ jobs:
    
       - name: Upload Artifact
         if: github.event_name == 'release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkg
           path: packages/MinimalKafka*.nupkg
+
+  publish:
+    name: Publish
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v5
+        
+      - name: Download Artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: nupkg
+          path: packages
+
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: ${{ env.NUGET_USER }}
           
       - name: DotNet NuGet Push  
-        if: github.event_name == 'release'
-        run: dotnet nuget push "packages/MinimalKafka*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_KEY }} --skip-duplicate --no-symbols    
+        run: dotnet nuget push "packages/MinimalKafka*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} --skip-duplicate --no-symbols    
     
