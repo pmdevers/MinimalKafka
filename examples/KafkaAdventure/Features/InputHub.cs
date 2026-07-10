@@ -19,7 +19,7 @@ public class InputHub(
 
     public async Task SendMessage(string gameId, string message)
     {
-        if(string.IsNullOrWhiteSpace(message))
+        if (string.IsNullOrWhiteSpace(message))
         {
             return;
         }
@@ -29,12 +29,18 @@ public class InputHub(
         try
         {
             var command = Enum.Parse<Commands>(cmd.First(), true);
-            await producer.ProduceAsync("game-commands", gameId, 
+            await producer.ProduceAsync("game-commands", gameId,
                 new AppCommand(command, [.. cmd.Skip(1)]));
-        } catch(Exception ex)
+        }
+        catch (Exception ex)
         {
+            await Clients.Group(gameId).SendAsync("ReceiveMessage", $"Unknown Command '{message}'");
+
+            await producer.ProduceAsync("game-commands", gameId,
+                new AppCommand(Commands.Help, [.. cmd.Skip(1)]));
+
             Console.WriteLine(ex.Message);
         }
-        
+
     }
 }
