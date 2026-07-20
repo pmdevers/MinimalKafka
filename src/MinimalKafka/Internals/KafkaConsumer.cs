@@ -42,14 +42,14 @@ internal class KafkaConsumer(
     public async Task Consume(CancellationToken cancellationToken)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
-        
+
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
                 var result = _consumer.Consume(cancellationToken);
 
-                if(result == null) 
+                if (result == null)
                     continue;
 
                 if (++_recordsConsumed % _reportInterval == 0)
@@ -72,14 +72,14 @@ internal class KafkaConsumer(
 
                 Commit(result);
             }
-            catch (KafkaException ex) 
+            catch (KafkaException ex)
             when (ex.Error.Code == ErrorCode.Local_NoOffset)
             {
                 logger.NoOffsetStored(config.Key.GroupId, config.Key.ClientId, config.Key.TopicName);
             }
             catch (OperationCanceledException ex)
-            when(ex.CancellationToken == cancellationToken)
-            {   
+            when (ex.CancellationToken == cancellationToken)
+            {
                 logger.OperatonCanceled(config.Key.GroupId, config.Key.ClientId);
             }
         }
@@ -129,8 +129,8 @@ internal class KafkaConsumer(
             .SetPartitionsAssignedHandler(handlers?.PartitionsAssignedHandler)
             .SetPartitionsLostHandler(handlers?.PartitionsLostHandler)
             .SetPartitionsRevokedHandler(handlers?.PartitionsRevokedHandler)
+            .SetOAuthBearerTokenRefreshHandler(handlers?.OAuthBearerTokenRefreshHandler)
             .Build();
     }
 }
 
-    

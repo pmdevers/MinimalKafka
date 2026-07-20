@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
-using MinimalKafka.Metadata.Internals;
 using MinimalKafka.Serializers;
 using System.Text.Json;
 
@@ -130,11 +129,12 @@ public static class KafkaConsumerConfigExtensions
     }
 
     internal static TBuilder UpdateConfig<TBuilder>(this TBuilder builder, Action<ConfigMetadataAttribute> update)
-        where TBuilder: IKafkaConventionBuilder
+        where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => { 
+        builder.Add(b =>
+        {
             var item = b.MetaData.OfType<ConfigMetadataAttribute>().FirstOrDefault();
-            if(item is null)
+            if (item is null)
             {
                 item = new ConfigMetadataAttribute();
                 b.MetaData.Add(item);
@@ -248,7 +248,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithPartitionAssignedHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartition>, IEnumerable<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsAssignedHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.PartitionsAssignedHandler = handler));
         return builder;
     }
 
@@ -262,7 +262,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithPartitionRevokedHandler<TBuilder>(this TBuilder builder, Action<object, List<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsRevokedHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.PartitionsRevokedHandler = handler));
         return builder;
     }
 
@@ -276,7 +276,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithPartitionLostHandler<TBuilder>(this TBuilder builder, Func<object, List<TopicPartitionOffset>, IEnumerable<TopicPartitionOffset>> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.PartitionsLostHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.PartitionsLostHandler = handler));
         return builder;
     }
 
@@ -290,7 +290,8 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithErrorHandler<TBuilder>(this TBuilder builder, Action<object, Error> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.ErrorHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.ErrorHandler = handler));
+        builder.Add(b => b.Ensure<ProducerHandlerMetadataAttribute>(ph => ph.ErrorHandler = handler));
         return builder;
     }
 
@@ -304,7 +305,8 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithStatisticsHandler<TBuilder>(this TBuilder builder, Action<object, string> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.StatisticsHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.StatisticsHandler = handler));
+        builder.Add(b => b.Ensure<ProducerHandlerMetadataAttribute>(ph => ph.StatisticsHandler = handler));
         return builder;
     }
 
@@ -318,7 +320,8 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithLogHandler<TBuilder>(this TBuilder builder, Action<object, LogMessage> handler)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.Add(b => b.Ensure<ConsumerHandlerMetadata>(ch => ch.LogHandler = handler));
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.LogHandler = handler));
+        builder.Add(b => b.Ensure<ProducerHandlerMetadataAttribute>(ph => ph.LogHandler = handler));
         return builder;
     }
 
@@ -333,6 +336,21 @@ public static class KafkaConsumerConfigExtensions
         where TBuilder : IKafkaConventionBuilder
     {
         builder.WithSingle(new ReportIntervalMetadataAttribute(reportInterval));
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an OAuth bearer token refresh handler for both the consumer and producer.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="handler">The OAuth bearer token refresh handler delegate.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithOAuthBearerTokenRefreshHandler<TBuilder>(this TBuilder builder, Action<object, string> handler)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.OAuthBearerTokenRefreshHandler = handler));
+        builder.Add(b => b.Ensure<ProducerHandlerMetadataAttribute>(ph => ph.OAuthBearerTokenRefreshHandler = handler));
         return builder;
     }
 }

@@ -34,7 +34,7 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
         {
             var builder = new KafkaBuilder(serviceProvider);
 
-            foreach(var convention in entry.Conventions)
+            foreach (var convention in entry.Conventions)
             {
                 convention(builder);
             }
@@ -45,11 +45,11 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
                 ServiceProvider = serviceProvider
             });
 
-            foreach(var finallyConvention in entry.FinallyConventions)
+            foreach (var finallyConvention in entry.FinallyConventions)
             {
                 finallyConvention(builder);
             }
-            
+
             var key = new KafkaConsumerKey(entry.TopicName, builder.GetGroupId(), builder.GetClientId());
 
             if (!process.TryGetValue(key, out var cbuilder))
@@ -100,11 +100,11 @@ internal static class MetadataExtensions
 {
     public static string GetClientId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().BuildConsumerConfig().ClientId;
+        return builder.MetaData.OfType<ConfigMetadataAttribute>().First().BuildConsumerConfig().ClientId;
     }
 
     public static string GetGroupId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().BuildConsumerConfig().GroupId;
+        return builder.MetaData.OfType<ConfigMetadataAttribute>().First().BuildConsumerConfig().GroupId;
     }
 }

@@ -13,4 +13,8 @@
     <PackageReference Include="System.Linq.Async" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Metadata\Internals\" />
+  </ItemGroup>
+
 </Project>

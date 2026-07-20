@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
-using System.Diagnostics.Contracts;
 
 namespace MinimalKafka;
 
@@ -46,7 +45,13 @@ public static class KafkaExtensions
         {
             var builder = sp.GetRequiredService<IKafkaBuilder>();
             var config = builder.MetaData.ProducerConfig();
+            var handlers = builder.MetaData.ProducerHandlers();
+
             return new ProducerBuilder<byte[], byte[]>(config)
+                .SetLogHandler(handlers.LogHandler)
+                .SetErrorHandler(handlers.ErrorHandler)
+                .SetOAuthBearerTokenRefreshHandler(handlers.OAuthBearerTokenRefreshHandler)
+                .SetStatisticsHandler(handlers.StatisticsHandler)
                 .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
                 .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
                 .Build();
