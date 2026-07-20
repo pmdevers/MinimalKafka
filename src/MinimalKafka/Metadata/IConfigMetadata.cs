@@ -11,11 +11,11 @@ public interface IConfigMetadata
     /// <summary>
     /// Gets the consumer configuration for Kafka operations.
     /// </summary>
-    ConsumerConfig ConsumerConfig { get; }
+    ConsumerConfig BuildConsumerConfig();
 
     /// <summary>
     /// Gets the producer configuration for Kafka operations.
     /// </summary>
-    ProducerConfig ProducerConfig { get; }
+    ProducerConfig BuildProducerConfig();
 
 }

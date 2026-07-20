@@ -100,11 +100,11 @@ internal static class MetadataExtensions
 {
     public static string GetClientId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().ConsumerConfig.ClientId;
+        return builder.MetaData.OfType<IConfigMetadata>().First().BuildConsumerConfig().ClientId;
     }
 
     public static string GetGroupId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().ConsumerConfig.GroupId;
+        return builder.MetaData.OfType<IConfigMetadata>().First().BuildConsumerConfig().GroupId;
     }
 }

@@ -25,7 +25,8 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithConfiguration<TBuilder>(this TBuilder builder, IConfiguration configuration)
          where TBuilder : IKafkaConventionBuilder
     {
-        return builder.WithSingle(ConfigMetadataAttribute.FromConfig(configuration));
+        builder.UpdateConfig(x => x.LoadFromConfig(configuration));
+        return builder;
     }
 
     /// <summary>
@@ -38,7 +39,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithClientId<TBuilder>(this TBuilder builder, string clientId)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.UpdateConsumerConfig(builder => builder.ClientId = clientId);
+        builder.UpdateConfig(x => x.AddOrUpdate("client.id", clientId));
         return builder;
     }
 
@@ -52,7 +53,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithGroupId<TBuilder>(this TBuilder builder, string groupId)
         where TBuilder : IKafkaConventionBuilder
     {
-        builder.UpdateConsumerConfig(x => x.GroupId = groupId);
+        builder.UpdateConfig(x => x.AddOrUpdate("group.id", groupId));
         return builder;
     }
 
@@ -81,7 +82,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithBootstrapServers<TBuilder>(this TBuilder builder, string bootstrapServers)
         where TBuilder : IKafkaConventionBuilder
     {
-        return builder.UpdateConsumerConfig(x => x.BootstrapServers = bootstrapServers);
+        return builder.UpdateConfig(x => x.AddOrUpdate("bootstrap.servers", bootstrapServers));
     }
 
     /// <summary>
@@ -94,7 +95,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithOffsetReset<TBuilder>(this TBuilder builder, AutoOffsetReset offsetReset)
          where TBuilder : IKafkaConventionBuilder
     {
-        return builder.UpdateConsumerConfig(x => x.AutoOffsetReset = offsetReset);
+        return builder.UpdateConfig(x => x.AddOrUpdate("auto.offset.reset", offsetReset.ToString().ToLowerInvariant()));
     }
 
     /// <summary>
@@ -111,7 +112,7 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithDebug<TBuilder>(this TBuilder builder, string value = "all")
         where TBuilder : IKafkaConventionBuilder
     {
-        return builder.UpdateConsumerConfig(x => x.Debug = value);
+        return builder.UpdateConfig(x => x.AddOrUpdate("debug", value));
     }
 
 
@@ -125,37 +126,21 @@ public static class KafkaConsumerConfigExtensions
     public static TBuilder WithTransactionalId<TBuilder>(this TBuilder builder, string transactionalId)
          where TBuilder : IKafkaConventionBuilder
     {
-        return builder.UpdateProducerConfig(x => x.TransactionalId = transactionalId);
+        return builder.UpdateConfig(x => x.AddOrUpdate("transactional.id", transactionalId));
     }
 
-    internal static TBuilder UpdateConsumerConfig<TBuilder>(this TBuilder builder, Action<ConsumerConfig> update)
+    internal static TBuilder UpdateConfig<TBuilder>(this TBuilder builder, Action<ConfigMetadataAttribute> update)
         where TBuilder: IKafkaConventionBuilder
     {
         builder.Add(b => { 
-            var item = b.MetaData.OfType<IConfigMetadata>().FirstOrDefault();
+            var item = b.MetaData.OfType<ConfigMetadataAttribute>().FirstOrDefault();
             if(item is null)
             {
-                item = new ConfigMetadataAttribute(new Dictionary<string, string>());
+                item = new ConfigMetadataAttribute();
                 b.MetaData.Add(item);
             }
 
-            update?.Invoke(item.ConsumerConfig);
-        });
-        return builder;
-    }
-
-    internal static TBuilder UpdateProducerConfig<TBuilder>(this TBuilder builder, Action<ProducerConfig> update)
-        where TBuilder : IKafkaConventionBuilder
-    {
-        builder.Add(b => {
-            var item = b.MetaData.OfType<IConfigMetadata>().FirstOrDefault();
-            if (item is null)
-            {
-                item = new ConfigMetadataAttribute(new Dictionary<string, string>());
-                b.MetaData.Add(item);
-            }
-
-            update?.Invoke(item.ProducerConfig);
+            update?.Invoke(item);
         });
         return builder;
     }

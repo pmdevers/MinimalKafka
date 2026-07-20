@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
+using System.Diagnostics.Contracts;
 
 namespace MinimalKafka;
 
@@ -28,6 +29,7 @@ public static class KafkaExtensions
         configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
         configBuilder.WithReportInterval(5);
         configBuilder.WithTopicFormatter(topic => topic);
+        configBuilder.WithInMemoryStore();
 
         config?.Invoke(configBuilder);
 
@@ -51,7 +53,6 @@ public static class KafkaExtensions
         });
 
         services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
-        services.AddSingleton<KafkaInMemoryStoreFactory>();
         services.AddHostedService<KafkaService>();
         return services;
     }
@@ -104,10 +105,23 @@ public static class KafkaExtensions
     /// <param name="builder"></param>
     /// <param name="create"></param>
     /// <returns></returns>
-    public static TBuilder UseStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
+    public static TBuilder WithStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
         where TBuilder : IKafkaConfigBuilder
     {
         builder.Services.AddSingleton(sp => create(sp));
         return builder;
     }
+
+    /// <summary>
+    /// Configures the builder to use an in-memory store for Kafka-related operations.
+    /// </summary>
+    /// <remarks>This method sets up an in-memory store, which is useful for testing or scenarios where
+    /// persistence is not required. It overrides the default store factory with an in-memory implementation.</remarks>
+    /// <typeparam name="TBuilder">The type of the builder implementing <see cref="IKafkaConfigBuilder"/>.</typeparam>
+    /// <param name="builder">The builder instance to configure.</param>
+    /// <param name="timeProvider"></param>
+    /// <returns>The configured builder instance.</returns>
+    public static TBuilder WithInMemoryStore<TBuilder>(this TBuilder builder, TimeProvider? timeProvider = null)
+        where TBuilder : IKafkaConfigBuilder
+        => builder.WithStoreFactory(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
 }

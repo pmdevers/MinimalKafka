@@ -23,7 +23,7 @@ public static class KafkaMetadataExtensions
     /// Thrown if the metadata does not contain an <see cref="IConfigMetadata"/> entry.
     /// </exception>
     public static ConsumerConfig ConsumerConfig(this IReadOnlyList<object> metadata) 
-        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.ConsumerConfig
+        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.BuildConsumerConfig()
         ?? throw new InvalidOperationException("No IConfigMetadata found in builder metadata.");
 
     /// <summary>
@@ -36,7 +36,7 @@ public static class KafkaMetadataExtensions
     /// The <see cref="IConsumerHandlerMetadata"/> instance if present; otherwise a new (empty) <see cref="ConsumerHandlerMetadata"/>.
     /// </returns>
     public static ProducerConfig ProducerConfig(this IReadOnlyList<object> metadata)
-        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.ProducerConfig
+        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.BuildProducerConfig()
         ?? throw new InvalidOperationException("No IConfigMetadata found in builder metadata.");
 
     /// <summary>
@@ -74,7 +74,7 @@ public static class KafkaMetadataExtensions
     /// <c>true</c> if auto commit is enabled or not specified; <c>false</c> otherwise.
     /// </returns>
     public static bool AutoCommitEnabled(this IReadOnlyList<object> metadata)
-        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.ConsumerConfig.EnableAutoCommit ?? true;
+        => metadata.OfType<IConfigMetadata>().FirstOrDefault()?.BuildConsumerConfig().EnableAutoCommit ?? true;
 }
 
     

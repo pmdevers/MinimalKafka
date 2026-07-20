@@ -4,22 +4,28 @@ using Microsoft.Extensions.Configuration;
 namespace MinimalKafka.Metadata.Internals;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-internal class ConfigMetadataAttribute(IDictionary<string, string> config) : Attribute, IConfigMetadata
+internal class ConfigMetadataAttribute() : Attribute, IConfigMetadata
 {
-    public ConsumerConfig ConsumerConfig { get;  init; } = new ConsumerConfig(config);
-    public ProducerConfig ProducerConfig { get; init; } = new ProducerConfig(config);
-
+    private readonly Dictionary<string, string> _config = [];
     /// <summary>
     /// Creates a ConfigMetadataAttribute instance from the provided configuration.
     /// </summary>
     /// <param name="configuration">The configuration object to extract settings from.</param>
     /// <returns>A new ConfigMetadataAttribute instance with the extracted configuration values.</returns>
-    public static ConfigMetadataAttribute FromConfig(IConfiguration configuration)
+    public void LoadFromConfig(IConfiguration configuration)
     {
-        var value = configuration.AsEnumerable(true)
-            .Select(x => new KeyValuePair<string, string>(x.Key, x.Value ?? string.Empty))
-            .ToDictionary();
-
-        return new(value);
+        foreach(var kv in configuration.AsEnumerable(true))
+        {
+            _config[kv.Key] = kv.Value ?? string.Empty;
+        }
     }
+
+    public void AddOrUpdate(string key, string value)
+        => _config[key] = value;
+
+    public ConsumerConfig BuildConsumerConfig()
+        => new(_config);
+
+    public ProducerConfig BuildProducerConfig() 
+        => new(_config);
 }

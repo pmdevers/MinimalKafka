@@ -7,4 +7,6 @@ internal class KafkaConfigConventionBuilder(IServiceCollection services, ICollec
     IKafkaConfigBuilder
 {
     public IServiceCollection Services { get; } = services;
+
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 }

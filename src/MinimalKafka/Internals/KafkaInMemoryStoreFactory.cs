@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace MinimalKafka.Internals;
 
-internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : BackgroundService, IKafkaStoreFactory
+internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider, TimeProvider timeProvider) : BackgroundService, IKafkaStoreFactory
 {
     private readonly ConcurrentDictionary<string, KafkaInMemoryStore> _stores = [];
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     public IKafkaStore GetStore(string topicName)
     {
@@ -15,7 +16,7 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : Bac
         {
             if (!_stores.TryGetValue(topicName, out KafkaInMemoryStore? store))
             {
-                store = new KafkaInMemoryStore(serviceProvider);
+                store = new KafkaInMemoryStore(serviceProvider, timeProvider);
                 _stores.TryAdd(topicName, store);
 
             }
@@ -37,10 +38,10 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : Bac
 }
 
 
-internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStore
+internal class KafkaInMemoryStore(IServiceProvider serviceProvider, TimeProvider timeProvider) : IKafkaStore
 {
     private readonly TimedConcurrentDictionary<byte[], byte[]> _store =
-        new(TimeSpan.FromDays(7));
+        new(TimeSpan.FromDays(7), timeProvider);
 
     public IServiceProvider ServiceProvider => serviceProvider;
 
