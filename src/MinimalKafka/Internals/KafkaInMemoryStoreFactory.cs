@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace MinimalKafka.Internals;
 
@@ -28,9 +26,9 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider, TimeP
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
-            foreach(var store in _stores.Values) 
-            { 
+            await Task.Delay(TimeSpan.FromMinutes(10), timeProvider, stoppingToken);
+            foreach (var store in _stores.Values)
+            {
                 store.CleanUp();
             }
         }
@@ -49,8 +47,8 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider, TimeProvider
     {
         byte[] localVal = value.ToArray();
 
-        return _store.AddOrUpdate(key.ToArray(), 
-            (k) => localVal, 
+        return _store.AddOrUpdate(key.ToArray(),
+            (k) => localVal,
             (k, v) => localVal);
     }
 
