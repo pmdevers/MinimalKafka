@@ -18,7 +18,7 @@ internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expiratio
     private readonly ConcurrentDictionary<TKey, Tuple<TValue, DateTimeOffset>> _dictionary = [];
     private readonly TimeSpan _expirationTime = expirationTime;
     private readonly TimeProvider _timeProvider = timeProvider;
-    
+
 
     /// <summary>
     /// Adds a new value to the dictionary or updates an existing value if the key is already present.
@@ -41,7 +41,7 @@ internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expiratio
     /// </summary>
     public void CleanUp()
     {
-        var now = TimeProvider.System.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
 
         // Remove items where the timestamp is older than the expiration time
         foreach (var key in _dictionary.Keys.ToList())
