@@ -13,7 +13,7 @@ internal class RocksDBStreamStore(IServiceProvider serviceProvider, RocksDb db, 
         return ValueTask.FromResult(value.ToArray());
     }
 
-    public ValueTask<byte[]?> FindByIdAsync(ReadOnlySpan<byte> key)
+    public ValueTask<byte[]?> FindByKeyAsync(ReadOnlySpan<byte> key)
     {
         var result = db.Get(key, cfHandle);
         return ValueTask.FromResult<byte[]?>(result);

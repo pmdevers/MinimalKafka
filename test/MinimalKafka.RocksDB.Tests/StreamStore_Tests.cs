@@ -31,7 +31,7 @@ public class StreamStore_Tests
         // Test adding new key
         await streamStore.AddOrUpdate(key, value);
 
-        var val = await streamStore.FindByIdAsync(key);
+        var val = await streamStore.FindByKeyAsync(key);
 
         Assert.Equal(val,  value);
     }

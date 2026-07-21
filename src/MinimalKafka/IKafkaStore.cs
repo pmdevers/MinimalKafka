@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MinimalKafka;
+﻿namespace MinimalKafka;
 
 /// <summary>
 /// 
@@ -25,14 +23,14 @@ public interface IKafkaStore
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    ValueTask<byte[]?> FindByIdAsync(ReadOnlySpan<byte> key);
+    ValueTask<byte[]?> FindByKeyAsync(ReadOnlySpan<byte> key);
 
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    IAsyncEnumerable<byte[]> GetItems();   
-    
+    IAsyncEnumerable<byte[]> GetItems();
+
 }
 
 /// <summary>
@@ -47,4 +45,3 @@ public interface IKafkaStoreFactory
     /// <returns></returns>
     public IKafkaStore GetStore(string topicName);
 }
-    
