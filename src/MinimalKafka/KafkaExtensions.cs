@@ -1,6 +1,9 @@
 ﻿using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Serializers;
@@ -30,8 +33,11 @@ public static class KafkaExtensions
         configBuilder.WithReportInterval(5);
         configBuilder.WithTopicFormatter(topic => topic);
         configBuilder.WithInMemoryStore();
+        configBuilder.WithJsonSerializers();
 
         config?.Invoke(configBuilder);
+
+        services.TryAddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         services.AddSingleton<IKafkaBuilder>(s =>
         {

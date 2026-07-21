@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using MinimalKafka.Serializers;
 using System.Text;
 using System.Text.Json;
 
@@ -144,7 +145,8 @@ public class KafkaDelegateFactoryTests
     {
         var services = new ServiceCollection();
         services.AddSingleton(JsonSerializerOptions.Default);
-        //services.AddTransient(typeof(JsonTextSerializer<>));
+        services.AddSingleton<ISerializerFactory, SystemTextJsonSerializerFactory>();
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
 
         // Arrange
         var serviceProvider = services.BuildServiceProvider();
@@ -172,17 +174,14 @@ public class KafkaDelegateFactoryTests
         var key = Encoding.UTF8.GetBytes("\"testKey\"");
         var value = Encoding.UTF8.GetBytes("\"testValue\"");
         var headers = new Headers();
-        var consumeResult = new ConsumeResult<byte[], byte[]>
+        var message = new Message<byte[], byte[]>
         {
-            Message = new Message<byte[], byte[]>
-            {
-                Key = key,
-                Value = value,
-                Headers = headers
-            }
+            Key = key,
+            Value = value,
+            Headers = headers
         };
 
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], message, serviceProvider);
 
         await result.Delegate.Invoke(context);
     }
