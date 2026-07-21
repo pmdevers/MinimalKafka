@@ -128,5 +128,10 @@ public static class KafkaExtensions
     /// <returns>The configured builder instance.</returns>
     public static TBuilder WithInMemoryStore<TBuilder>(this TBuilder builder, TimeProvider? timeProvider = null)
         where TBuilder : IKafkaConfigBuilder
-        => builder.WithStoreFactory(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
+    {
+        builder.Services.AddSingleton(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
+        builder.WithStoreFactory(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
+        return builder;
+    }
 }

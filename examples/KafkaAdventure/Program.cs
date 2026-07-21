@@ -18,6 +18,7 @@ builder.Services.AddMinimalKafka(x =>
      .WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithOffsetReset(AutoOffsetReset.Earliest)
+
      .WithJsonSerializers(x =>
      {
          x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
