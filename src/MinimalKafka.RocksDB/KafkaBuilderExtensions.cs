@@ -18,13 +18,9 @@ public static class KafkaBuilderExtensions
     /// <returns></returns>
     public static IKafkaConfigBuilder UseRocksDB(this IKafkaConfigBuilder builder, Action<RocksDBOptions>? options = null)
     {
-        var config = new RocksDBOptions();
-        options?.Invoke(config);
-
-        Directory.CreateDirectory(config.DataPath);
-
-        builder.Services.AddSingleton<IKafkaStoreFactory>(s => new RocksDBStreamStoreFactory(s, config));
-        builder.WithStoreFactory(s => s.GetRequiredService<IKafkaStoreFactory>());
+        builder.Services.Configure(options ?? (_ => { }));
+        builder.Services.AddSingleton<RocksDBStreamStoreFactory>();
+        builder.WithStoreFactory(s => s.GetRequiredService<RocksDBStreamStoreFactory>());
         return builder;
     }
 }
