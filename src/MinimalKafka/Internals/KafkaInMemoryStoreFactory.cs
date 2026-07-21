@@ -6,7 +6,12 @@ namespace MinimalKafka.Internals;
 internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider, TimeProvider timeProvider) : BackgroundService, IKafkaStoreFactory
 {
     private readonly ConcurrentDictionary<string, KafkaInMemoryStore> _stores = [];
+
+#if NET9_0_OR_GREATER
     private readonly Lock _lock = new();
+#else
+    private readonly object _lock = new();
+#endif
 
     public IKafkaStore GetStore(string topicName)
     {
