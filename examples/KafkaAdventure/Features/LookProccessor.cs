@@ -20,20 +20,20 @@ public static class LookProccessor
                    return;
                }
 
-               if(location is null)
+               if (location is null)
                {
                    // this is a new game
                    await c.ProduceAsync("game-player-position", k, new PlayerPosition(k, 1));
                    return;
                }
 
-               await c.ProduceAsync("game-response", k, 
+               await c.ProduceAsync("game-response", k,
                    new AppResponse(command.Command, $"{location.Description}"));
-               
+
                var store = c.GetTopicStore("locations");
-               foreach(var exit in location.Exits)
+               foreach (var exit in location.Exits)
                {
-                   var exitLocation = await store.FindByKey<int, Location>(exit.Value);
+                   var exitLocation = await store.FindByKeyAsync<int, Location>(exit.Value);
                    await c.ProduceAsync("game-response", k,
                         new AppResponse(command.Command, $"[{exit.Key}] - {exitLocation?.Description}"));
                }

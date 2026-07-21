@@ -262,10 +262,33 @@ internal class KafkaDelegateFactoryContext
     }
 }
 
-internal sealed class EmptyServiceProvider : IServiceProvider
+internal sealed class EmptyServiceProvider : IServiceProvider, IServiceScopeFactory
 {
     public static EmptyServiceProvider Instance { get; } = new EmptyServiceProvider();
-    public object? GetService(Type serviceType) => null;
+
+    public object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IServiceScopeFactory))
+        {
+            return this;
+        }
+        if (serviceType == typeof(IServiceProvider))
+        {
+            return this;
+        }
+        return null;
+    }
+
+    public IServiceScope CreateScope()
+    {
+        return new EmptyServiceScope(this);
+    }
+}
+
+internal sealed class EmptyServiceScope(IServiceProvider serviceProvider) : IServiceScope
+{
+    public IServiceProvider ServiceProvider => serviceProvider;
+    public void Dispose() { }
 }
 
 internal class RfdKafkaBuilder(IServiceProvider serviceProvider) : KafkaBuilder(serviceProvider)

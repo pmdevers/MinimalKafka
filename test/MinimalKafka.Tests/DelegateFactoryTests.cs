@@ -1,7 +1,6 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Internals;
 using System.Text;
 using System.Text.Json;
 
@@ -46,8 +45,8 @@ public class KafkaDelegateFactoryTests
         result.Should().NotBeNull();
         result.Should().BeOfType<KafkaDelegateResult>();
         result.Delegate.Should().BeOfType<KafkaDelegate>();
-        result.KeyType.Should().Be(typeof(Ignore));
-        result.ValueType.Should().Be(typeof(Ignore));
+        result.KeyType.Should().Be<Ignore>();
+        result.ValueType.Should().Be<Ignore>();
     }
 
     [Fact]
@@ -75,7 +74,9 @@ public class KafkaDelegateFactoryTests
     public async Task FinalKafkaDelegate_ShouldInvokeHandler()
     {
         // Arrange
-        var serviceProvider = Substitute.For<IServiceProvider>();
+        var services = new ServiceCollection();
+        var serviceProvider = services.BuildServiceProvider();
+
         var kafkaBuilder = Substitute.For<IKafkaBuilder>();
         var options = new KafkaDelegateFactoryOptions
         {
@@ -92,7 +93,7 @@ public class KafkaDelegateFactoryTests
 
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
-        var context = KafkaContext.Create("topic", [], new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new Message<byte[], byte[]>(), serviceProvider);
 
         await result.Delegate.Invoke(context);
 
@@ -115,8 +116,8 @@ public class KafkaDelegateFactoryTests
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
         // Assert
-        result.KeyType.Should().Be(typeof(Ignore));
-        result.ValueType.Should().Be(typeof(Ignore));
+        result.KeyType.Should().Be<Ignore>();
+        result.ValueType.Should().Be<Ignore>();
     }
 
     [Fact]
@@ -134,8 +135,8 @@ public class KafkaDelegateFactoryTests
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
         // Assert
-        result.KeyType.Should().Be(typeof(Ignore));
-        result.ValueType.Should().Be(typeof(Ignore));
+        result.KeyType.Should().Be<Ignore>();
+        result.ValueType.Should().Be<Ignore>();
     }
 
     [Fact]
@@ -146,15 +147,16 @@ public class KafkaDelegateFactoryTests
         //services.AddTransient(typeof(JsonTextSerializer<>));
 
         // Arrange
-        var serviceProvider = services.BuildServiceProvider();  
-        
+        var serviceProvider = services.BuildServiceProvider();
+
         var kafkaBuilder = Substitute.For<IKafkaBuilder>();
         var options = new KafkaDelegateFactoryOptions
         {
             ServiceProvider = serviceProvider,
             KafkaBuilder = kafkaBuilder
         };
-        Delegate handler = ([FromKey] string key, [FromValue] string value) => {
+        Delegate handler = ([FromKey] string key, [FromValue] string value) =>
+        {
 
             key.Should().Be("testKey");
             value.Should().Be("testValue");
@@ -164,8 +166,8 @@ public class KafkaDelegateFactoryTests
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
         // Assert
-        result.KeyType.Should().Be(typeof(string));
-        result.ValueType.Should().Be(typeof(string));
+        result.KeyType.Should().Be<string>();
+        result.ValueType.Should().Be<string>();
 
         var key = Encoding.UTF8.GetBytes("\"testKey\"");
         var value = Encoding.UTF8.GetBytes("\"testValue\"");
@@ -180,16 +182,17 @@ public class KafkaDelegateFactoryTests
             }
         };
 
-        var context = KafkaContext.Create("topic", [], new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new Message<byte[], byte[]>(), serviceProvider);
 
         try
         {
             await result.Delegate.Invoke(context);
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
         }
 
-        
+
     }
 }

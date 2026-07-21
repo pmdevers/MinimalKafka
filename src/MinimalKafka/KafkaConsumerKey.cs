@@ -1,20 +1,34 @@
 ﻿namespace MinimalKafka;
 
 /// <summary>
-/// 
+/// Describes a unique key for a consumer.
 /// </summary>
-/// <param name="TopicName"></param>
-/// <param name="GroupId"></param>
-/// <param name="ClientId"></param>
-public record KafkaConsumerKey(string TopicName, string GroupId, string ClientId)
+public sealed record KafkaConsumerKey()
 {
     /// <summary>
-    /// 
+    /// Create a random key for a given topic.
     /// </summary>
-    /// <param name="topicName"></param>
-    /// <returns></returns>
     public static KafkaConsumerKey Random(string topicName)
-        => new(topicName, Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
-};
+        => new()
+        {
+            TopicName = topicName,
+            GroupId = Guid.NewGuid().ToString(),
+            ClientId = Guid.NewGuid().ToString(),
+        };
 
-    
+    /// <summary>
+    /// The name of the topic.
+    /// </summary>
+    public required string TopicName { get; init; }
+
+    /// <summary>
+    /// The consumer group id.
+    /// </summary>
+    public required string GroupId { get; init; }
+
+    /// <summary>
+    /// The client id.
+    /// </summary>
+    public required string ClientId { get; init; }
+}
+

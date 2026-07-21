@@ -14,9 +14,9 @@ internal class KafkaContextProducer(
 {
     public async Task ProduceAsync(KafkaContext ctx, CancellationToken ct)
     {
-        if(!ctx.Messages.Any())
+        if (!ctx.Messages.Any())
             return;
-                
+
         foreach (var msg in ctx.Messages)
         {
             var formmattedTopic = formatter(msg.Topic);
@@ -29,7 +29,8 @@ internal class KafkaContextProducer(
                     Value = msg.Value
                 }, ct);
 
-            } catch (Exception ex) 
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 throw;
@@ -40,7 +41,8 @@ internal class KafkaContextProducer(
 
     public async Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? header = null)
     {
-        var context = KafkaContext.Create(topic, [], new() { Key = [], Value = [] }, serviceProvider);
+        var consumerKey = KafkaConsumerKey.Random(topic);
+        var context = KafkaContext.Create(consumerKey, [], new() { Key = [], Value = [] }, serviceProvider);
         await context.ProduceAsync(topic, key, value, header);
         await ProduceAsync(context, CancellationToken.None);
     }

@@ -1,4 +1,6 @@
-﻿namespace MinimalKafka;
+﻿using MinimalKafka.Middlewares;
+
+namespace MinimalKafka;
 
 /// <summary>
 /// Represents a builder for configuring and managing Kafka-related services, topics, and metadata.
@@ -19,4 +21,9 @@ public interface IKafkaBuilder
     /// Gets the collection of metadata objects associated with the Kafka builder.
     /// </summary>
     List<object> MetaData { get; }
+
+    /// <summary>
+    /// Gets the collection of middleware components to be executed in the Kafka processing pipeline.
+    /// </summary>
+    List<Func<IServiceProvider, KafkaMiddlewareDelegate>> Middlewares { get; }
 }

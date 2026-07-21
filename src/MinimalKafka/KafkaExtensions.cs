@@ -23,6 +23,7 @@ public static class KafkaExtensions
         List<Action<IKafkaBuilder>> conventions = [];
         var configBuilder = new KafkaConfigConventionBuilder(services, conventions);
 
+
         configBuilder.WithClientId(Environment.MachineName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);

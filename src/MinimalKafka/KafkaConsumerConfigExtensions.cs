@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
+using MinimalKafka.Middlewares;
 using MinimalKafka.Serializers;
 using System.Text.Json;
 
@@ -351,6 +352,27 @@ public static class KafkaConsumerConfigExtensions
     {
         builder.Add(b => b.Ensure<ConsumerHandlerMetadataAttribute>(ch => ch.OAuthBearerTokenRefreshHandler = handler));
         builder.Add(b => b.Ensure<ProducerHandlerMetadataAttribute>(ph => ph.OAuthBearerTokenRefreshHandler = handler));
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds a collection of middleware functions to the builder's middleware pipeline.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="items">The collection of middleware functions to add.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder WithMiddlewares<TBuilder>(this TBuilder builder, IList<Func<IServiceProvider, KafkaMiddlewareDelegate>> items)
+        where TBuilder : IKafkaConventionBuilder
+    {
+        builder.Add(b =>
+        {
+            foreach (var item in items)
+            {
+                b.Middlewares.Add(item);
+            }
+        });
+
         return builder;
     }
 }
