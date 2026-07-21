@@ -31,8 +31,6 @@ public class KafkaProcessTests
     {
         var services = new ServiceCollection();
 
-        services.AddLogging();
-
         services.AddMinimalKafka(x => x.WithClientId("test-client"));
 
         _serviceProvider = services.BuildServiceProvider();
