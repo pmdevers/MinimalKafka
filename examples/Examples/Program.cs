@@ -11,7 +11,6 @@ builder.Services.AddMinimalKafka(config =>
  {
      config
            .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithBootstrapServers("localhost:19092")
            .WithOffsetReset(AutoOffsetReset.Earliest)
            .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
            .WithJsonSerializers(x =>

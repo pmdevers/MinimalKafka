@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace MinimalKafka.Internals;
 
-internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : BackgroundService, IKafkaStoreFactory
+internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider, TimeProvider timeProvider) : BackgroundService, IKafkaStoreFactory
 {
     private readonly ConcurrentDictionary<string, KafkaInMemoryStore> _stores = [];
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     public IKafkaStore GetStore(string topicName)
     {
@@ -15,7 +14,7 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : Bac
         {
             if (!_stores.TryGetValue(topicName, out KafkaInMemoryStore? store))
             {
-                store = new KafkaInMemoryStore(serviceProvider);
+                store = new KafkaInMemoryStore(serviceProvider, timeProvider);
                 _stores.TryAdd(topicName, store);
 
             }
@@ -27,9 +26,9 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : Bac
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
-            foreach(var store in _stores.Values) 
-            { 
+            await Task.Delay(TimeSpan.FromMinutes(10), timeProvider, stoppingToken);
+            foreach (var store in _stores.Values)
+            {
                 store.CleanUp();
             }
         }
@@ -37,10 +36,10 @@ internal class KafkaInMemoryStoreFactory(IServiceProvider serviceProvider) : Bac
 }
 
 
-internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStore
+internal class KafkaInMemoryStore(IServiceProvider serviceProvider, TimeProvider timeProvider) : IKafkaStore
 {
     private readonly TimedConcurrentDictionary<byte[], byte[]> _store =
-        new(TimeSpan.FromDays(7));
+        new(TimeSpan.FromDays(7), timeProvider);
 
     public IServiceProvider ServiceProvider => serviceProvider;
 
@@ -48,8 +47,8 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider) : IKafkaStor
     {
         byte[] localVal = value.ToArray();
 
-        return _store.AddOrUpdate(key.ToArray(), 
-            (k) => localVal, 
+        return _store.AddOrUpdate(key.ToArray(),
+            (k) => localVal,
             (k, v) => localVal);
     }
 

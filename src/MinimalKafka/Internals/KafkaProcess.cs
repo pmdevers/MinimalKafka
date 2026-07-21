@@ -1,38 +1,67 @@
 ﻿using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
+using MinimalKafka.Middlewares;
 
 namespace MinimalKafka.Internals;
 
-internal class KafkaProcess(
-    IKafkaConsumer consumer, 
+internal sealed class KafkaProcess(
+    IKafkaConsumerBuilder consumerBuilder,
+    IKafkaProducer producer,
+    IReadOnlyList<Func<IServiceProvider, KafkaMiddlewareDelegate>> middlewares,
     ILogger<KafkaProcess> logger) : IKafkaProcess
 {
-    public static KafkaProcess Create(IKafkaConsumer consumer, ILogger<KafkaProcess> logger)
-        => new(consumer, logger);
+    private readonly IKafkaConsumer _consumer = consumerBuilder.Build();
 
     public async Task Start(CancellationToken token)
     {
-        consumer.Subscribe();
+        _consumer.Subscribe();
 
         try
         {
-            await consumer.Consume(token);
-        } 
-        catch (Exception ex) 
+            while (!token.IsCancellationRequested)
+            {
+                using var context = await _consumer.Consume(token);
+
+                if (context is EmptyKafkaContext)
+                {
+                    logger.EmptyContext();
+                    continue;
+                }
+
+                await Invoke(context);
+
+                await producer.ProduceAsync(context, token);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.UnknownProcessException(consumer.TopicName, ex.Message);
-            throw new KafkaProcesException(ex, "Unknown Process error.");
+            logger.UnknownProcessException(_consumer.TopicName, ex.Message);
+            throw new KafkaProcesException(ex, $"Unknown Process error while handling topic '{_consumer.TopicName}'");
         }
         finally
         {
-            consumer.Close();
+            _consumer.Close();
             logger.DropOutOfConsumeLoop();
         }
     }
 
+    public async Task Invoke(KafkaContext context)
+    {
+        KafkaDelegate next = (_) => Task.CompletedTask;
+
+        for (int i = middlewares.Count - 1; i >= 0; i--)
+        {
+            var currentMiddleware = middlewares[i].Invoke(context.RequestServices);
+            KafkaDelegate prevNext = next;
+            next = (context) => currentMiddleware(context, prevNext);
+        }
+
+        await next(context);
+    }
+
     public Task Stop()
     {
-        consumer.Close();
+        _consumer.Close();
         return Task.CompletedTask;
     }
 }

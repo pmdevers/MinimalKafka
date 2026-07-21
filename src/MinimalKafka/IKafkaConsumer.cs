@@ -21,9 +21,14 @@ public interface IKafkaConsumer
     /// 
     /// </summary>
     /// <param name="cancellationToken"></param>
-    Task Consume(CancellationToken cancellationToken);
+    Task<KafkaContext> Consume(CancellationToken cancellationToken);
     /// <summary>
     /// 
     /// </summary>
     void Close();
 }
+
+/// <summary>
+/// Delegate for handling kafka messages.
+/// </summary>
+public delegate Task KafkaDelegate(KafkaContext context);

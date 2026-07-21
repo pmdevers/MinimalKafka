@@ -1,27 +1,34 @@
-﻿using Confluent.Kafka;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Internals;
+using System.Diagnostics.Contracts;
 
 namespace MinimalKafka.Builders;
 
-internal class KafkaConsumerBuilder(KafkaConsumerKey key, IKafkaBuilder builder) : IKafkaConsumerBuilder
+internal sealed class KafkaConsumerBuilder(IServiceProvider serviceProvider) : IKafkaConsumerBuilder
 {
-    private List<KafkaDelegate> Delegates { get; } = [];
+    private KafkaConsumerKey? _key;
+    private IReadOnlyList<object> _metadata = [];
 
-    public IKafkaConsumer Build()
+    public IKafkaConsumerBuilder WithKey(KafkaConsumerKey key)
     {
-        var conf = KafkaConsumerConfig.Create(key, Delegates, builder.MetaData);
-        
-        return ActivatorUtilities.CreateInstance<KafkaConsumer>(
-            builder.ServiceProvider,
-            conf
-        );
+        _key = key;
+        return this;
     }
 
-    
-
-    internal void AddDelegate(KafkaDelegate del)
+    public IKafkaConsumerBuilder WithMetadata(IReadOnlyList<object> metadata)
     {
-       Delegates.Add( del );
+        _metadata = metadata;
+        return this;
+    }
+
+    [Pure]
+    public IKafkaConsumer Build()
+    {
+        if (_key == null)
+        {
+            throw new InvalidOperationException("KafkaConsumerKey must be provided before building the consumer.");
+        }
+
+        return ActivatorUtilities.CreateInstance<KafkaConsumer>(serviceProvider, _key, _metadata);
     }
 }

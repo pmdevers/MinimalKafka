@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
 
@@ -28,13 +27,14 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
 
     public IEnumerable<IKafkaProcess> GetProcesses()
     {
-        var process = new Dictionary<KafkaConsumerKey, KafkaConsumerBuilder>();
+        var processes = new HashSet<KafkaConsumerKey>();
 
         foreach (var entry in _entries)
         {
             var builder = new KafkaBuilder(serviceProvider);
+            var topicFormatter = serviceProvider.GetRequiredService<KafkaTopicFormatter>();
 
-            foreach(var convention in entry.Conventions)
+            foreach (var convention in entry.Conventions)
             {
                 convention(builder);
             }
@@ -42,29 +42,29 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
             var result = KafkaDelegateFactory.Create(entry.Delegate, new()
             {
                 KafkaBuilder = builder,
-                ServiceProvider = serviceProvider
+                ServiceProvider = serviceProvider,
             });
 
-            foreach(var finallyConvention in entry.FinallyConventions)
+            foreach (var finallyConvention in entry.FinallyConventions)
             {
                 finallyConvention(builder);
             }
-            
-            var key = new KafkaConsumerKey(entry.TopicName, builder.GetGroupId(), builder.GetClientId());
 
-            if (!process.TryGetValue(key, out var cbuilder))
+            var key = new KafkaConsumerKey() { TopicName = topicFormatter(entry.TopicName), GroupId = builder.GetGroupId(), ClientId = builder.GetClientId() };
+
+            if (processes.Contains(key))
             {
-                cbuilder = new KafkaConsumerBuilder(key, builder);
-                process.Add(key, cbuilder);
+                throw new InvalidOperationException($"Duplicate consumer: '{key}' try specifying different consumer group. ");
             }
 
-            cbuilder.AddDelegate(result.Delegate);
-        }
+            processes.Add(key);
 
-        foreach (var item in process)
-        {
-            var consumer = item.Value.Build();
-            yield return new KafkaProcess(consumer, serviceProvider.GetRequiredService<ILogger<KafkaProcess>>());
+            yield return KafkaProcessBuilder.Create(serviceProvider)
+                .WithKey(key)
+                .WithMetadata(builder.MetaData)
+                .WithMiddleware(builder.Middlewares)
+                .WithDelegate(result.Delegate)
+                .Build();
         }
     }
 
@@ -100,11 +100,11 @@ internal static class MetadataExtensions
 {
     public static string GetClientId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().ConsumerConfig.ClientId;
+        return builder.MetaData.OfType<ConfigMetadataAttribute>().First().BuildConsumerConfig().ClientId;
     }
 
     public static string GetGroupId(this IKafkaBuilder builder)
     {
-        return builder.MetaData.OfType<IConfigMetadata>().First().ConsumerConfig.GroupId;
+        return builder.MetaData.OfType<ConfigMetadataAttribute>().First().BuildConsumerConfig().GroupId;
     }
 }

@@ -23,7 +23,7 @@ public static class KafkaBuilderExtensions
 
         Directory.CreateDirectory(config.DataPath);
 
-        builder.UseStoreFactory(s => new RocksDBStreamStoreFactory(s,config));
+        builder.WithStoreFactory(s => new RocksDBStreamStoreFactory(s,config));
         return builder;
     }
 }

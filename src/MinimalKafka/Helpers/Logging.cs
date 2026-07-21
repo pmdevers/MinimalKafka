@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 
 namespace MinimalKafka.Helpers;
+
 internal static partial class Logging
 {
 
@@ -80,4 +81,22 @@ internal static partial class Logging
        Message = "Consumer with GroupId: '{GroupId}' and ClientId: '{ClientId}' no offset stored for topic: {Topic}"
        )]
     public static partial void NoOffsetStored(this ILogger logger, string groupId, string clientId, string topic);
+
+    [LoggerMessage(
+       EventId = 11,
+       Level = LogLevel.Critical,
+       Message = "Error while producing to topic: '{Topic}'. {Message}")]
+    public static partial void ErrorWhileProducing(this ILogger logger, string topic, string message);
+
+    [LoggerMessage(
+        EventId = 12,
+        Level = LogLevel.Information,
+        Message = "Start consume topic: '{Topic}' with GroupId {groupId}.")]
+    public static partial void StartConsume(this ILogger logger, string topic, string groupId);
+
+    [LoggerMessage(
+        EventId = 13,
+        Level = LogLevel.Information,
+        Message = "Finished consume topic: '{Topic}' with GroupId '{groupId}' after '{elapsed}'.")]
+    public static partial void FinishedConsume(this ILogger logger, string topic, string groupId, TimeSpan elapsed);
 }

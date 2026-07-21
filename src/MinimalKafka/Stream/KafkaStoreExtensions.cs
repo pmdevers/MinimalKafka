@@ -20,7 +20,7 @@ public static class KafkaStoreExtensions
     /// <returns>
     /// A <typeparamref name="TValue"/> instance if found; otherwise <c>null</c>.
     /// </returns>
-    public async static ValueTask<TValue?> FindByKey<TKey, TValue>(this IKafkaStore store, TKey key)
+    public async static ValueTask<TValue?> FindByKeyAsync<TKey, TValue>(this IKafkaStore store, TKey key)
     {
         var keySerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TKey>>();
         var valueSerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TValue>>();

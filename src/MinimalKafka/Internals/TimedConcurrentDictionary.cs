@@ -11,11 +11,14 @@ namespace MinimalKafka.Internals;
 /// This dictionary automatically removes entries that have exceeded the specified expiration time.
 /// </remarks>
 /// <param name="expirationTime">The time duration after which items in the dictionary expire and are removed.</param>
-internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime)
+/// <param name="timeProvider"></param>
+internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expirationTime, TimeProvider timeProvider)
     where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, Tuple<TValue, DateTimeOffset>> _dictionary = [];
     private readonly TimeSpan _expirationTime = expirationTime;
+    private readonly TimeProvider _timeProvider = timeProvider;
+
 
     /// <summary>
     /// Adds a new value to the dictionary or updates an existing value if the key is already present.
@@ -27,8 +30,8 @@ internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expiratio
     public ValueTask<TValue> AddOrUpdate(TKey key, Func<TKey, TValue> create, Func<TKey, TValue, TValue> update)
     {
         var result = _dictionary.AddOrUpdate(key,
-            (k) => new Tuple<TValue, DateTimeOffset>(create(k), TimeProvider.System.GetUtcNow()),
-            (k, v) => Tuple.Create(update(k, v.Item1), TimeProvider.System.GetUtcNow()));
+            (k) => new Tuple<TValue, DateTimeOffset>(create(k), _timeProvider.GetUtcNow()),
+            (k, v) => Tuple.Create(update(k, v.Item1), _timeProvider.GetUtcNow()));
 
         return ValueTask.FromResult(result.Item1);
     }
@@ -38,7 +41,7 @@ internal sealed class TimedConcurrentDictionary<TKey, TValue>(TimeSpan expiratio
     /// </summary>
     public void CleanUp()
     {
-        var now = TimeProvider.System.GetUtcNow();
+        var now = _timeProvider.GetUtcNow();
 
         // Remove items where the timestamp is older than the expiration time
         foreach (var key in _dictionary.Keys.ToList())

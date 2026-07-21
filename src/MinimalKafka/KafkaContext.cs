@@ -1,60 +1,77 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Builders;
 using MinimalKafka.Internals;
-using MinimalKafka.Serializers;
 using System.Text;
 
 namespace MinimalKafka;
 
 /// <summary>
-/// 
+/// Encapsulates all Information during consume of a message.
 /// </summary>
-
-public class KafkaContext
+public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposable
 {
-    private readonly Message<byte[], byte[]> _message;
-
-    private KafkaContext(string topic, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider requestServices)
-    {
-        TopicName = topic; 
-        Metadata = metadata;
-        RequestServices = requestServices;
-        _message = message;
-    }
-
+    /// <summary>
+    /// Creates a new instance of <see cref="KafkaContext"/> with the specified parameters.
+    /// </summary>
+    /// <returns>A new instance of <see cref="KafkaContext"/>.</returns>
+    public static KafkaContext Empty() => new EmptyKafkaContext();
 
     /// <summary>
-    /// The Unique ConsumerKey
+    /// 
     /// </summary>
-    public string TopicName { get; }
+    /// <param name="consumerKey"></param>
+    /// <param name="metadata"></param>
+    /// <param name="message"></param>
+    /// <param name="serviceProvider"></param>
+    /// <returns></returns>
+    public static KafkaContext Create(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
+        => new DefaultKafkaContext(consumerKey, metadata, message, serviceProvider);
+
+
+    private readonly AsyncServiceScope _serviceScope = serviceProvider.CreateAsyncScope();
+
+    private bool _disposed;
 
     /// <summary>
-    /// Thhe service provider.
+    /// The service provider.
     /// </summary>
-    public IServiceProvider RequestServices { get;}
+    public IServiceProvider RequestServices => _serviceScope.ServiceProvider;
 
     /// <summary>
-    /// The metadata for this consumer
+    /// The name of the topic.
     /// </summary>
-    public IReadOnlyList<object> Metadata { get; }
+    public abstract string TopicName { get; }
+
+    /// <summary>
+    /// The client identifier.
+    /// </summary>
+    public abstract string ClientId { get; }
+
+    /// <summary>
+    /// The Consumer group identifier.
+    /// </summary>
+    public abstract string GroupId { get; }
 
     /// <summary>
     /// The <see cref="ReadOnlySpan{T}"/> of the message key.
     /// </summary>
-    public ReadOnlySpan<byte> Key => _message.Key;
+    public abstract ReadOnlySpan<byte> Key { get; }
+
     /// <summary>
     /// The <see cref="ReadOnlySpan{T}"/> of the message value.
     /// </summary>
-    public ReadOnlySpan<byte> Value => _message.Value;
+    public abstract ReadOnlySpan<byte> Value { get; }
 
     /// <summary>
     /// The kafka message headers.
     /// </summary>
-    public IReadOnlyDictionary<string, string> Headers => _message.Headers
-        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()));
+    public abstract IReadOnlyDictionary<string, string> Headers { get; }
 
-    internal static KafkaContext Create(string topic, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
-        => new(topic, metadata, message, serviceProvider);
+    /// <summary>
+    /// The metadata for this consumer.
+    /// </summary>
+    public abstract IReadOnlyList<object> Metadata { get; }
 
     internal void Produce(KafkaMessage message)
     {
@@ -62,19 +79,71 @@ public class KafkaContext
     }
 
     private readonly List<KafkaMessage> _messages = [];
+
     internal IReadOnlyList<KafkaMessage> Messages => _messages.AsReadOnly();
-    
+
+    /// <summary>
+    /// Releases the resources used by the current instance of the class.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases the resources used by the current instance of the class.
+    /// </summary>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            _serviceScope.Dispose();
+        }
+
+        _disposed = true;
+    }
 }
 
-/// <summary>
-/// Delegate for handling kafka messages.
-/// </summary>
-/// <param name="context"></param>
-public delegate Task KafkaDelegate(KafkaContext context);
-
-
-internal sealed class EmptyServiceProvider : IServiceProvider
+internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider requestServices) : KafkaContext(requestServices)
 {
-    public static EmptyServiceProvider Instance { get; } = new EmptyServiceProvider();
-    public object? GetService(Type serviceType) => null;
+    private readonly Message<byte[], byte[]> _message = message;
+
+    public override string TopicName { get; } = consumerKey.TopicName;
+
+    public override string ClientId { get; } = consumerKey.ClientId;
+
+    public override string GroupId { get; } = consumerKey.GroupId;
+
+    public override IReadOnlyList<object> Metadata { get; } = metadata;
+
+    public override ReadOnlySpan<byte> Key => _message.Key;
+
+    public override ReadOnlySpan<byte> Value => _message.Value;
+
+    public override IReadOnlyDictionary<string, string> Headers => _message.Headers?
+        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()))
+        ?? [];
+}
+
+internal sealed class EmptyKafkaContext() : KafkaContext(EmptyServiceProvider.Instance)
+{
+    public override string TopicName => string.Empty;
+
+    public override string ClientId => string.Empty;
+
+    public override string GroupId => string.Empty;
+
+    public override ReadOnlySpan<byte> Key => [];
+
+    public override ReadOnlySpan<byte> Value => [];
+
+    public override IReadOnlyDictionary<string, string> Headers => new Dictionary<string, string>();
+
+    public override IReadOnlyList<object> Metadata => [];
 }

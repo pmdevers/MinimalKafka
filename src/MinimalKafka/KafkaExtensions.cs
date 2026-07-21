@@ -23,11 +23,13 @@ public static class KafkaExtensions
         List<Action<IKafkaBuilder>> conventions = [];
         var configBuilder = new KafkaConfigConventionBuilder(services, conventions);
 
+
         configBuilder.WithClientId(Environment.MachineName);
         configBuilder.WithGroupId(AppDomain.CurrentDomain.FriendlyName);
         configBuilder.WithOffsetReset(AutoOffsetReset.Earliest);
         configBuilder.WithReportInterval(5);
         configBuilder.WithTopicFormatter(topic => topic);
+        configBuilder.WithInMemoryStore();
 
         config?.Invoke(configBuilder);
 
@@ -44,14 +46,19 @@ public static class KafkaExtensions
         {
             var builder = sp.GetRequiredService<IKafkaBuilder>();
             var config = builder.MetaData.ProducerConfig();
+            var handlers = builder.MetaData.ProducerHandlers();
+
             return new ProducerBuilder<byte[], byte[]>(config)
+                .SetLogHandler(handlers.LogHandler)
+                .SetErrorHandler(handlers.ErrorHandler)
+                .SetOAuthBearerTokenRefreshHandler(handlers.OAuthBearerTokenRefreshHandler)
+                .SetStatisticsHandler(handlers.StatisticsHandler)
                 .SetKeySerializer(Confluent.Kafka.Serializers.ByteArray)
                 .SetValueSerializer(Confluent.Kafka.Serializers.ByteArray)
                 .Build();
         });
 
         services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
-        services.AddSingleton<KafkaInMemoryStoreFactory>();
         services.AddHostedService<KafkaService>();
         return services;
     }
@@ -104,10 +111,28 @@ public static class KafkaExtensions
     /// <param name="builder"></param>
     /// <param name="create"></param>
     /// <returns></returns>
-    public static TBuilder UseStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
+    public static TBuilder WithStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
         where TBuilder : IKafkaConfigBuilder
     {
         builder.Services.AddSingleton(sp => create(sp));
+        return builder;
+    }
+
+    /// <summary>
+    /// Configures the builder to use an in-memory store for Kafka-related operations.
+    /// </summary>
+    /// <remarks>This method sets up an in-memory store, which is useful for testing or scenarios where
+    /// persistence is not required. It overrides the default store factory with an in-memory implementation.</remarks>
+    /// <typeparam name="TBuilder">The type of the builder implementing <see cref="IKafkaConfigBuilder"/>.</typeparam>
+    /// <param name="builder">The builder instance to configure.</param>
+    /// <param name="timeProvider"></param>
+    /// <returns>The configured builder instance.</returns>
+    public static TBuilder WithInMemoryStore<TBuilder>(this TBuilder builder, TimeProvider? timeProvider = null)
+        where TBuilder : IKafkaConfigBuilder
+    {
+        builder.Services.AddSingleton(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
+        builder.WithStoreFactory(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
         return builder;
     }
 }

@@ -38,7 +38,7 @@ internal sealed class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
         var rightStore = context.GetTopicStore(rightTopic);
 
         var lkey = leftKey(key, value);
-        var rvalue = await rightStore.FindByKey<TKey, V2>(lkey);
+        var rvalue = await rightStore.FindByKeyAsync<TKey, V2>(lkey);
 
         await Handle(context, lkey, (value, rvalue));
     }
@@ -46,9 +46,9 @@ internal sealed class JoinByKeyIntoBuilder<TKey, K1, V1, K2, V2>(
     public async Task ExecuteRightAsync(KafkaContext context, K2 key, V2 value)
     {
         var leftStore = context.GetTopicStore(leftTopic);
-                
+
         var rkey = rightKey(key, value);
-        var lvalue = await leftStore.FindByKey<TKey, V1>(rkey);
+        var lvalue = await leftStore.FindByKeyAsync<TKey, V1>(rkey);
 
         await Handle(context, rkey, (lvalue, value));
     }
