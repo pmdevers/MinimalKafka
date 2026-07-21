@@ -62,7 +62,7 @@ internal class KafkaInMemoryStore(IServiceProvider serviceProvider, TimeProvider
         _store.CleanUp();
     }
 
-    public ValueTask<byte[]?> FindByIdAsync(ReadOnlySpan<byte> key)
+    public ValueTask<byte[]?> FindByKeyAsync(ReadOnlySpan<byte> key)
     {
         return _store.FindByIdAsync(key.ToArray());
     }
