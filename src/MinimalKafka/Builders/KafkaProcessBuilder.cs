@@ -113,13 +113,14 @@ public sealed class KafkaProcessBuilder(IServiceProvider serviceProvider)
             .WithKey(Key)
             .WithMetadata(Metadata);
 
-        Middlewares.Add((_) => async (ctx, next) =>
+        var pipeline = Middlewares.ToList();
+        pipeline.Add((_) => async (ctx, next) =>
         {
             await Delegate(ctx);
             await next(ctx);
         });
 
-        return ActivatorUtilities.CreateInstance<KafkaProcess>(serviceProvider, consumerBuilder, Middlewares.AsReadOnly());
+        return ActivatorUtilities.CreateInstance<KafkaProcess>(serviceProvider, consumerBuilder, pipeline.AsReadOnly());
     }
 }
 

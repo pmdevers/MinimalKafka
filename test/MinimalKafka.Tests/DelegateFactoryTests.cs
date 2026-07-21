@@ -184,15 +184,6 @@ public class KafkaDelegateFactoryTests
 
         var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new Message<byte[], byte[]>(), serviceProvider);
 
-        try
-        {
-            await result.Delegate.Invoke(context);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
-
-
+        await result.Delegate.Invoke(context);
     }
 }

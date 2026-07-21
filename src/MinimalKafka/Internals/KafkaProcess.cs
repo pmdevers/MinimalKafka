@@ -33,7 +33,7 @@ internal sealed class KafkaProcess(
                 await producer.ProduceAsync(context, token);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.UnknownProcessException(_consumer.TopicName, ex.Message);
             throw new KafkaProcesException(ex, $"Unknown Process error while handling topic '{_consumer.TopicName}'");

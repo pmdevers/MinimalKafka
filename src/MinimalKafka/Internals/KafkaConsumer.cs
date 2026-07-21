@@ -35,7 +35,6 @@ internal sealed class KafkaConsumer(
         logger.Subscribed(key.GroupId, key.ClientId, key.TopicName);
     }
 
-    [Pure]
     public Task<KafkaContext> Consume(CancellationToken cancellationToken)
     {
         try

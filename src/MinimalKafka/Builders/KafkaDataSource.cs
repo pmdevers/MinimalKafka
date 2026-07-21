@@ -54,7 +54,7 @@ internal class KafkaDataSource(IServiceProvider serviceProvider) : IKafkaDataSou
 
             if (processes.Contains(key))
             {
-                throw new InvalidOperationException($"Duplicate consumer: '{key}' try specifing diffrent consumer group. ");
+                throw new InvalidOperationException($"Duplicate consumer: '{key}' try specifying different consumer group. ");
             }
 
             processes.Add(key);

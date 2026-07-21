@@ -126,8 +126,9 @@ internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnl
 
     public override ReadOnlySpan<byte> Value => _message.Value;
 
-    public override IReadOnlyDictionary<string, string> Headers => _message.Headers
-        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()));
+    public override IReadOnlyDictionary<string, string> Headers => _message.Headers?
+        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()))
+        ?? [];
 }
 
 internal sealed class EmptyKafkaContext() : KafkaContext(EmptyServiceProvider.Instance)
