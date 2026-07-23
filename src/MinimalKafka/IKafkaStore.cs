@@ -36,7 +36,7 @@ public interface IKafkaStore
 /// <summary>
 /// 
 /// </summary>
-public interface IKafkaStoreFactory
+public interface IKafkaStoreFactory : IDisposable
 {
     /// <summary>
     /// 

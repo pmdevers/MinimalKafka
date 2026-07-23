@@ -17,7 +17,7 @@ builder.Services.AddMinimalKafka(config =>
            {
                x.Converters.Add(new JsonStringEnumConverter());
            })
-           .UseRocksDB(x =>
+           .WithRocksDB(x =>
            {
                x.DataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RocksDB");
            });

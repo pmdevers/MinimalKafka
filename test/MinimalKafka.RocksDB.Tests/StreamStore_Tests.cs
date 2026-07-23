@@ -1,29 +1,47 @@
 using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Stream.Storage.RocksDB;
 using System.Text;
 
 namespace MinimalKafka.RocksDB.Tests;
 
 public class StreamStore_Tests
 {
-    public StreamStore_Tests()
+    [Fact]
+    public async Task WithRocksDB_Should_Register_RocksdbFactory()
     {
         RocksDBHelper.ResetDatabase();
+
+        var services = new ServiceCollection();
+        services.AddMinimalKafka(builder =>
+        {
+            builder.WithRocksDB(o =>
+            {
+                o.DataPath = RocksDBHelper.DataPath;
+            });
+        });
+        var provider = services.BuildServiceProvider();
+        using var factory = provider.GetRequiredService<IKafkaStoreFactory>();
+        Assert.NotNull(factory);
+        Assert.IsType<RocksDBStreamStoreFactory>(factory);
+
     }
 
 
     [Fact]
     public async Task AddOrUpdate_WithNewKey_ShouldAddValue()
     {
+        RocksDBHelper.ResetDatabase();
+
         var services = new ServiceCollection();
         services.AddMinimalKafka(builder =>
         {
-            builder.UseRocksDB(o =>
+            builder.WithRocksDB(o =>
             {
                 o.DataPath = RocksDBHelper.DataPath;
             });
         });
         var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IKafkaStoreFactory>();
+        using var factory = provider.GetRequiredService<IKafkaStoreFactory>();
         var streamStore = factory.GetStore("test");
         var key = Encoding.UTF8.GetBytes("key");
         var value = Encoding.UTF8.GetBytes("value");
@@ -33,7 +51,7 @@ public class StreamStore_Tests
 
         var val = await streamStore.FindByKeyAsync(key);
 
-        Assert.Equal(val,  value);
+        Assert.Equal(val, value);
     }
 }
 

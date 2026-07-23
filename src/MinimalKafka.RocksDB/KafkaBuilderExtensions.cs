@@ -16,11 +16,11 @@ public static class KafkaBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public static IKafkaConfigBuilder UseRocksDB(this IKafkaConfigBuilder builder, Action<RocksDBOptions>? options = null)
+    public static TBuilder WithRocksDB<TBuilder>(this TBuilder builder, Action<RocksDBOptions>? options = null)
+        where TBuilder : IKafkaConfigBuilder
     {
         builder.Services.Configure(options ?? (_ => { }));
-        builder.Services.AddSingleton<RocksDBStreamStoreFactory>();
-        builder.WithStoreFactory(s => s.GetRequiredService<RocksDBStreamStoreFactory>());
+        builder.WithStoreFactory<TBuilder, RocksDBStreamStoreFactory>();
         return builder;
     }
 }
