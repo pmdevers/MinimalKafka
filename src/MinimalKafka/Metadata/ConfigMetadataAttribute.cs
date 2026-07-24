@@ -55,6 +55,6 @@ public class ConfigMetadataAttribute : Attribute
     /// </summary>
     /// <param name="configMetadata"></param>
     /// <returns></returns>
-    public static ConfigMetadataAttribute FromExisting(ConfigMetadataAttribute? configMetadata)
+    public static ConfigMetadataAttribute From(ConfigMetadataAttribute? configMetadata)
         => new(configMetadata?._config.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new Dictionary<string, string>());
 }

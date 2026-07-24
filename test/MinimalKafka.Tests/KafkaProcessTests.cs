@@ -59,7 +59,8 @@ public class KafkaProcessTests
 
         _serviceProvider = services.BuildServiceProvider();
 
-        var metadata = new ConfigMetadataAttribute();
+        var metadata = ConfigMetadataAttribute.From(null);
+
         metadata.AddOrUpdate("group.id", "test-group");
         metadata.AddOrUpdate("bootstrap.servers", "localhost:9092");
 
@@ -155,7 +156,7 @@ public class KafkaProcessTests
         services.AddSingleton<IDeadLetterResolver>(resolver);
         var sp = services.BuildServiceProvider();
 
-        var metadata = new ConfigMetadataAttribute();
+        var metadata = ConfigMetadataAttribute.From(null);
         metadata.AddOrUpdate("group.id", "test-group");
         metadata.AddOrUpdate("bootstrap.servers", "localhost:9092");
 

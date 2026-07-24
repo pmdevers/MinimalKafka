@@ -139,7 +139,7 @@ public static class KafkaConsumerConfigExtensions
             {
                 b.MetaData.Remove(item);
             }
-            item = ConfigMetadataAttribute.FromExisting(item);
+            item = ConfigMetadataAttribute.From(item);
             update?.Invoke(item);
             b.MetaData.Add(item);
         });
