@@ -24,7 +24,7 @@ builder.Services.AddMinimalKafka(x =>
          x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
          x.Converters.Add(new JsonStringEnumConverter());
      })
-     .UseRocksDB();
+     .WithRocksDB();
 });
 
 builder.Services.AddResponseCompression(opts =>

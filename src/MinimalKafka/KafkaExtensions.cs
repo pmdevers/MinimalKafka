@@ -119,16 +119,23 @@ public static class KafkaExtensions
     }
 
     /// <summary>
-    /// 
+    /// Configures the builder to use a specified store factory for Kafka-related operations.
     /// </summary>
     /// <typeparam name="TBuilder"></typeparam>
+    /// <typeparam name="TStoreFactory"></typeparam>
     /// <param name="builder"></param>
-    /// <param name="create"></param>
+    /// <param name="implementationFactory"></param>
     /// <returns></returns>
-    public static TBuilder WithStoreFactory<TBuilder>(this TBuilder builder, Func<IServiceProvider, IKafkaStoreFactory> create)
+    public static TBuilder WithStoreFactory<TBuilder, TStoreFactory>(this TBuilder builder, Func<IServiceProvider, TStoreFactory>? implementationFactory = null)
         where TBuilder : IKafkaConfigBuilder
+        where TStoreFactory : class, IKafkaStoreFactory
     {
-        builder.Services.AddSingleton(sp => create(sp));
+        if (implementationFactory == null)
+            builder.Services.AddSingleton<TStoreFactory>();
+        else
+            builder.Services.AddSingleton(implementationFactory);
+
+        builder.Services.AddSingleton<IKafkaStoreFactory>(sp => sp.GetRequiredService<TStoreFactory>());
         return builder;
     }
 
@@ -144,9 +151,10 @@ public static class KafkaExtensions
     public static TBuilder WithInMemoryStore<TBuilder>(this TBuilder builder, TimeProvider? timeProvider = null)
         where TBuilder : IKafkaConfigBuilder
     {
-        builder.Services.AddSingleton(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
+        builder.WithStoreFactory(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
+
         builder.Services.AddHostedService(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
-        builder.WithStoreFactory(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
+
         return builder;
     }
 

@@ -13,7 +13,7 @@ namespace MinimalKafka;
 /// <summary>
 /// 
 /// </summary>
-public static class KafkaConsumerConfigExtensions
+public static class KafkaConfigExtensions
 {
     /// <summary>
     /// Adds configuration metadata from the specified <see cref="IConfiguration"/> to the builder.
@@ -129,7 +129,14 @@ public static class KafkaConsumerConfigExtensions
         return builder.UpdateConfig(x => x.AddOrUpdate("transactional.id", transactionalId));
     }
 
-    internal static TBuilder UpdateConfig<TBuilder>(this TBuilder builder, Action<ConfigMetadataAttribute> update)
+    /// <summary>
+    /// Updates the configuration of the Kafka convention builder using the specified update action.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the Kafka convention builder.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="update">The action to update the configuration.</param>
+    /// <returns>The same <typeparamref name="TBuilder"/> instance for chaining.</returns>
+    public static TBuilder UpdateConfig<TBuilder>(this TBuilder builder, Action<ConfigMetadataAttribute> update)
         where TBuilder : IKafkaConventionBuilder
     {
         builder.Add(b =>
