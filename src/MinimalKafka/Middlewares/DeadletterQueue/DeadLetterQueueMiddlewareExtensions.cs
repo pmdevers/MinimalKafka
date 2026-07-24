@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace MinimalKafka.Middlewares.DeadletterQueue;
@@ -21,9 +20,8 @@ public static class DeadLetterQueueMiddlewareExtensions
     {
         if (builder is IKafkaConfigBuilder configBuilder)
         {
-            configBuilder.Services.TryAddSingleton<IDeadLetterResolver, InMemoryDeadLetterResolver>();
             configBuilder.Services.Configure(configure ?? (_ => { }));
-            builder.Use<DeadLetterQueueMiddleware>();
+            configBuilder.Use<DeadLetterQueueMiddleware>();
 
             return builder;
         }
@@ -32,7 +30,12 @@ public static class DeadLetterQueueMiddlewareExtensions
         {
             var options = new DeadLetterQueueOptions();
             configure?.Invoke(options);
-            return new DeadLetterQueueMiddleware(sp.GetRequiredService<IDeadLetterResolver>(), Options.Create(options), NullLogger<DeadLetterQueueMiddleware>.Instance).InvokeAsync;
+
+            var resolver = sp.GetRequiredService<IDeadLetterResolver>();
+            var option = Options.Create(options);
+            var logger = sp.GetRequiredService<ILogger<DeadLetterQueueMiddleware>>();
+
+            return new DeadLetterQueueMiddleware(resolver, option, logger).InvokeAsync;
         });
 
         return builder;

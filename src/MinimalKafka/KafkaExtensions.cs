@@ -109,6 +109,7 @@ public static class KafkaExtensions
     {
         return builder.GetOrAddDatasource()
             .AddTopicDelegate(topic, handler)
+            .WithMiddlewares([.. builder.Middlewares])
             .WithMetaData([.. builder.MetaData]);
     }
 
