@@ -40,8 +40,8 @@ public class DeadLetterQueueMiddleware(IDeadLetterResolver resolver, IOptions<De
 
             if (_options.ResolveAutomatically)
             {
-                resolver.Resolve(context.TopicName, context.Partition, context.Offset);
                 _logger.DeadLetterAutoResolved(context.TopicName, context.Partition, context.Offset);
+                resolver.Resolve(context.TopicName, context.Partition, context.Offset);
             }
         }
     }

@@ -26,7 +26,7 @@ public class DeadLetterQueueMiddlewareTests
             serviceProvider);
 
         var resolver = new InMemoryDeadLetterResolver();
-        var options = Options.Create(new DeadLetterQueueOptions());
+        var options = Options.Create(new DeadLetterQueueOptions() { ResolveAutomatically = false });
         var middleware = new DeadLetterQueueMiddleware(resolver, options, NullLogger<DeadLetterQueueMiddleware>.Instance);
 
         await middleware.InvokeAsync(context, _ => throw new KafkaProcesException(new InvalidOperationException("boom"), "wrapped"));
