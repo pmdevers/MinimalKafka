@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -20,7 +21,7 @@ public static class DeadLetterQueueMiddlewareExtensions
     {
         if (builder is IKafkaConfigBuilder configBuilder)
         {
-            configBuilder.Services.AddSingleton<IDeadLetterResolver, InMemoryDeadLetterResolver>();
+            configBuilder.Services.TryAddSingleton<IDeadLetterResolver, InMemoryDeadLetterResolver>();
             configBuilder.Services.Configure(configure ?? (_ => { }));
             builder.Use<DeadLetterQueueMiddleware>();
 

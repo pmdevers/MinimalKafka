@@ -35,7 +35,7 @@ public class DeadLetterQueueMiddlewareTests
         resolver.HasPending(context).Should().BeTrue();
 
         var dlqMessage = context.Messages[0];
-        dlqMessage.Topic.Should().Be("orders.dlq");
+        dlqMessage.Topic.Should().Be("dead-letter-queue");
         dlqMessage.Key.Should().Equal([1, 2, 3]);
         dlqMessage.Value.Should().Equal([4, 5, 6]);
         dlqMessage.Headers.Should().ContainKey("dlq.source.topic");

@@ -19,11 +19,11 @@ public class DeadLetterQueueMiddleware(IDeadLetterResolver resolver, IOptions<De
         {
             await next(context);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             var resolutionKey = resolver.MarkPending(context);
 
-            var headers = new Dictionary<string, string>
+            var headers = new Dictionary<string, string>(context.Headers)
             {
                 ["dlq.source.topic"] = context.TopicName,
                 ["dlq.source.partition"] = context.Partition.ToString(),
