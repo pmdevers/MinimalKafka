@@ -94,7 +94,7 @@ public class KafkaDelegateFactoryTests
 
         // Act
         var result = KafkaDelegateFactory.Create(handler, options);
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new Message<byte[], byte[]>(), serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), serviceProvider);
 
         await result.Delegate.Invoke(context);
 
@@ -173,15 +173,8 @@ public class KafkaDelegateFactoryTests
 
         var key = Encoding.UTF8.GetBytes("\"testKey\"");
         var value = Encoding.UTF8.GetBytes("\"testValue\"");
-        var headers = new Headers();
-        var message = new Message<byte[], byte[]>
-        {
-            Key = key,
-            Value = value,
-            Headers = headers
-        };
 
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], message, serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new KafkaMessage("topic", key, value, []), serviceProvider);
 
         await result.Delegate.Invoke(context);
     }

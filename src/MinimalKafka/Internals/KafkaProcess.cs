@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using MinimalKafka.Middlewares;
+using MinimalKafka.Middlewares.DeadletterQueue;
 
 namespace MinimalKafka.Internals;
 
 internal sealed class KafkaProcess(
     IKafkaConsumerBuilder consumerBuilder,
     IKafkaProducer producer,
+    IDeadLetterResolver deadLetterResolver,
     IReadOnlyList<Func<IServiceProvider, KafkaMiddlewareDelegate>> middlewares,
     ILogger<KafkaProcess> logger) : IKafkaProcess
 {
@@ -31,6 +33,15 @@ internal sealed class KafkaProcess(
                 await Invoke(context);
 
                 await producer.ProduceAsync(context, token);
+
+                if (deadLetterResolver.HasPending(context))
+                {
+                    logger.WaitingForDeadLetterResolution(context.TopicName, context.Partition, context.Offset);
+                    await deadLetterResolver.WaitForResolutionAsync(context, token);
+                    logger.DeadLetterResolved(context.TopicName, context.Partition, context.Offset);
+                }
+
+                _consumer.Commit(context);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace MinimalKafka.Internals;
 
@@ -41,7 +42,14 @@ internal sealed class KafkaConsumer(
         {
             var result = _consumer.Consume(cancellationToken);
 
-            var context = KafkaContext.Create(key, metadata, result.Message, serviceProvider);
+            var kafkaMessage = new KafkaMessage(key.TopicName, result.Message.Key, result.Message.Value,
+                BuildHeadersDictionary(result.Message.Headers))
+            {
+                Partition = result.Partition.Value,
+                Offset = result.Offset.Value
+            };
+
+            var context = KafkaContext.Create(key, metadata, kafkaMessage, serviceProvider);
             return Task.FromResult(context);
         }
         catch (KafkaException ex)
@@ -60,6 +68,23 @@ internal sealed class KafkaConsumer(
 
     public string TopicName => key.TopicName;
 
+    public void Commit(KafkaContext context)
+    {
+        if (context is EmptyKafkaContext)
+        {
+            return;
+        }
+
+        logger.Committing(key.GroupId, key.ClientId, context.TopicName, context.Partition, context.Offset + 1);
+
+        _consumer.Commit([
+            new TopicPartitionOffset(
+                context.TopicName,
+                new Partition(context.Partition),
+                new Offset(context.Offset + 1))
+        ]);
+    }
+
     public void Close()
     {
         if (_disposed)
@@ -76,6 +101,25 @@ internal sealed class KafkaConsumer(
     public void Dispose()
     {
         Close();
+    }
+
+    [Pure]
+    private static Dictionary<string, string> BuildHeadersDictionary(Headers headers)
+    {
+        var result = new Dictionary<string, string>();
+
+        foreach (var header in headers)
+        {
+            var valueBytes = header.GetValueBytes();
+            var value = valueBytes == null || valueBytes.Length == 0 
+                ? string.Empty 
+                : Encoding.UTF8.GetString(valueBytes);
+
+            // Duplicate key policy: last value wins (overwrites previous)
+            result[header.Key] = value;
+        }
+
+        return result;
     }
 
     [Pure]

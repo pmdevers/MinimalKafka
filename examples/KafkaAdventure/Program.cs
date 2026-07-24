@@ -14,7 +14,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddMinimalKafka(x =>
 {
-    x.WithBootstrapServers("localhost:19092")
+    x.WithConfiguration(builder.Configuration.GetSection("Kafka"))
      .WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithOffsetReset(AutoOffsetReset.Earliest)

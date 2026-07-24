@@ -135,13 +135,13 @@ public static class KafkaConsumerConfigExtensions
         builder.Add(b =>
         {
             var item = b.MetaData.OfType<ConfigMetadataAttribute>().FirstOrDefault();
-            if (item is null)
+            if (item is not null)
             {
-                item = new ConfigMetadataAttribute();
-                b.MetaData.Add(item);
+                b.MetaData.Remove(item);
             }
-
+            item = ConfigMetadataAttribute.From(item);
             update?.Invoke(item);
+            b.MetaData.Add(item);
         });
         return builder;
     }
