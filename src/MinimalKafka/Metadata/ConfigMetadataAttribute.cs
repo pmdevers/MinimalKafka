@@ -7,9 +7,14 @@ namespace MinimalKafka.Metadata;
 /// Represents a metadata attribute that holds Kafka configuration settings for methods. This attribute can be applied to methods to specify Kafka configuration values, which can be used to build consumer and producer configurations.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-public class ConfigMetadataAttribute() : Attribute
+public class ConfigMetadataAttribute : Attribute
 {
-    private readonly Dictionary<string, string> _config = [];
+    private ConfigMetadataAttribute(Dictionary<string, string> config)
+    {
+        _config = config;
+    }
+
+    private readonly Dictionary<string, string> _config;
     /// <summary>
     /// Creates a ConfigMetadataAttribute instance from the provided configuration.
     /// </summary>
@@ -44,4 +49,12 @@ public class ConfigMetadataAttribute() : Attribute
     /// <returns>A new <see cref="ProducerConfig"/> instance.</returns>
     public ProducerConfig BuildProducerConfig()
         => new(_config);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="configMetadata"></param>
+    /// <returns></returns>
+    public static ConfigMetadataAttribute FromExisting(ConfigMetadataAttribute? configMetadata)
+        => new(configMetadata?._config.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new Dictionary<string, string>());
 }

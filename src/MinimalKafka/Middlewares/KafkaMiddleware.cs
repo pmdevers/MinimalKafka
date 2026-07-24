@@ -40,6 +40,22 @@ internal sealed class LoggerMiddleware(ILogger<LoggerMiddleware> logger) : IKafk
 /// </summary>
 public static class KafkaBuilderMiddlewareExtensions
 {
+
+
+    /// <summary>
+    /// Adds a KafkaMiddleware to the pipeline.
+    /// </summary>
+    /// <param name="builder">The Kafka convention builder.</param>
+    /// <param name="instance">A function that creates the middleware instance.</param>
+    /// <returns>The updated Kafka convention builder.</returns>
+    public static IKafkaConventionBuilder Use(this IKafkaConventionBuilder builder, Func<IServiceProvider, KafkaMiddlewareDelegate> instance)
+    {
+        builder.Add(x =>
+        {
+            x.Middlewares.Add(instance);
+        });
+        return builder;
+    }
     /// <summary>
     /// Adds a KafkaMiddleware to the pipeline.
     /// </summary>
@@ -83,4 +99,6 @@ public static class KafkaBuilderMiddlewareExtensions
     {
         return builder.Use<LoggerMiddleware>();
     }
+
+
 }

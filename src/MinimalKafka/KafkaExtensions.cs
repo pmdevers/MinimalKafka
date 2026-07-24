@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
+using MinimalKafka.Middlewares.DeadletterQueue;
 using MinimalKafka.Serializers;
 
 namespace MinimalKafka;
@@ -34,6 +35,13 @@ public static class KafkaExtensions
         configBuilder.WithTopicFormatter(topic => topic);
         configBuilder.WithInMemoryStore();
         configBuilder.WithJsonSerializers();
+        configBuilder.WithDeadLetterResolver(x => new InMemoryDeadLetterResolver());
+        configBuilder.UpdateConfig(x =>
+        {
+            x.AddOrUpdate("enable.auto.commit", "false");
+            x.AddOrUpdate("enable.auto.offset.store", "false");
+        });
+
 
         config?.Invoke(configBuilder);
 
@@ -139,6 +147,27 @@ public static class KafkaExtensions
         builder.Services.AddSingleton(sp => new KafkaInMemoryStoreFactory(sp, timeProvider ?? TimeProvider.System));
         builder.Services.AddHostedService(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
         builder.WithStoreFactory(sp => sp.GetRequiredService<KafkaInMemoryStoreFactory>());
+        return builder;
+    }
+
+    /// <summary>
+    /// Configures the builder to use a specified dead letter resolver for Kafka-related operations.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the builder implementing <see cref="IKafkaConfigBuilder"/>.</typeparam>
+    /// <typeparam name="TResolver">The type of the dead letter resolver implementing <see cref="IDeadLetterResolver"/>.</typeparam>
+    /// <param name="builder">The builder instance to configure.</param>
+    /// <param name="implementationFactory">A factory function to create the dead letter resolver instance.</param>
+    /// <returns>The configured builder instance.</returns>
+    public static TBuilder WithDeadLetterResolver<TBuilder, TResolver>(this TBuilder builder, Func<IServiceProvider, TResolver>? implementationFactory = null)
+        where TBuilder : IKafkaConfigBuilder
+        where TResolver : class, IDeadLetterResolver
+    {
+        if (implementationFactory == null)
+            builder.Services.AddSingleton<TResolver>();
+        else
+            builder.Services.AddSingleton(implementationFactory);
+
+        builder.Services.AddSingleton<IDeadLetterResolver>(sp => sp.GetRequiredService<TResolver>());
         return builder;
     }
 }

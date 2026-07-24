@@ -37,6 +37,6 @@ public static class LookProccessor
                    await c.ProduceAsync("game-response", k,
                         new AppResponse(command.Command, $"[{exit.Key}] - {exitLocation?.Description}"));
                }
-           });
+           }).WithGroupId("game-look-group");
     }
 }

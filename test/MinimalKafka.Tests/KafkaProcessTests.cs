@@ -2,6 +2,7 @@
 using MinimalKafka.Builders;
 using MinimalKafka.Internals;
 using MinimalKafka.Metadata;
+using MinimalKafka.Middlewares.DeadletterQueue;
 
 namespace MinimalKafka.Tests;
 
@@ -17,6 +18,29 @@ public class TestConsumerBuilder(IKafkaConsumer consumer) : IKafkaConsumerBuilde
     public IKafkaConsumerBuilder WithMetadata(IReadOnlyList<object> metadata)
     {
         return this;
+    }
+}
+
+internal sealed class BlockingResolver : IDeadLetterResolver
+{
+    private readonly TaskCompletionSource _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private volatile bool _hasPending;
+
+    public string MarkPending(KafkaContext context)
+    {
+        _hasPending = true;
+        return $"{context.TopicName}:{context.Partition}:{context.Offset}";
+    }
+
+    public bool HasPending(KafkaContext context) => _hasPending;
+
+    public Task WaitForResolutionAsync(KafkaContext context, CancellationToken cancellationToken)
+        => _tcs.Task.WaitAsync(cancellationToken);
+
+    public bool Resolve(string topic, int partition, long offset)
+    {
+        _hasPending = false;
+        return _tcs.TrySetResult();
     }
 }
 
@@ -103,5 +127,71 @@ public class KafkaProcessTests
 
         // Assert
         _consumer.Received(1).Close();
+    }
+
+    [Fact]
+    public async Task KafkaProcess_Start_ShouldCommitConsumedContext_WhenNoPendingDlq()
+    {
+        var message = new KafkaMessage("test-topic", [1], [2], []) with { Partition = 0, Offset = 1 };
+        using var consumedContext = KafkaContext.Create(KafkaConsumerKey.Random("test-topic"), [], message, _serviceProvider);
+
+        _consumer.Consume(Arg.Any<CancellationToken>()).Returns(_ => consumedContext, _ => KafkaContext.Empty());
+
+        var process = _kafkaProcessBuilder.Build();
+
+        var run = Task.Run(() => process.Start(_cancellationTokenSource.Token));
+        _cancellationTokenSource.CancelAfter(150);
+        await Task.Delay(120);
+
+        _consumer.Received().Commit(Arg.Any<KafkaContext>());
+    }
+
+    [Fact]
+    public async Task KafkaProcess_Start_ShouldWaitForDlqResolution_BeforeCommit()
+    {
+        var services = new ServiceCollection();
+        services.AddMinimalKafka(x => x.WithClientId("test-client"));
+        var resolver = new BlockingResolver();
+        services.AddSingleton<IDeadLetterResolver>(resolver);
+        var sp = services.BuildServiceProvider();
+
+        var metadata = new ConfigMetadataAttribute();
+        metadata.AddOrUpdate("group.id", "test-group");
+        metadata.AddOrUpdate("bootstrap.servers", "localhost:9092");
+
+        var consumer = Substitute.For<IKafkaConsumer>();
+        var message = new KafkaMessage("test-topic", [1], [2], []) with { Partition = 0, Offset = 2 };
+        using var consumedContext = KafkaContext.Create(KafkaConsumerKey.Random("test-topic"), [], message, sp);
+
+        resolver.MarkPending(consumedContext);
+
+        consumer.Consume(Arg.Any<CancellationToken>()).Returns(_ => consumedContext, _ => KafkaContext.Empty());
+
+        var processBuilder = KafkaProcessBuilder.Create(sp)
+            .WithDelegate(_ => Task.CompletedTask)
+            .WithConsumerBuilder(new TestConsumerBuilder(consumer))
+            .WithMetadata([metadata])
+            .WithKey(KafkaConsumerKey.Random("test-topic"))
+            .WithMiddleware([]);
+
+        var process = processBuilder.Build();
+
+        var commitSignal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        consumer.When(x => x.Commit(Arg.Any<KafkaContext>())).Do(_ => commitSignal.TrySetResult());
+
+        var run = Task.Run(() => process.Start(_cancellationTokenSource.Token));
+
+        await Task.Delay(100);
+
+        commitSignal.Task.IsCompleted.Should().BeFalse();
+
+        resolver.Resolve(consumedContext.TopicName, consumedContext.Partition, consumedContext.Offset);
+
+        await commitSignal.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        consumer.Received().Commit(Arg.Any<KafkaContext>());
+
+        _cancellationTokenSource.Cancel();
+        await run.ContinueWith(_ => Task.CompletedTask);
     }
 }

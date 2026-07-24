@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace MinimalKafka.Internals;
 
@@ -41,7 +42,14 @@ internal sealed class KafkaConsumer(
         {
             var result = _consumer.Consume(cancellationToken);
 
-            var context = KafkaContext.Create(key, metadata, result.Message, serviceProvider);
+            var kafkaMessage = new KafkaMessage(key.TopicName, result.Message.Key, result.Message.Value,
+                result.Message.Headers.ToDictionary(h => h.Key, h => Encoding.UTF8.GetString(h.GetValueBytes())))
+            {
+                Partition = result.Partition.Value,
+                Offset = result.Offset.Value
+            };
+
+            var context = KafkaContext.Create(key, metadata, kafkaMessage, serviceProvider);
             return Task.FromResult(context);
         }
         catch (KafkaException ex)
@@ -59,6 +67,23 @@ internal sealed class KafkaConsumer(
     }
 
     public string TopicName => key.TopicName;
+
+    public void Commit(KafkaContext context)
+    {
+        if (context is EmptyKafkaContext)
+        {
+            return;
+        }
+
+        logger.Committing(key.GroupId, key.ClientId, context.TopicName, context.Partition, context.Offset + 1);
+
+        _consumer.Commit([
+            new TopicPartitionOffset(
+                context.TopicName,
+                new Partition(context.Partition),
+                new Offset(context.Offset + 1))
+        ]);
+    }
 
     public void Close()
     {

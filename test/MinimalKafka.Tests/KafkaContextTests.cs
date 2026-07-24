@@ -16,13 +16,7 @@ public class KafkaContextTests
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
         // Act
-        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [],
-            new()
-            {
-                Key = key,
-                Value = value
-            },
-            serviceProvider);
+        var context = KafkaContext.Create(KafkaConsumerKey.Random("topic"), [], new KafkaMessage("topic", key, value, []), serviceProvider);
 
         // Assert
         context.Should().BeAssignableTo<KafkaContext>();

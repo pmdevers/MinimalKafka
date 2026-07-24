@@ -1,30 +1,21 @@
-name: RedPanda
 services:
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.5
+    image: redpandadata/redpanda:v24.2.5
     container_name: redpanda
     command:
       - redpanda
       - start
-      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      # Address the broker advertises to clients that connect to the Kafka API.
-      # Use the internal addresses to connect to the Redpanda brokers'
-      # from inside the same Docker network.
-      # Use the external addresses to connect to the Redpanda brokers'
-      # from outside the Docker network.
+      - --kafka-addr internal://0.0.0.0:9092,external://[::]:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
       - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
-      # Address the broker advertises to clients that connect to the HTTP Proxy.
       - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
       - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
-      # Redpanda brokers use the RPC API to communicate with each other internally.
       - --rpc-addr redpanda:33145
       - --advertise-rpc-addr redpanda:33145
-      # Mode dev-container uses well-known configuration properties for development in containers.
       - --mode dev-container
-      # Tells Seastar (the framework Redpanda uses under the hood) to use 1 core on the system.
       - --smp 1
       - --default-log-level=info
+
     volumes:
       - redpanda:/var/lib/redpanda/data
     networks:
@@ -34,9 +25,21 @@ services:
       - 18082:18082
       - 19092:19092
       - 19644:9644
+
+  redpanda-init:
+    image: redpandadata/redpanda:v24.2.5
+    restart: on-failure
+    depends_on:
+      - redpanda
+    networks:
+      - redpanda_network
+    volumes:
+      - ./create-topics.sh:/create-topics.sh
+    entrypoint: ["/bin/bash", "/create-topics.sh"]
+
   console:
     container_name: redpanda-console
-    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    image: redpandadata/console:v2.7.2
     networks:
       - redpanda_network
     entrypoint: /bin/sh
@@ -61,11 +64,12 @@ services:
 networks:
   redpanda_network:
     driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 10.89.3.0/24
+        - subnet: fd10:89:3::/64
 
 volumes:
   redpanda:
     driver: local
-    #driver_opts:
-      #o: bind
-      #type: rw
-      #device: /redpanda_data

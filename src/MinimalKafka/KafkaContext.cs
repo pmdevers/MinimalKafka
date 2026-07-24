@@ -1,8 +1,5 @@
-﻿using Confluent.Kafka;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
-using MinimalKafka.Internals;
-using System.Text;
 
 namespace MinimalKafka;
 
@@ -21,11 +18,20 @@ public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposab
     /// 
     /// </summary>
     /// <param name="consumerKey"></param>
+    /// <param name="serviceProvider"></param>
+    /// <returns></returns>
+    public static KafkaContext Create(KafkaConsumerKey consumerKey, IServiceProvider serviceProvider)
+        => Create(consumerKey, [], KafkaMessage.Empty, serviceProvider);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="consumerKey"></param>
     /// <param name="metadata"></param>
     /// <param name="message"></param>
     /// <param name="serviceProvider"></param>
     /// <returns></returns>
-    public static KafkaContext Create(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider serviceProvider)
+    public static KafkaContext Create(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, KafkaMessage message, IServiceProvider serviceProvider)
         => new DefaultKafkaContext(consumerKey, metadata, message, serviceProvider);
 
 
@@ -52,6 +58,16 @@ public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposab
     /// The Consumer group identifier.
     /// </summary>
     public abstract string GroupId { get; }
+
+    /// <summary>
+    /// The partition number of the message.
+    /// </summary>
+    public abstract int Partition { get; }
+
+    /// <summary>
+    /// The offset of the message in the partition.
+    /// </summary>
+    public abstract long Offset { get; }
 
     /// <summary>
     /// The <see cref="ReadOnlySpan{T}"/> of the message key.
@@ -110,9 +126,9 @@ public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposab
     }
 }
 
-internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, Message<byte[], byte[]> message, IServiceProvider requestServices) : KafkaContext(requestServices)
+internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, KafkaMessage message, IServiceProvider requestServices) : KafkaContext(requestServices)
 {
-    private readonly Message<byte[], byte[]> _message = message;
+    private readonly KafkaMessage _message = message;
 
     public override string TopicName { get; } = consumerKey.TopicName;
 
@@ -120,15 +136,17 @@ internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnl
 
     public override string GroupId { get; } = consumerKey.GroupId;
 
+    public override int Partition => _message.Partition;
+
+    public override long Offset => _message.Offset;
+
     public override IReadOnlyList<object> Metadata { get; } = metadata;
 
     public override ReadOnlySpan<byte> Key => _message.Key;
 
     public override ReadOnlySpan<byte> Value => _message.Value;
 
-    public override IReadOnlyDictionary<string, string> Headers => _message.Headers?
-        .ToDictionary(x => x.Key, y => Encoding.UTF8.GetString(y.GetValueBytes()))
-        ?? [];
+    public override IReadOnlyDictionary<string, string> Headers => _message.Headers.AsReadOnly();
 }
 
 internal sealed class EmptyKafkaContext() : KafkaContext(EmptyServiceProvider.Instance)
@@ -146,4 +164,8 @@ internal sealed class EmptyKafkaContext() : KafkaContext(EmptyServiceProvider.In
     public override IReadOnlyDictionary<string, string> Headers => new Dictionary<string, string>();
 
     public override IReadOnlyList<object> Metadata => [];
+
+    public override int Partition => 0;
+
+    public override long Offset => 0;
 }

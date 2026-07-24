@@ -22,6 +22,13 @@ public interface IKafkaConsumer
     /// </summary>
     /// <param name="cancellationToken"></param>
     Task<KafkaContext> Consume(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Commits the processed message offset.
+    /// </summary>
+    /// <param name="context">The consumed context to commit.</param>
+    void Commit(KafkaContext context);
+
     /// <summary>
     /// 
     /// </summary>
