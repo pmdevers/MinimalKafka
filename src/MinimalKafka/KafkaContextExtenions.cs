@@ -51,13 +51,7 @@ public static class KafkaContextExtenions
         var keySerializer = context.RequestServices.GetRequiredService<IKafkaSerializer<TKey>>();
         var valueSerializer = context.RequestServices.GetRequiredService<IKafkaSerializer<TValue>>();
 
-        context.Produce(new()
-        {
-            Topic = topic,
-            Key = keySerializer.Serialize(key),
-            Value = valueSerializer.Serialize(value),
-            Headers = headers ?? []
-        });
+        context.Produce(new KafkaMessage(topic, keySerializer.Serialize(key), valueSerializer.Serialize(value), headers ?? []));
 
     }
 

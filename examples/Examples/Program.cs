@@ -1,8 +1,7 @@
 using Confluent.Kafka;
-using Examples.Aggregate;
-using Examples.Branch;
+using Microsoft.AspNetCore.Mvc;
 using MinimalKafka;
-using MinimalKafka.Aggregates;
+using MinimalKafka.Middlewares.DeadletterQueue;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,10 +26,22 @@ builder.Services.AddMinimalKafka(config =>
 var app = builder.Build();
 
 
-//app.MapJoinExample();
-app.MapAggregate<Test, Guid, TestCommands>("tests");
+app.MapTopic("my-topic", ([FromKey] int key, [FromValue] string value) =>
+{
+    throw new NotImplementedException();
+})
+    .WithDeadLetterQueue();
 
-app.MapBranchExample();
+app.MapGet("/{topic}/{partition}/{offset}", (
+    [FromKeyedServices] IDeadLetterResolver deadLetterResolver,
+    [FromRoute] string topic,
+    [FromRoute] int partition,
+    [FromRoute] long offset) => deadLetterResolver.Resolve(topic, partition, offset));
+
+//app.MapJoinExample();
+//app.MapAggregate<Test, Guid, TestCommands>("tests");
+
+//app.MapBranchExample();
 
 
 //app.MapTopic("my-topic", ([FromKey] string key, [FromValue] string value) =>
