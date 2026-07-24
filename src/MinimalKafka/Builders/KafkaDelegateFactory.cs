@@ -174,7 +174,7 @@ internal static class KafkaDelegateFactory
         }
 
         factoryContext.HasInferredBody = true;
-        return Expression.Empty();
+        throw new InvalidOperationException($"Unable to resolve service for parameter '{parameter.Name}' of type '{parameter.ParameterType.FullName}'. Register the service in the container.");
 
     }
 

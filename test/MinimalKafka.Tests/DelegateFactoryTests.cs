@@ -178,4 +178,30 @@ public class KafkaDelegateFactoryTests
 
         await result.Delegate.Invoke(context);
     }
+
+    [Fact]
+    public void Create_ShouldThrowInvalidOperationException_WhenServiceParameterIsNotRegistered()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var serviceProvider = services.BuildServiceProvider();
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+
+        static Task Handler(IMissingService _) => Task.CompletedTask;
+
+        // Act
+        Action act = () => KafkaDelegateFactory.Create(Handler, options);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Unable to resolve service for parameter*IMissingService*");
+    }
+
+    private interface IMissingService;
 }

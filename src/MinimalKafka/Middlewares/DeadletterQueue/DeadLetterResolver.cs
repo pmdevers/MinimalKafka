@@ -64,7 +64,7 @@ internal sealed class InMemoryDeadLetterResolver : IDeadLetterResolver
     public bool Resolve(string topic, int partition, long offset)
     {
         var resolutionKey = ResolutionKey.Create(topic, partition, offset);
-        if (!_pending.TryGetValue(resolutionKey, out var completion))
+        if (!_pending.TryRemove(resolutionKey, out var completion))
         {
             return false;
         }

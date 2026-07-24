@@ -23,7 +23,7 @@ public static class DeadLetterQueueMiddlewareExtensions
         {
             configBuilder.Services.TryAddSingleton<IDeadLetterResolver, InMemoryDeadLetterResolver>();
             configBuilder.Services.Configure(configure ?? (_ => { }));
-            builder.Use<DeadLetterQueueMiddleware>();
+            configBuilder.Use<DeadLetterQueueMiddleware>();
 
             return builder;
         }
