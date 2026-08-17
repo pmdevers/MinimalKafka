@@ -26,9 +26,9 @@
       },
       "NSubstitute": {
         "type": "Direct",
-        "requested": "[6.0.0, )",
-        "resolved": "6.0.0",
-        "contentHash": "0gvKMbiJ+/WrfbcfBfqRZZrvfLJcd3rqkqVMjjlY5dtmLRVzMY+o/K/rJUStofQ2haSr9Vd04YDfvZtVVGS3/A==",
+        "requested": "[6.2.0, )",
+        "resolved": "6.2.0",
+        "contentHash": "05oaAmBAvYYUQb/NTb9/kWBDjq0iS772X4t428WJcHRcH+5ULJx6rTbEvqkZJBIHWRLI8MlU3et3F5/gkEHKIw==",
         "dependencies": {
           "Castle.Core": "5.1.1"
         }
@@ -400,7 +400,7 @@
         "type": "Project",
         "dependencies": {
           "MinimalKafka": "[1.0.0, )",
-          "RocksDB": "[10.10.1.1747, )"
+          "RocksDB": "[11.1.2.3412, )"
         }
       },
       "Confluent.Kafka": {
@@ -462,9 +462,9 @@
       },
       "RocksDB": {
         "type": "CentralTransitive",
-        "requested": "[10.10.1.1747, )",
-        "resolved": "10.10.1.1747",
-        "contentHash": "uzwXHMAhfGnfa/iTspRRElvjxzfoUsca/fcRtZvYvBnW4k1CdherPeegz8Fym96V6XdJAAVfj9Xw7HkLq3mAqw==",
+        "requested": "[11.1.2.3412, )",
+        "resolved": "11.1.2.3412",
+        "contentHash": "caju+YxgcLw4+MlTYDu5WqBer3vyJDv+OSwYrIXyEfkvFUvBWW38YTuP8ctVFYns5/UtV1aVAw+wza0T/Uf8vw==",
         "dependencies": {
           "ZstdSharp.Port": "0.8.7"
         }
