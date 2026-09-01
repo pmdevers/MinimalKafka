@@ -9,14 +9,14 @@
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/pmdevers/MinimalKafka?utm_source=oss&utm_medium=github&utm_campaign=pmdevers%2FMinimalKafka&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 
-MinimalKafka is a Kafka consumer library designed to consume messages similarly to a Minimal API. This repository provides a streamlined and efficient way to work with Kafka consumers in .NET 8.0.
+MinimalKafka is a Kafka consumer library designed to consume messages similarly to a Minimal API. This repository provides a streamlined and efficient way to work with Kafka consumers in .NET.
 
 ![Alt text](https://github.com/pmdevers/MinimalKafka/raw/main/assets/logo_256_background.png "Minimal Kafka logo")
 
 ## Features
 
 - Simple and minimalistic Kafka consumer setup
-- Built to integrate seamlessly with .NET 8.0 applications
+- Built to integrate seamlessly with .NET applications
 - Utilizes the Confluent.Kafka for robust Kafka interactions
 
 ## Installation
