@@ -1,10 +1,10 @@
 # Getting Started
 
-MinimalKafka is a lightweight, extensible library for building Kafka-based applications in .NET 8 using minimal APIs and modern C# features.
+MinimalKafka is a lightweight, extensible library for building Kafka-based applications in .NET using minimal APIs and modern C# features.
 
 ## Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET SDK](https://dot.net)
 - [Apache Kafka](https://kafka.apache.org/quickstart) running locally or accessible remotely
 
 ## Installation
