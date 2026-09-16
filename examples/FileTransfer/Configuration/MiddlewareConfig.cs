@@ -20,6 +20,8 @@ public static class MiddlewareConfig
                 app.MapScalarApiReference("/openapi");
             }
 
+            app.UseAntiforgery();
+
             var fileProvider = UiOptions.CreateFileProvider();
 
             app.UseStaticFiles(new StaticFileOptions

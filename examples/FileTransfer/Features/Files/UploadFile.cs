@@ -10,11 +10,56 @@ public class UploadFile
         IFormFileCollection files
     )
     {
+        var list = new List<KafkaFile>();
+
         foreach (var file in files)
         {
+            using var stream = new MemoryStream();
+            file.CopyTo(stream);
+
+            var kFile = KafkaFile.Create(file.FileName, file.ContentType, stream.ToArray());
+
+
+            await producer.ProduceAsync("file-upload", Guid.NewGuid(), new
+            {
+                File = kFile
+            });
 
         }
 
-        return TypedResults.Accepted("/files");
+        return TypedResults.Ok(list);
+    }
+
+    public static async Task Consumer([FromValue] FileUpload fileUpload)
+    {
+
+    }
+
+    public record FileUpload(KafkaFile File);
+
+}
+
+public class InMemoryKafkaFileStore : IKafkaFileStore
+{
+    private readonly Dictionary<Guid, ReadOnlyMemory<byte>> _items = [];
+
+    public Task<KafkaFile> LoadData(KafkaFile kafkaFile)
+    {
+        if (_items.ContainsKey(kafkaFile.Id))
+        {
+            kafkaFile = kafkaFile with
+            {
+                Data = _items[kafkaFile.Id]
+            };
+        }
+
+        return Task.FromResult(kafkaFile);
+    }
+
+    public Task StoreAsync(KafkaFile kafkaFile)
+    {
+        _items[kafkaFile.Id] = kafkaFile.Data;
+        return Task.CompletedTask;
     }
 }
+

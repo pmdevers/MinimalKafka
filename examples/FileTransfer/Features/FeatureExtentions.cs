@@ -2,6 +2,7 @@ using FileTransfer.Configuration;
 using FileTransfer.Features.AntiForgery;
 using FileTransfer.Features.Files;
 using Microsoft.Extensions.Options;
+using MinimalKafka;
 
 namespace FileTransfer.Features;
 
@@ -21,6 +22,8 @@ public static class FeatureExtentions
 
             files.MapGet("/", GetFiles.Handle);
             files.MapPost("/", UploadFile.Handle);
+
+            app.MapTopic("file-upload", UploadFile.Consumer);
 
             return app;
         }

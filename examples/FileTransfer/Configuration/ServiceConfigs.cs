@@ -1,3 +1,4 @@
+using FileTransfer.Features.Files;
 using MinimalKafka;
 
 namespace FileTransfer.Configuration;
@@ -12,6 +13,8 @@ public static class ServiceConfigs
 
             services.AddOptions();
             services.AddOpenApi();
+            services.AddHealthChecks();
+            services.AddAntiforgery();
 
             services.AddMinimalKafka(config =>
                 {
@@ -22,6 +25,7 @@ public static class ServiceConfigs
                         x.PropertyNameCaseInsensitive = true;
                     });
                     config.WithInMemoryStore();
+                    config.WithFileStore(x => new InMemoryKafkaFileStore());
                 });
 
             logger.ServicesRegistered("Configuration");

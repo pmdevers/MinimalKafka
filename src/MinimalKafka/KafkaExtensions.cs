@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -36,6 +36,8 @@ public static class KafkaExtensions
         configBuilder.WithInMemoryStore();
         configBuilder.WithJsonSerializers();
         configBuilder.WithDeadLetterResolver(x => new InMemoryDeadLetterResolver());
+        configBuilder.WithFileStore(x => new NoKafkaFileStore());
+
         configBuilder.UpdateConfig(x =>
         {
             x.AddOrUpdate("enable.auto.commit", "false");
@@ -72,7 +74,8 @@ public static class KafkaExtensions
                 .Build();
         });
 
-        services.AddSingleton<IKafkaProducer, KafkaContextProducer>();
+        services.AddSingleton<KafkaContextProducer>();
+        services.AddSingleton<IKafkaProducer>(x => x.GetRequiredService<KafkaContextProducer>());
         services.AddHostedService<KafkaService>();
         return services;
     }
@@ -177,6 +180,27 @@ public static class KafkaExtensions
             builder.Services.AddSingleton(implementationFactory);
 
         builder.Services.AddSingleton<IDeadLetterResolver>(sp => sp.GetRequiredService<TResolver>());
+        return builder;
+    }
+
+    /// <summary>
+    /// Configures the builder to use a specified file store for Kafka file hydration and dehydration operations.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of the builder implementing <see cref="IKafkaConfigBuilder"/>.</typeparam>
+    /// <typeparam name="TStorage">The type of the file store implementing <see cref="IKafkaFileStore"/>.</typeparam>
+    /// <param name="builder">The builder instance to configure.</param>
+    /// <param name="implementationFactory">A factory function to create the file store instance.</param>
+    /// <returns>The configured builder instance.</returns>
+    public static TBuilder WithFileStore<TBuilder, TStorage>(this TBuilder builder, Func<IServiceProvider, TStorage>? implementationFactory = null)
+        where TBuilder : IKafkaConfigBuilder
+        where TStorage : class, IKafkaFileStore
+    {
+        if (implementationFactory == null)
+            builder.Services.AddSingleton<TStorage>();
+        else
+            builder.Services.AddSingleton(implementationFactory);
+
+        builder.Services.AddSingleton<IKafkaFileStore>(sp => sp.GetRequiredService<TStorage>());
         return builder;
     }
 }

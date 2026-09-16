@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
@@ -131,15 +131,11 @@ internal static class KafkaDelegateFactory
             factoryContext.TrackedParameters.Add(parameter.Name, KafkaDelegateFactoryConstants.KeyAttribute);
             factoryContext.KeyType = parameter.ParameterType;
 
-            var serializerType = typeof(IKafkaSerializer<>).MakeGenericType(parameter.ParameterType);
-            var getSerializerExpr = Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(serializerType), RequestServicesExpr);
-            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(ReadOnlySpan<byte>)])!;
             var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Key));
 
-
             return Expression.Call(
-                getSerializerExpr,
-                deserializeMethod,
+                DeserializeAndReHydrateMethod.MakeGenericMethod(parameter.ParameterType),
+                RequestServicesExpr,
                 valueExpr);
 
         }
@@ -149,15 +145,11 @@ internal static class KafkaDelegateFactory
             factoryContext.TrackedParameters.Add(parameter.Name, KafkaDelegateFactoryConstants.ValueAttribute);
             factoryContext.ValueType = parameter.ParameterType;
 
-            var serializerType = typeof(IKafkaSerializer<>).MakeGenericType(parameter.ParameterType);
-            var getSerializerExpr = Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(serializerType), RequestServicesExpr);
-            var deserializeMethod = serializerType.GetMethod("Deserialize", [typeof(ReadOnlySpan<byte>)])!;
             var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Value));
 
-
             return Expression.Call(
-                getSerializerExpr,
-                deserializeMethod,
+                DeserializeAndReHydrateMethod.MakeGenericMethod(parameter.ParameterType),
+                RequestServicesExpr,
                 valueExpr);
         }
 
@@ -178,6 +170,19 @@ internal static class KafkaDelegateFactory
 
     }
 
+    public static T DeserializeAndReHydrate<T>(IServiceProvider serviceProvider, ReadOnlySpan<byte> value)
+    {
+        var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<T>>();
+        var result = serializer.Deserialize(value);
+
+        if (result is not null && serviceProvider.GetService<IKafkaFileStore>() is { } fileStore)
+        {
+            fileStore.ReHydrate(result).GetAwaiter().GetResult();
+        }
+
+        return result;
+    }
+
 #pragma warning disable IDE1006 // Naming Styles
 
     private static readonly ParameterExpression TargetExpr = Expression.Parameter(typeof(object), "target");
@@ -190,6 +195,8 @@ internal static class KafkaDelegateFactory
         .GetMethod(nameof(ServiceProviderServiceExtensions.GetRequiredService),
         BindingFlags.Public | BindingFlags.Static, [typeof(IServiceProvider)])!;
 
+    private static readonly MethodInfo DeserializeAndReHydrateMethod = typeof(KafkaDelegateFactory)
+        .GetMethod(nameof(DeserializeAndReHydrate), BindingFlags.Public | BindingFlags.Static)!;
 
 #pragma warning restore IDE1006 // Naming Styles
 }

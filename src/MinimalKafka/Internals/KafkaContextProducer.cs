@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using System.Text;
 
 namespace MinimalKafka.Internals;
@@ -10,6 +10,7 @@ public delegate string KafkaTopicFormatter(string topic);
 
 internal class KafkaContextProducer(
     IServiceProvider serviceProvider,
+    IKafkaFileStore fileStore,
     IProducer<byte[], byte[]> producer,
     KafkaTopicFormatter formatter) : IKafkaProducer
 {
@@ -52,6 +53,7 @@ internal class KafkaContextProducer(
     {
         var consumerKey = KafkaConsumerKey.Random(topic);
         using var context = KafkaContext.Create(consumerKey, serviceProvider);
+        await fileStore.DeHydrate(value);
         await context.ProduceAsync(topic, key, value, header);
         await ProduceAsync(context, CancellationToken.None);
     }
