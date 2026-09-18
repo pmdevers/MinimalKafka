@@ -196,11 +196,14 @@ public static class KafkaExtensions
         where TStorage : class, IKafkaFileStore
     {
         if (implementationFactory == null)
-            builder.Services.AddSingleton<TStorage>();
+        {
+            builder.Services.AddTransient<IKafkaFileStore>(x => x.GetRequiredService<TStorage>());
+        }
         else
-            builder.Services.AddSingleton(implementationFactory);
+        {
+            builder.Services.AddTransient<IKafkaFileStore>(implementationFactory);
+        }
 
-        builder.Services.AddSingleton<IKafkaFileStore>(sp => sp.GetRequiredService<TStorage>());
         return builder;
     }
 }

@@ -1,4 +1,8 @@
+using FileTransfer.Configuration;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using MinimalKafka;
 
 namespace FileTransfer.Features.Files;
@@ -39,27 +43,39 @@ public class UploadFile
 
 }
 
-public class InMemoryKafkaFileStore : IKafkaFileStore
+public class AzureBlobStorage(IOptions<FileTransferOptions> options) : IKafkaFileStore
 {
-    private readonly Dictionary<Guid, ReadOnlyMemory<byte>> _items = [];
+    private readonly BlobContainerClient _containerClient = new(options.Value.BlobStorageConnectionString, options.Value.BlobContainerName);
 
-    public Task<KafkaFile> LoadData(KafkaFile kafkaFile)
+    public async Task<KafkaFile> LoadData(KafkaFile kafkaFile)
     {
-        if (_items.ContainsKey(kafkaFile.Id))
+        await _containerClient.CreateIfNotExistsAsync();
+        var blobClient = _containerClient.GetBlobClient(kafkaFile.Id.ToString("N"));
+
+        if (!await blobClient.ExistsAsync())
         {
-            kafkaFile = kafkaFile with
-            {
-                Data = _items[kafkaFile.Id]
-            };
+            return kafkaFile;
         }
 
-        return Task.FromResult(kafkaFile);
+        var content = await blobClient.DownloadContentAsync();
+
+        return kafkaFile with
+        {
+            Data = content.Value.Content.ToMemory()
+        };
     }
 
-    public Task StoreAsync(KafkaFile kafkaFile)
+    public async Task StoreAsync(KafkaFile kafkaFile)
     {
-        _items[kafkaFile.Id] = kafkaFile.Data;
-        return Task.CompletedTask;
+        await _containerClient.CreateIfNotExistsAsync();
+        var blobClient = _containerClient.GetBlobClient(kafkaFile.Id.ToString("N"));
+
+        await using var stream = new MemoryStream(kafkaFile.Data.ToArray());
+        await blobClient.UploadAsync(stream, overwrite: true);
+        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders
+        {
+            ContentType = kafkaFile.ContentType
+        });
     }
 }
 

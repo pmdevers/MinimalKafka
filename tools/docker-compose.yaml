@@ -61,6 +61,19 @@ services:
     depends_on:
       - redpanda
 
+  azurite:
+    container_name: azurite
+    image: mcr.microsoft.com/azure-storage/azurite:3.34.0
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /workspace
+    volumes:
+      - azurite:/workspace
+    networks:
+      - redpanda_network
+    ports:
+      - 127.0.0.1:10000:10000
+      - 127.0.0.1:10001:10001
+      - 127.0.0.1:10002:10002
+
 networks:
   redpanda_network:
     driver: bridge
@@ -70,5 +83,7 @@ networks:
         - subnet: 10.89.3.0/24
 
 volumes:
+  azurite:
+    driver: local
   redpanda:
     driver: local
