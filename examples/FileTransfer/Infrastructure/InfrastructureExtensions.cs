@@ -1,3 +1,5 @@
+using FileTransfer.Infrastructure;
+
 public static class InfrastructureExtensions
 {
     extension(WebApplicationBuilder builder)
@@ -6,9 +8,11 @@ public static class InfrastructureExtensions
         {
             var services = builder.Services;
 
+            services.AddScoped<AzureBlobStorage>();
+
             if (builder.Environment.IsDevelopment())
             {
-                
+
             }
             else
             {

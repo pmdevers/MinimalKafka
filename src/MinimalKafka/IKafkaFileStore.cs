@@ -164,7 +164,7 @@ internal class KafkaFileConverter : JsonConverter<KafkaFile>
         if (!Guid.TryParse(identifier, out var id) || filename is null || contentType is null || !int.TryParse(lengthValue, out var length) || length < 0)
             return KafkaFile.Empty;
 
-        return new KafkaFile(id, filename, contentType, new byte[length]);
+        return new KafkaFile(id, filename, contentType, ReadOnlyMemory<byte>.Empty);
     }
 
     public override void Write(Utf8JsonWriter writer, KafkaFile value, JsonSerializerOptions options)

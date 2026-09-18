@@ -1,4 +1,4 @@
-using FileTransfer.Features.Files;
+using FileTransfer.Infrastructure;
 using MinimalKafka;
 
 namespace FileTransfer.Configuration;
@@ -16,8 +16,6 @@ public static class ServiceConfigs
             services.AddHealthChecks();
             services.AddAntiforgery();
 
-            services.AddSingleton<AzureBlobStorage>();
-
             services.AddMinimalKafka(config =>
                 {
                     config.WithConfiguration(builder.Configuration.GetSection("Kafka"));
@@ -27,7 +25,7 @@ public static class ServiceConfigs
                         x.PropertyNameCaseInsensitive = true;
                     });
                     config.WithInMemoryStore();
-                    config.WithFileStore(x => x.GetRequiredService<AzureBlobStorage>());
+                    config.WithAzureBlobFileStore();
                 });
 
             logger.ServicesRegistered("Configuration");
