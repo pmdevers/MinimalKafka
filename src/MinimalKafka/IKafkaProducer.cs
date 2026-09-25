@@ -1,18 +1,10 @@
-﻿namespace MinimalKafka;
+namespace MinimalKafka;
 
 /// <summary>
 /// 
 /// </summary>
 public interface IKafkaProducer
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="ctx"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    Task ProduceAsync(KafkaContext ctx, CancellationToken ct);
-
     /// <summary>
     /// 
     /// </summary>
@@ -26,4 +18,3 @@ public interface IKafkaProducer
     Task ProduceAsync<TKey, TValue>(string topic, TKey key, TValue value, Dictionary<string, string>? header = null);
 }
 
-    
