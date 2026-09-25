@@ -19,6 +19,7 @@ public class UploadFile
 
             var kFile = KafkaFile.Create(file.FileName, file.ContentType, stream.ToArray());
 
+            list.Add(kFile);
 
             await producer.ProduceAsync("file-upload", Guid.NewGuid(), new
             {

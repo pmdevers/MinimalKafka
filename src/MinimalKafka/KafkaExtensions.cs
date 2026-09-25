@@ -197,6 +197,7 @@ public static class KafkaExtensions
     {
         if (implementationFactory == null)
         {
+            builder.Services.TryAddTransient<TStorage>();
             builder.Services.AddTransient<IKafkaFileStore>(x => x.GetRequiredService<TStorage>());
         }
         else

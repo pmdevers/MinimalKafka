@@ -8,7 +8,7 @@ public static class InfrastructureExtensions
         {
             var services = builder.Services;
 
-            services.AddScoped<AzureBlobStorage>();
+            services.AddSingleton<AzureBlobStorage>();
 
             if (builder.Environment.IsDevelopment())
             {

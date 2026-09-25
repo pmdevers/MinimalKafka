@@ -143,42 +143,23 @@ internal class KafkaFileConverter : JsonConverter<KafkaFile>
         if (reader.TokenType is JsonTokenType.Null)
             return null;
 
-        var value = reader.TokenType switch
-        {
-            JsonTokenType.String => reader.GetString(),
-            _ => throw new NotSupportedException($"TokenType: '{reader.TokenType}' not supported for '{typeToConvert}'")
-        };
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var root = doc.RootElement;
 
-        if (string.IsNullOrWhiteSpace(value))
-            return KafkaFile.Empty;
-
-        var parts = value.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 4)
-            return KafkaFile.Empty;
-
-        var identifier = ReadPart(parts[0], nameof(KafkaFile.Id));
-        var filename = ReadPart(parts[1], nameof(KafkaFile.Filename));
-        var contentType = ReadPart(parts[2], nameof(KafkaFile.ContentType));
-        var lengthValue = ReadPart(parts[3], nameof(KafkaFile.Data.Length));
-
-        if (!Guid.TryParse(identifier, out var id) || filename is null || contentType is null || !int.TryParse(lengthValue, out var length) || length < 0)
-            return KafkaFile.Empty;
-
-        return new KafkaFile(id, filename, contentType, ReadOnlyMemory<byte>.Empty);
+        return new KafkaFile(
+            root.GetProperty("id").GetGuid(),
+            root.GetProperty("filename").GetString() ?? string.Empty,
+            root.GetProperty("contentType").GetString() ?? string.Empty,
+             ReadOnlyMemory<byte>.Empty);
     }
 
     public override void Write(Utf8JsonWriter writer, KafkaFile value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue($"{nameof(KafkaFile.Id)}={value.Id}; {nameof(KafkaFile.Filename)}={value.Filename}; {nameof(KafkaFile.ContentType)}={value.ContentType}; {nameof(KafkaFile.Data.Length)}={value.Data.Length}");
-    }
-
-    private static string? ReadPart(string part, string name)
-    {
-        var prefix = $"{name}=";
-
-        if (!part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        return part[prefix.Length..].Trim();
+        writer.WriteStartObject();
+        writer.WriteString("id", value.Id);
+        writer.WriteString("filename", value.Filename);
+        writer.WriteString("contentType", value.ContentType);
+        writer.WriteNumber("length", value.Data.Length);
+        writer.WriteEndObject();
     }
 }
