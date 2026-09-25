@@ -1,4 +1,4 @@
-using FileTransfer.Infrastructure;
+namespace FileTransfer.Infrastructure;
 
 public static class InfrastructureExtensions
 {
