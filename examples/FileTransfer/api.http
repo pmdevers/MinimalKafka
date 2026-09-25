@@ -1,0 +1,32 @@
+@host = http://localhost:5057
+
+### Liveness
+GET {{host}}/liveness
+
+### Startup
+GET {{host}}/startup
+
+### Ready
+GET {{host}}/ready
+
+### Get anti-forgery token
+# @name antiforgery
+GET {{host}}/antiforgery/token
+
+### List files
+GET {{host}}/files/
+
+### Upload a file
+POST {{host}}/files/
+Content-Type: multipart/form-data; boundary=FileTransferBoundary
+
+--FileTransferBoundary
+Content-Disposition: form-data; name="__RequestVerificationToken"
+
+{{antiforgery.response.body}}
+--FileTransferBoundary
+Content-Disposition: form-data; name="files"; filename="example.txt"
+Content-Type: text/plain
+
+hello from api.http
+--FileTransferBoundary--

@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
 using MinimalKafka.Serializers;
@@ -180,6 +180,60 @@ public class KafkaDelegateFactoryTests
     }
 
     [Fact]
+    public async Task Value_Should_Be_ReHydrated()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddSingleton(JsonSerializerOptions.Default);
+        services.AddSingleton<ISerializerFactory, SystemTextJsonSerializerFactory>();
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+
+        var fileStore = Substitute.For<IKafkaFileStore>();
+        var expectedData = Encoding.UTF8.GetBytes("rehydrated");
+        fileStore.LoadData(Arg.Any<KafkaFile>())
+            .Returns(call =>
+            {
+                var kafkaFile = call.Arg<KafkaFile>() ?? throw new InvalidOperationException();
+                return Task.FromResult(kafkaFile with { Data = expectedData });
+            });
+        services.AddSingleton(fileStore);
+
+        var serviceProvider = services.BuildServiceProvider();
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+
+        Delegate handler = ([FromValue] FilePayload value) =>
+        {
+            value.File.Data.ToArray().Should().Equal(expectedData);
+            return Task.CompletedTask;
+        };
+
+        var result = KafkaDelegateFactory.Create(handler, options);
+        var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<FilePayload>>();
+        var message = new FilePayload
+        {
+            File = new KafkaFile(Guid.NewGuid(), "file.txt", "text/plain", ReadOnlyMemory<byte>.Empty)
+        };
+
+        var context = KafkaContext.Create(
+            KafkaConsumerKey.Random("topic"),
+            [],
+            new KafkaMessage("topic", [], serializer.Serialize(message), []),
+            serviceProvider);
+
+        // Act
+        await result.Delegate.Invoke(context);
+
+        // Assert
+        await fileStore.Received(1).LoadData(Arg.Any<KafkaFile>());
+    }
+
+    [Fact]
     public void Create_ShouldThrowInvalidOperationException_WhenServiceParameterIsNotRegistered()
     {
         // Arrange
@@ -204,4 +258,9 @@ public class KafkaDelegateFactoryTests
     }
 
     private interface IMissingService;
+
+    private sealed class FilePayload
+    {
+        public required KafkaFile File { get; init; }
+    }
 }

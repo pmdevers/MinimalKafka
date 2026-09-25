@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
 using MinimalKafka.Middlewares;
 using MinimalKafka.Middlewares.DeadletterQueue;
@@ -7,7 +7,7 @@ namespace MinimalKafka.Internals;
 
 internal sealed class KafkaProcess(
     IKafkaConsumerBuilder consumerBuilder,
-    IKafkaProducer producer,
+    KafkaContextProducer producer,
     IDeadLetterResolver deadLetterResolver,
     IReadOnlyList<Func<IServiceProvider, KafkaMiddlewareDelegate>> middlewares,
     ILogger<KafkaProcess> logger) : IKafkaProcess
