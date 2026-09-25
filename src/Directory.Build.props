@@ -1,9 +1,10 @@
-﻿<!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
+<!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
 <Project>
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<LangVersion>14</LangVersion>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<ImplicitUsings>enable</ImplicitUsings>
+		<ImplicitUsings>enable</ImplicitUsings>		
 		<Nullable>enable</Nullable>
 		<IsPackable>true</IsPackable>
 		<CompanyName>Pmdevers</CompanyName>
