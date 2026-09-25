@@ -400,7 +400,7 @@
         "type": "Project",
         "dependencies": {
           "MinimalKafka": "[1.0.0, )",
-          "RocksDB": "[11.1.2.3412, )"
+          "RocksDB": "[11.8.1.4423, )"
         }
       },
       "Confluent.Kafka": {
@@ -462,9 +462,9 @@
       },
       "RocksDB": {
         "type": "CentralTransitive",
-        "requested": "[11.1.2.3412, )",
-        "resolved": "11.1.2.3412",
-        "contentHash": "caju+YxgcLw4+MlTYDu5WqBer3vyJDv+OSwYrIXyEfkvFUvBWW38YTuP8ctVFYns5/UtV1aVAw+wza0T/Uf8vw==",
+        "requested": "[11.8.1.4423, )",
+        "resolved": "11.8.1.4423",
+        "contentHash": "UdNILTMQmnu7C/uA070u4xfzmzbSMFUgGEkxr6oobf1EdKYdeU4ReoNdvRgjWilzSCvrFXr2vIxYneeJNR/IQA==",
         "dependencies": {
           "ZstdSharp.Port": "0.8.7"
         }
