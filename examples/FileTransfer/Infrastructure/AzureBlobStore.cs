@@ -1,4 +1,4 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using FileTransfer.Configuration;
 using Microsoft.Extensions.Options;
@@ -21,6 +21,7 @@ public static class MinimalKafkaBlobStoreExtensions
 public class AzureBlobStorage(IOptions<FileTransferOptions> options) : IKafkaFileStore
 {
     private readonly BlobContainerClient _containerClient = new(options.Value.BlobStorageConnectionString, options.Value.BlobContainerName);
+    private bool _disposedValue;
 
     public async Task<KafkaFile> LoadData(KafkaFile kafkaFile)
     {
@@ -51,5 +52,19 @@ public class AzureBlobStorage(IOptions<FileTransferOptions> options) : IKafkaFil
         {
             ContentType = kafkaFile.ContentType
         });
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            _disposedValue = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

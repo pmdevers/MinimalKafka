@@ -2,3 +2,5 @@
   href: getting-started.md
 - name: Stream Branching
   href: stream-branching.md
+- name: Claims-Check with KafkaFile
+  href: claims-check-pattern.md
