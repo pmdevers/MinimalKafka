@@ -5,11 +5,28 @@ namespace MinimalKafka;
 
 internal class NoKafkaFileStore : IKafkaFileStore
 {
+    private bool _disposedValue;
+
     public Task<KafkaFile> LoadData(KafkaFile kafkaFile)
         => Task.FromResult(kafkaFile);
 
     public Task StoreAsync(KafkaFile kafkaFile)
         => Task.CompletedTask;
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            _disposedValue = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 }
 
 
@@ -71,7 +88,7 @@ public static class KafkaStoreExtensions
 /// <summary>
 /// Describes a class that can store kafka files.
 /// </summary>
-public interface IKafkaFileStore
+public interface IKafkaFileStore : IDisposable
 {
     /// <summary>
     /// Stores a KafkaFile in the Store.
