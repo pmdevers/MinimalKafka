@@ -1,5 +1,4 @@
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using FileTransfer.Configuration;
 using Microsoft.Extensions.Options;
 using MinimalKafka;
@@ -21,50 +20,27 @@ public static class MinimalKafkaBlobStoreExtensions
 public class AzureBlobStorage(IOptions<FileTransferOptions> options) : IKafkaFileStore
 {
     private readonly BlobContainerClient _containerClient = new(options.Value.BlobStorageConnectionString, options.Value.BlobContainerName);
-    private bool _disposedValue;
 
-    public async Task<KafkaFile> LoadData(KafkaFile kafkaFile)
+    public async Task<ReadOnlyMemory<byte>> LoadAsync(Guid key)
     {
         await _containerClient.CreateIfNotExistsAsync();
-        var blobClient = _containerClient.GetBlobClient(kafkaFile.Id.ToString("N"));
+        var blobClient = _containerClient.GetBlobClient(key.ToString("N"));
 
         if (!await blobClient.ExistsAsync())
         {
-            return kafkaFile;
+            return ReadOnlyMemory<byte>.Empty;
         }
 
         var content = await blobClient.DownloadContentAsync();
-
-        return kafkaFile with
-        {
-            Data = content.Value.Content.ToMemory()
-        };
+        return content.Value.Content.ToMemory();
     }
 
-    public async Task StoreAsync(KafkaFile kafkaFile)
+    public async Task StoreAsync(Guid key, ReadOnlyMemory<byte> data)
     {
         await _containerClient.CreateIfNotExistsAsync();
-        var blobClient = _containerClient.GetBlobClient(kafkaFile.Id.ToString("N"));
+        var blobClient = _containerClient.GetBlobClient(key.ToString("N"));
 
-        await using var stream = new MemoryStream(kafkaFile.Data.ToArray());
+        await using var stream = new MemoryStream(data.ToArray());
         await blobClient.UploadAsync(stream, overwrite: true);
-        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders
-        {
-            ContentType = kafkaFile.ContentType
-        });
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            _disposedValue = true;
-        }
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

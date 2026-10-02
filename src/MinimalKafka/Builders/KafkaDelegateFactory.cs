@@ -175,9 +175,9 @@ internal static class KafkaDelegateFactory
         var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<T>>();
         var result = serializer.Deserialize(value);
 
-        if (result is not null && serviceProvider.GetService<IKafkaFileStore>() is { } fileStore)
+        if (result is not null && serviceProvider.GetService<IKafkaHydrationService>() is { } hydrationService)
         {
-            fileStore.ReHydrate(result).GetAwaiter().GetResult();
+            hydrationService.ReHydrateAsync(result).GetAwaiter().GetResult();
         }
 
         return result;

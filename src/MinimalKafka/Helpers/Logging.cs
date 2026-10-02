@@ -135,4 +135,16 @@ internal static partial class Logging
         Level = LogLevel.Information,
         Message = "DLQ item resolved; resuming commit for source topic '{SourceTopic}', partition '{Partition}', offset '{Offset}'.")]
     public static partial void DeadLetterResolved(this ILogger logger, string sourceTopic, int partition, long offset);
+
+    [LoggerMessage(
+        EventId = 20,
+        Level = LogLevel.Warning,
+        Message = "Kafka file storage is not configured. File with id '{Id}' is not being loaded from external storage.")]
+    public static partial void NoKafkaFileStoreLoad(this ILogger logger, Guid id);
+
+    [LoggerMessage(
+        EventId = 21,
+        Level = LogLevel.Warning,
+        Message = "Kafka file storage is not configured. File with id '{Id}' is not being stored. Configure a custom IKafkaFileStore with WithFileStore(...).")]
+    public static partial void NoKafkaFileStoreStore(this ILogger logger, Guid id);
 }

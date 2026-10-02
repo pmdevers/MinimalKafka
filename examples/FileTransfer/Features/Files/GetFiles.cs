@@ -6,7 +6,7 @@ namespace FileTransfer.Features.Files;
 public class GetFiles
 {
     public static async Task Handle(
-        [FromServices] IKafkaFileStore store)
+        [FromServices] KafkaFile store)
     {
     }
 

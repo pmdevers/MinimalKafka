@@ -190,13 +190,11 @@ public class KafkaDelegateFactoryTests
 
         var fileStore = Substitute.For<IKafkaFileStore>();
         var expectedData = Encoding.UTF8.GetBytes("rehydrated");
-        fileStore.LoadData(Arg.Any<KafkaFile>())
-            .Returns(call =>
-            {
-                var kafkaFile = call.Arg<KafkaFile>() ?? throw new InvalidOperationException();
-                return Task.FromResult(kafkaFile with { Data = expectedData });
-            });
+        var fileId = Guid.NewGuid();
+        fileStore.LoadAsync(fileId)
+            .Returns(Task.FromResult<ReadOnlyMemory<byte>>(expectedData));
         services.AddSingleton(fileStore);
+        services.AddTransient<IKafkaHydrationService, KafkaHydrationService>();
 
         var serviceProvider = services.BuildServiceProvider();
         var kafkaBuilder = Substitute.For<IKafkaBuilder>();
@@ -217,7 +215,7 @@ public class KafkaDelegateFactoryTests
         var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<FilePayload>>();
         var message = new FilePayload
         {
-            File = new KafkaFile(Guid.NewGuid(), "file.txt", "text/plain", ReadOnlyMemory<byte>.Empty)
+            File = new KafkaFile(fileId, "file.txt", "text/plain", ReadOnlyMemory<byte>.Empty)
         };
 
         var context = KafkaContext.Create(
@@ -230,7 +228,7 @@ public class KafkaDelegateFactoryTests
         await result.Delegate.Invoke(context);
 
         // Assert
-        await fileStore.Received(1).LoadData(Arg.Any<KafkaFile>());
+        await fileStore.Received(1).LoadAsync(fileId);
     }
 
     [Fact]
