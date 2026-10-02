@@ -59,6 +59,24 @@ public class KafkaHydrationServiceTests
     }
 
     [Fact]
+    public async Task DeHydrate_Should_Not_Store_Empty_KafkaFile_Data()
+    {
+        // Arrange
+        var fileStore = Substitute.For<IKafkaFileStore>();
+        var sut = new KafkaHydrationService(fileStore);
+        var message = new ClassMessage
+        {
+            File = KafkaFile.Create("file.txt", "text/plain")
+        };
+
+        // Act
+        await sut.DeHydrateAsync(message);
+
+        // Assert
+        await fileStore.DidNotReceive().StoreAsync(Arg.Any<Guid>(), Arg.Any<ReadOnlyMemory<byte>>());
+    }
+
+    [Fact]
     public async Task ReHydrate_Should_Load_KafkaFile_Data_For_Record_Message()
     {
         // Arrange

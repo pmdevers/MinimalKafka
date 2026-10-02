@@ -25,6 +25,11 @@ internal sealed class KafkaHydrationService(IKafkaFileStore fileStore) : IKafkaH
                 continue;
             }
 
+            if (file.Data.IsEmpty)
+            {
+                continue;
+            }
+
             await fileStore.StoreAsync(file.Id, file.Data);
         }
     }
