@@ -53,8 +53,8 @@ internal class KafkaContextProducer(
     {
         var consumerKey = KafkaConsumerKey.Random(topic);
         using var context = KafkaContext.Create(consumerKey, serviceProvider);
-        using var fileStore = context.RequestServices.GetRequiredService<IKafkaFileStore>();
-        await fileStore.DeHydrate(value);
+        var hydrationService = context.RequestServices.GetRequiredService<IKafkaHydrationService>();
+        await hydrationService.DeHydrateAsync(value);
         await context.ProduceAsync(topic, key, value, header);
         await ProduceAsync(context, CancellationToken.None);
     }

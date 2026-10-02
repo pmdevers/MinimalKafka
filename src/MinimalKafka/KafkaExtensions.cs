@@ -36,7 +36,7 @@ public static class KafkaExtensions
         configBuilder.WithInMemoryStore();
         configBuilder.WithJsonSerializers();
         configBuilder.WithDeadLetterResolver(x => new InMemoryDeadLetterResolver());
-        configBuilder.WithFileStore(x => new NoKafkaFileStore());
+        configBuilder.WithFileStore(x => new NoKafkaFileStore(x.GetRequiredService<ILogger<NoKafkaFileStore>>()));
 
         configBuilder.UpdateConfig(x =>
         {
@@ -57,6 +57,7 @@ public static class KafkaExtensions
         });
 
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+        services.AddTransient<IKafkaHydrationService, KafkaHydrationService>();
 
         services.AddSingleton(sp =>
         {
