@@ -57,6 +57,7 @@ public static class KafkaExtensions
         });
 
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+        services.AddTransient<IKafkaHydrationService, KafkaHydrationService>();
 
         services.AddSingleton(sp =>
         {

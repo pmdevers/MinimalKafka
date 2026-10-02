@@ -232,6 +232,65 @@ public class KafkaDelegateFactoryTests
     }
 
     [Fact]
+    public async Task Value_Should_Await_ReHydration_Before_Invoking_Handler()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddSingleton(JsonSerializerOptions.Default);
+        services.AddSingleton<ISerializerFactory, SystemTextJsonSerializerFactory>();
+        services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
+
+        var hydrationService = new DelayedHydrationService();
+        services.AddSingleton<IKafkaHydrationService>(hydrationService);
+
+        var serviceProvider = services.BuildServiceProvider();
+        var kafkaBuilder = Substitute.For<IKafkaBuilder>();
+        var expectedData = Encoding.UTF8.GetBytes("rehydrated");
+        var handlerCalled = false;
+
+        var options = new KafkaDelegateFactoryOptions
+        {
+            ServiceProvider = serviceProvider,
+            KafkaBuilder = kafkaBuilder
+        };
+
+        Delegate handler = ([FromValue] FilePayload value) =>
+        {
+            handlerCalled = true;
+            value.File.Data.ToArray().Should().Equal(expectedData);
+            return Task.CompletedTask;
+        };
+
+        var result = KafkaDelegateFactory.Create(handler, options);
+        var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<FilePayload>>();
+        var message = new FilePayload
+        {
+            File = new KafkaFile(Guid.NewGuid(), "file.txt", "text/plain", ReadOnlyMemory<byte>.Empty)
+        };
+
+        var context = KafkaContext.Create(
+            KafkaConsumerKey.Random("topic"),
+            [],
+            new KafkaMessage("topic", [], serializer.Serialize(message), []),
+            serviceProvider);
+
+        hydrationService.SetData(expectedData);
+
+        // Act
+        var invokeTask = result.Delegate.Invoke(context);
+        await hydrationService.Started;
+
+        // Assert
+        handlerCalled.Should().BeFalse();
+        invokeTask.IsCompleted.Should().BeFalse();
+
+        hydrationService.Release();
+        await invokeTask;
+
+        handlerCalled.Should().BeTrue();
+    }
+
+    [Fact]
     public void Create_ShouldThrowInvalidOperationException_WhenServiceParameterIsNotRegistered()
     {
         // Arrange
@@ -260,5 +319,33 @@ public class KafkaDelegateFactoryTests
     private sealed class FilePayload
     {
         public required KafkaFile File { get; init; }
+    }
+
+    private sealed class DelayedHydrationService : IKafkaHydrationService
+    {
+        private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private ReadOnlyMemory<byte> _data;
+
+        public Task Started => _started.Task;
+
+        public Task DeHydrateAsync(object? obj) => Task.CompletedTask;
+
+        public async Task ReHydrateAsync(object? obj)
+        {
+            _started.TrySetResult();
+            await _release.Task;
+
+            if (obj is FilePayload payload)
+            {
+                typeof(FilePayload)
+                    .GetProperty(nameof(FilePayload.File))!
+                    .SetValue(payload, payload.File with { Data = _data });
+            }
+        }
+
+        public void SetData(ReadOnlyMemory<byte> data) => _data = data;
+
+        public void Release() => _release.TrySetResult();
     }
 }

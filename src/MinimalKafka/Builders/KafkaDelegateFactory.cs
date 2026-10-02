@@ -2,7 +2,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Metadata;
 using MinimalKafka.Serializers;
-using System.Linq.Expressions;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace MinimalKafka.Builders;
@@ -12,14 +12,8 @@ internal static class KafkaDelegateFactory
     {
         ArgumentNullException.ThrowIfNull(handler);
 
-        var targetExpression = handler.Target switch
-        {
-            object => Expression.Convert(TargetExpr, handler.Target.GetType()),
-            null => null,
-        };
-
         var factoryContext = KafkaDelegateFactoryContext.Create(handler, options);
-        var targetableKafkaDelegate = CreateTargetableRequestDelegate(handler.Method, targetExpression, factoryContext);
+        var targetableKafkaDelegate = CreateTargetableRequestDelegate(handler.Method, factoryContext);
         var finalKafkaDelegate = targetableKafkaDelegate switch
         {
             null => (KafkaDelegate)handler,
@@ -31,30 +25,9 @@ internal static class KafkaDelegateFactory
 
     private static Func<object?, KafkaContext, Task>? CreateTargetableRequestDelegate(
         MethodInfo methodInfo,
-        Expression? targetExpression,
-        KafkaDelegateFactoryContext factoryContext
-        )
+        KafkaDelegateFactoryContext factoryContext)
     {
-        factoryContext.ArgumentExpressions ??= CreateArguments(methodInfo.GetParameters(), factoryContext);
-        factoryContext.MethodCall = CreateMethodCall(methodInfo, targetExpression, factoryContext);
-
-        Func<object?, KafkaContext, Task> continuation;
-
-        if (factoryContext.MethodCall.Type == typeof(void))
-        {
-            var block = Expression.Block(
-                factoryContext.MethodCall,
-                Expression.Constant(Task.CompletedTask)
-            );
-            continuation = Expression.Lambda<Func<object?, KafkaContext, Task>>(
-                block, TargetExpr, KafkaContextExpr).Compile();
-
-        }
-        else
-        {
-            continuation = Expression.Lambda<Func<object?, KafkaContext, Task>>(
-                    factoryContext.MethodCall, TargetExpr, KafkaContextExpr).Compile();
-        }
+        var parameterBinders = CreateArgumentBinders(methodInfo.GetParameters(), factoryContext);
 
         if (factoryContext.Handler is KafkaDelegate)
         {
@@ -63,33 +36,29 @@ internal static class KafkaDelegateFactory
 
         return async (target, kafkaContext) =>
         {
-            await continuation(target, kafkaContext);
+            var arguments = await BindArgumentsAsync(parameterBinders, kafkaContext);
+            var result = methodInfo.Invoke(target, arguments);
+
+            if (result is Task task)
+            {
+                await task;
+            }
         };
     }
 
-    private static MethodCallExpression CreateMethodCall(MethodInfo methodInfo, Expression? target, KafkaDelegateFactoryContext factoryContext)
-        => target is null ?
-        Expression.Call(methodInfo, factoryContext.ArgumentExpressions) :
-        Expression.Call(target, methodInfo, factoryContext.ArgumentExpressions);
-
-    private static Expression[]? CreateArguments(ParameterInfo[] parameters, KafkaDelegateFactoryContext factoryContext)
+    private static KafkaParameterBinder[] CreateArgumentBinders(ParameterInfo[] parameters, KafkaDelegateFactoryContext factoryContext)
     {
-        if (parameters is null || parameters.Length == 0)
+        if (parameters.Length == 0)
         {
             return [];
         }
 
-        var arguments = new Expression[parameters.Length];
-
-        factoryContext.ArgumentTypes = new Type[parameters.Length];
-        factoryContext.BoxedArgs = new Expression[parameters.Length];
+        var binders = new KafkaParameterBinder[parameters.Length];
         factoryContext.Parameters = [.. parameters];
 
         for (var i = 0; i < parameters.Length; i++)
         {
-            arguments[i] = CreateArgument(parameters[i], factoryContext);
-            factoryContext.ArgumentTypes[i] = parameters[i].ParameterType;
-            factoryContext.BoxedArgs[i] = Expression.Convert(arguments[i], typeof(object));
+            binders[i] = CreateArgumentBinder(parameters[i], factoryContext);
         }
 
         if (factoryContext.HasInferredBody)
@@ -97,10 +66,10 @@ internal static class KafkaDelegateFactory
             throw new InvalidOperationException("Method has unresolved parameter.");
         }
 
-        return arguments;
+        return binders;
     }
 
-    private static Expression CreateArgument(ParameterInfo parameter, KafkaDelegateFactoryContext factoryContext)
+    private static KafkaParameterBinder CreateArgumentBinder(ParameterInfo parameter, KafkaDelegateFactoryContext factoryContext)
     {
         if (parameter.Name is null)
         {
@@ -130,73 +99,73 @@ internal static class KafkaDelegateFactory
         {
             factoryContext.TrackedParameters.Add(parameter.Name, KafkaDelegateFactoryConstants.KeyAttribute);
             factoryContext.KeyType = parameter.ParameterType;
-
-            var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Key));
-
-            return Expression.Call(
-                DeserializeAndReHydrateMethod.MakeGenericMethod(parameter.ParameterType),
-                RequestServicesExpr,
-                valueExpr);
-
+            return kafkaContext => DeserializeAndReHydrateAsync(parameter.ParameterType, kafkaContext.RequestServices, kafkaContext.Key.ToArray());
         }
+
         if (attributes.OfType<IFromValueMetadata>().FirstOrDefault() is { } ||
             parameter.Name.Equals(nameof(KafkaContext.Value), StringComparison.CurrentCultureIgnoreCase))
         {
             factoryContext.TrackedParameters.Add(parameter.Name, KafkaDelegateFactoryConstants.ValueAttribute);
             factoryContext.ValueType = parameter.ParameterType;
-
-            var valueExpr = Expression.Property(KafkaContextExpr, nameof(KafkaContext.Value));
-
-            return Expression.Call(
-                DeserializeAndReHydrateMethod.MakeGenericMethod(parameter.ParameterType),
-                RequestServicesExpr,
-                valueExpr);
+            return kafkaContext => DeserializeAndReHydrateAsync(parameter.ParameterType, kafkaContext.RequestServices, kafkaContext.Value.ToArray());
         }
 
         if (parameter.ParameterType == typeof(KafkaContext))
         {
-            return KafkaContextExpr;
+            return kafkaContext => ValueTask.FromResult<object?>(kafkaContext);
         }
 
         if (factoryContext.ServiceProviderIsService is IServiceProviderIsService serviceProviderIsService
             && serviceProviderIsService.IsService(parameter.ParameterType))
         {
             factoryContext.TrackedParameters.Add(parameter.Name, KafkaDelegateFactoryConstants.ServiceParameter);
-            return Expression.Call(GetRequiredServiceMethod.MakeGenericMethod(parameter.ParameterType), RequestServicesExpr);
+            return kafkaContext => ValueTask.FromResult((object?)kafkaContext.RequestServices.GetRequiredService(parameter.ParameterType));
         }
 
         factoryContext.HasInferredBody = true;
         throw new InvalidOperationException($"Unable to resolve service for parameter '{parameter.Name}' of type '{parameter.ParameterType.FullName}'. Register the service in the container.");
-
     }
 
-    public static T DeserializeAndReHydrate<T>(IServiceProvider serviceProvider, ReadOnlySpan<byte> value)
+    public static async ValueTask<object?> DeserializeAndReHydrateAsync<T>(IServiceProvider serviceProvider, ReadOnlyMemory<byte> value)
     {
         var serializer = serviceProvider.GetRequiredService<IKafkaSerializer<T>>();
-        var result = serializer.Deserialize(value);
+        var result = serializer.Deserialize(value.Span);
 
         if (result is not null && serviceProvider.GetService<IKafkaHydrationService>() is { } hydrationService)
         {
-            hydrationService.ReHydrateAsync(result).GetAwaiter().GetResult();
+            await hydrationService.ReHydrateAsync(result);
         }
 
         return result;
     }
 
+    private static async ValueTask<object?[]> BindArgumentsAsync(KafkaParameterBinder[] parameterBinders, KafkaContext kafkaContext)
+    {
+        var arguments = new object?[parameterBinders.Length];
+
+        for (var i = 0; i < parameterBinders.Length; i++)
+        {
+            arguments[i] = await parameterBinders[i](kafkaContext);
+        }
+
+        return arguments;
+    }
+
+    private static ValueTask<object?> DeserializeAndReHydrateAsync(Type parameterType, IServiceProvider serviceProvider, ReadOnlyMemory<byte> value)
+        => _deserializerCache.GetOrAdd(parameterType, static type =>
+            (Func<IServiceProvider, ReadOnlyMemory<byte>, ValueTask<object?>>)DeserializeAndReHydrateAsyncMethod
+                .MakeGenericMethod(type)
+                .CreateDelegate(typeof(Func<IServiceProvider, ReadOnlyMemory<byte>, ValueTask<object?>>)))(serviceProvider, value);
+
+    private delegate ValueTask<object?> KafkaParameterBinder(KafkaContext kafkaContext);
+
 #pragma warning disable IDE1006 // Naming Styles
 
-    private static readonly ParameterExpression TargetExpr = Expression.Parameter(typeof(object), "target");
-    private static readonly ParameterExpression KafkaContextExpr = Expression.Parameter(typeof(KafkaContext), "kafkaContext");
+    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, ReadOnlyMemory<byte>, ValueTask<object?>>> _deserializerCache = new();
 
-    private static readonly MemberExpression RequestServicesExpr = Expression.Property(KafkaContextExpr,
-        typeof(KafkaContext).GetProperty(nameof(KafkaContext.RequestServices))!);
-
-    private static readonly MethodInfo GetRequiredServiceMethod = typeof(ServiceProviderServiceExtensions)
-        .GetMethod(nameof(ServiceProviderServiceExtensions.GetRequiredService),
-        BindingFlags.Public | BindingFlags.Static, [typeof(IServiceProvider)])!;
-
-    private static readonly MethodInfo DeserializeAndReHydrateMethod = typeof(KafkaDelegateFactory)
-        .GetMethod(nameof(DeserializeAndReHydrate), BindingFlags.Public | BindingFlags.Static)!;
+    private static readonly MethodInfo DeserializeAndReHydrateAsyncMethod = typeof(KafkaDelegateFactory)
+        .GetMethod(nameof(DeserializeAndReHydrateAsync), BindingFlags.Public | BindingFlags.Static)!
+        .GetGenericMethodDefinition();
 
 #pragma warning restore IDE1006 // Naming Styles
 }
@@ -244,15 +213,10 @@ internal class KafkaDelegateFactoryContext
     public Dictionary<string, string> TrackedParameters { get; } = [];
     public List<ParameterInfo> Parameters { get; set; } = [];
 
-    public Expression[]? ArgumentExpressions { get; set; }
-    public Type[]? ArgumentTypes { get; set; }
-    public Expression[]? BoxedArgs { get; set; }
-
     public Type KeyType { get; set; } = typeof(Ignore);
     public Type ValueType { get; set; } = typeof(Ignore);
 
     public bool HasInferredBody { get; set; }
-    public Expression? MethodCall { get; set; }
 
     public static KafkaDelegateFactoryContext Create(Delegate? handler, KafkaDelegateFactoryOptions? options)
     {
