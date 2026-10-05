@@ -1,6 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Internals;
-using MinimalKafka.Serializers;
 
 namespace MinimalKafka;
 
@@ -46,12 +45,9 @@ public static class KafkaContextExtenions
     /// <param name="key"></param>
     /// <param name="value"></param>
     /// <param name="headers"></param>
-    public static void Produce<TKey, TValue>(this KafkaContext context, string topic, TKey key, TValue value, Dictionary<string, string>? headers = null)
+    public static void Produce<TKey, TValue>(this KafkaContext context, string topic, TKey key, TValue? value, Dictionary<string, string>? headers = null)
     {
-        var keySerializer = context.RequestServices.GetRequiredService<IKafkaSerializer<TKey>>();
-        var valueSerializer = context.RequestServices.GetRequiredService<IKafkaSerializer<TValue>>();
-
-        context.Produce(new KafkaMessage(topic, keySerializer.Serialize(key), valueSerializer.Serialize(value), headers ?? []));
+        context.Produce(new ProduceMessage(topic, key, value, headers ?? []));
 
     }
 

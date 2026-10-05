@@ -1,9 +1,18 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Helpers;
+using MinimalKafka.Internals;
 using System.Diagnostics;
 
 namespace MinimalKafka.Middlewares;
+
+/// <summary>
+/// 
+/// </summary>
+/// <param name="message"></param>
+/// <param name="next"></param>
+/// <returns></returns>
+public delegate Task KafkaProducerMiddlewareDelegate(ProduceMessage message, KafkaProduceDelegate next);
 
 /// <summary>
 /// Descibes the middleware.
@@ -19,6 +28,20 @@ public interface IKafkaMiddleware
     /// Invoke the middleware with the given context.
     /// </summary>
     Task InvokeAsync(KafkaContext context, KafkaDelegate next);
+}
+
+/// <summary>
+/// 
+/// </summary>
+public interface IKafkaProducerMiddleware
+{
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="next"></param>
+    /// <returns></returns>
+    Task Invoke(ProduceMessage message, KafkaProduceDelegate next);
 }
 
 internal sealed class LoggerMiddleware(ILogger<LoggerMiddleware> logger) : IKafkaMiddleware

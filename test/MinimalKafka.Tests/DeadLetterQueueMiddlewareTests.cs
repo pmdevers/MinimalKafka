@@ -19,10 +19,12 @@ public class DeadLetterQueueMiddlewareTests
         services.AddTransient(typeof(IKafkaSerializer<>), typeof(KafkaSerializerProxy<>));
 
         var serviceProvider = services.BuildServiceProvider();
+        var intSerializer = serviceProvider.GetRequiredService<IKafkaSerializer<int>>();
+
         using var context = KafkaContext.Create(
             KafkaConsumerKey.Random("orders"),
             [],
-            new KafkaMessage("orders", [1, 2, 3], [4, 5, 6], []) with { Partition = 1, Offset = 9 },
+            new KafkaMessage("orders", intSerializer.Serialize(1), intSerializer.Serialize(2), []) with { Partition = 1, Offset = 9 },
             serviceProvider);
 
         var resolver = new InMemoryDeadLetterResolver();
@@ -36,8 +38,8 @@ public class DeadLetterQueueMiddlewareTests
 
         var dlqMessage = context.Messages[0];
         dlqMessage.Topic.Should().Be("dead-letter-queue");
-        dlqMessage.Key.Should().Equal([1, 2, 3]);
-        dlqMessage.Value.Should().Equal([4, 5, 6]);
+        dlqMessage.Key.Should().Be(1);
+        dlqMessage.Value.Should().Be(2);
         dlqMessage.Headers.Should().ContainKey("dlq.source.topic");
         dlqMessage.Headers["dlq.source.topic"].Should().Be("orders");
         dlqMessage.Headers.Should().ContainKey("dlq.source.group");

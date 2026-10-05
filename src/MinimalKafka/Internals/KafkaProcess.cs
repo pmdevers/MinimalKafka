@@ -5,11 +5,18 @@ using MinimalKafka.Middlewares.DeadletterQueue;
 
 namespace MinimalKafka.Internals;
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="kafkaMessage"></param>
+/// <returns></returns>
+public delegate Task KafkaProduceDelegate(ProduceMessage kafkaMessage);
+
 internal sealed class KafkaProcess(
     IKafkaConsumerBuilder consumerBuilder,
-    KafkaContextProducer producer,
     IDeadLetterResolver deadLetterResolver,
     IReadOnlyList<Func<IServiceProvider, KafkaMiddlewareDelegate>> middlewares,
+    KafkaMiddlewareProducer producer,
     ILogger<KafkaProcess> logger) : IKafkaProcess
 {
     private readonly IKafkaConsumer _consumer = consumerBuilder.Build();
@@ -32,7 +39,7 @@ internal sealed class KafkaProcess(
 
                 await Invoke(context);
 
-                await producer.ProduceAsync(context, token);
+                await producer.Produce(context);
 
                 if (deadLetterResolver.HasPending(context))
                 {
@@ -69,6 +76,8 @@ internal sealed class KafkaProcess(
 
         await next(context);
     }
+
+
 
     public Task Stop()
     {

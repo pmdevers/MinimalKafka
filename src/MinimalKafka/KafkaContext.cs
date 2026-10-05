@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Builders;
+using static MinimalKafka.Internals.KafkaProducer;
 
 namespace MinimalKafka;
 
@@ -89,14 +90,14 @@ public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposab
     /// </summary>
     public abstract IReadOnlyList<object> Metadata { get; }
 
-    internal void Produce(KafkaMessage message)
+    internal void Produce(ProduceMessage message)
     {
         _messages.Add(message);
     }
 
-    private readonly List<KafkaMessage> _messages = [];
+    private readonly List<ProduceMessage> _messages = [];
 
-    internal IReadOnlyList<KafkaMessage> Messages => _messages.AsReadOnly();
+    internal IReadOnlyList<ProduceMessage> Messages => _messages.AsReadOnly();
 
     /// <summary>
     /// Releases the resources used by the current instance of the class.

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MinimalKafka.Helpers;
 
@@ -34,7 +34,7 @@ public class DeadLetterQueueMiddleware(IDeadLetterResolver resolver, IOptions<De
                 ["dlq.exception.message"] = ex.InnerException?.Message ?? ex.Message
             };
 
-            context.Produce(new KafkaMessage(_options.Topic, context.Key.ToArray(), context.Value.ToArray(), headers));
+            context.Produce(new ProduceMessage(_options.Topic, context.Key.ToArray(), context.Value.ToArray(), headers));
 
             _logger.DeadLetterQueued(_options.Topic, context.TopicName, context.Partition, context.Offset, resolutionKey);
 

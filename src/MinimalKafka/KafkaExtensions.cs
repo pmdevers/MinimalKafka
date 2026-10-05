@@ -75,8 +75,11 @@ public static class KafkaExtensions
                 .Build();
         });
 
-        services.AddSingleton<KafkaContextProducer>();
-        services.AddSingleton<IKafkaProducer>(x => x.GetRequiredService<KafkaContextProducer>());
+        services.AddSingleton<KafkaProducer>();
+        services.AddSingleton<KafkaMiddlewareProducer>();
+        services.AddSingleton<DiKafkaProducer>();
+
+        services.AddSingleton<IKafkaProducer>(x => x.GetRequiredService<DiKafkaProducer>());
         services.AddHostedService<KafkaService>();
         return services;
     }
