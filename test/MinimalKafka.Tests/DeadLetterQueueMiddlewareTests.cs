@@ -38,8 +38,10 @@ public class DeadLetterQueueMiddlewareTests
 
         var dlqMessage = context.Messages[0];
         dlqMessage.Topic.Should().Be("dead-letter-queue");
-        dlqMessage.Key.Should().Be(1);
-        dlqMessage.Value.Should().Be(2);
+        var key = Assert.IsType<byte[]>(dlqMessage.Key);
+        var value = Assert.IsType<byte[]>(dlqMessage.Value);
+        key.Should().Equal(intSerializer.Serialize(1));
+        value.Should().Equal(intSerializer.Serialize(2));
         dlqMessage.Headers.Should().ContainKey("dlq.source.topic");
         dlqMessage.Headers["dlq.source.topic"].Should().Be("orders");
         dlqMessage.Headers.Should().ContainKey("dlq.source.group");
