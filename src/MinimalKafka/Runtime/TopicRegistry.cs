@@ -5,7 +5,7 @@ namespace MinimalKafka.Runtime;
 internal sealed class TopicRegistration(string topic, ConsumerDelegate handler)
 {
     public string Topic { get; } = topic;
-    public ConsumerDelegate Handler { get; } = handler;
+    public ConsumerDelegate Handler { get; set; } = handler;
     public string? Format { get; set; }
     public List<Func<IServiceProvider, Middleware.IConsumerMiddleware>> Middleware { get; } = [];
 }
@@ -20,11 +20,24 @@ internal sealed class TopicRegistry
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
         ArgumentNullException.ThrowIfNull(handler);
-        var registration = new TopicRegistration(topic, HandlerAdapter.Create(handler));
-        if (!_topics.TryAdd(topic, registration))
+        var newHandler = HandlerAdapter.Create(handler);
+
+        if (!_topics.TryAdd(topic, new TopicRegistration(topic, newHandler)))
         {
-            throw new InvalidOperationException($"A consumer is already mapped for topic '{topic}'.");
+            var existingRegistration = _topics[topic];
+            var existingHandler = existingRegistration.Handler;
+
+            // Wrap both delegates to execute simultaneously
+            async Task combinedHandler(KafkaContext context)
+            {
+                var task1 = existingHandler(context);
+                var task2 = newHandler(context);
+                await Task.WhenAll(task1, task2).ConfigureAwait(false);
+            }
+
+            existingRegistration.Handler = combinedHandler;
         }
-        return registration;
+
+        return _topics[topic];
     }
 }

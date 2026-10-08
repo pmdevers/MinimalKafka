@@ -27,7 +27,8 @@ public static class ServiceConfigs
                         .WithJsonSerializer(configureSerializer: x =>
                         {
                             x.Converters.Add(new JsonStringEnumConverter());
-                        });
+                        })
+                        .WithClaimCheck();
                 });
 
             logger.ServicesRegistered("Configuration");

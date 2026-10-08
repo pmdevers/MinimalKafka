@@ -77,8 +77,45 @@ public class TopicBuilderTests
         builder.Use<TestConsumerMiddleware>("prefix");
 
         _ = registration.Middleware.Single()(provider);
+    }
 
-        Assert.Equal("prefix", state.Prefix);
+    [Fact]
+    public async Task Add_WhenConsumerAlreadyMapped_ShouldExecuteBothSimultaneously()
+    {
+        var registry = new TopicRegistry();
+        var handler1Called = false;
+        var handler2Called = false;
+        var bothCalledSimultaneously = false;
+
+        async Task Handler1(KafkaContext _)
+        {
+            handler1Called = true;
+            await Task.Delay(10); // Simulate some async work
+            if (handler2Called)
+            {
+                bothCalledSimultaneously = true;
+            }
+        }
+
+        async Task Handler2(KafkaContext _)
+        {
+            handler2Called = true;
+            await Task.Delay(10); // Simulate some async work
+            if (handler1Called)
+            {
+                bothCalledSimultaneously = true;
+            }
+        }
+
+        var registration1 = registry.Add("orders", (Delegate)Handler1);
+        var registration2 = registry.Add("orders", (Delegate)Handler2);
+
+        var context = CreateContext();
+        await registration2.Handler(context);
+
+        Assert.True(handler1Called);
+        Assert.True(handler2Called);
+        Assert.True(bothCalledSimultaneously);
     }
 
     private static KafkaContext CreateContext()

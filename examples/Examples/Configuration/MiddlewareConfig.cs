@@ -20,6 +20,8 @@ public static class MiddlewareConfig
                 app.MapScalarApiReference("/openapi");
             }
 
+            app.UseAntiforgery();
+
             app.MapFeatures();
 
             return app;

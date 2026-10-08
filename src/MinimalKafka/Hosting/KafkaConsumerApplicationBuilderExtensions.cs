@@ -18,7 +18,7 @@ public static class KafkaConsumerApplicationBuilderExtensions
         /// <returns>A <see cref="TopicBuilder"/> for further topic configuration.</returns>
         public TopicBuilder MapTopic(string topic, Delegate handler)
         {
-            var topicName = builder.ApplicationServices.GetRequiredService<ITopicNameConvention>().Normalize(topic);
+            var topicName = builder.ApplicationServices.GetRequiredService<ITopicNamingConvention>().Apply(topic);
             var registration = builder.ApplicationServices.GetRequiredService<TopicRegistry>()
                 .Add(topicName, handler);
 

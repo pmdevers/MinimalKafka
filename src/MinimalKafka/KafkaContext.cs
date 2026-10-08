@@ -29,7 +29,7 @@ public sealed class KafkaContext(
     public byte[]? Key { get; } = consumeResult.Message.Key;
 
     /// <summary>The message value.</summary>
-    public byte[]? Value { get; } = consumeResult.Message.Value;
+    public byte[]? Value { get; set; } = consumeResult.Message.Value;
 
     /// <summary>The Kafka headers for the message.</summary>
     public Headers Headers => ConsumeResult.Message.Headers;

@@ -12,7 +12,7 @@ internal sealed class KafkaMessageProducer(
     IServiceScopeFactory scopeFactory,
     ILogger<KafkaMessageProducer> logger,
     IKafkaSerializerRegistry serializers,
-    ITopicNameConvention topicNameConvention
+    ITopicNamingConvention topicNameConvention
     ) : IKafkaProducer, IDisposable
 {
     private readonly IProducer<byte[], byte[]> _producer = new ProducerBuilder<byte[], byte[]>(options.Value.CreateProducerConfig())
@@ -33,7 +33,7 @@ internal sealed class KafkaMessageProducer(
         ArgumentNullException.ThrowIfNull(value);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var topicName = topicNameConvention.Normalize(topic);
+        var topicName = topicNameConvention.Apply(topic);
         var messageHeaders = headers ?? [];
 
         // Raw bytes are sent as-is. Other values use the topic format; the schema subject is derived from the physical topic name.

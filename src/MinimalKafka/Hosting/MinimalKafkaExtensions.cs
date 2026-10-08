@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MinimalKafka.Hosting;
 using MinimalKafka.Middleware;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
 using MinimalKafka.Serialization;
+using System.Text.RegularExpressions;
 
 namespace MinimalKafka;
 
@@ -21,9 +23,11 @@ public static class MinimalKafkaExtensions
         {
             services.AddOptions<KafkaConsumerOptions>();
             services.AddOptions<SerializationOptions>();
+            services.AddOptions<TopicNamingOptions>();
+
             services.TryAddSingleton<IKafkaSerializerRegistry, MessageSerializerRegistry>();
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IKafkaSerializer, JsonMessageSerializer>());
-            services.TryAddSingleton<ITopicNameConvention, IdentityTopicNameConvention>();
+            services.TryAddSingleton<ITopicNamingConvention, TopicNamingConvention>();
             services.TryAddSingleton<TopicRegistry>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
@@ -100,13 +104,14 @@ public static class MinimalKafkaExtensions
         }
 
         /// <summary>Sets the topic naming convention used for both consumer registrations and producer calls.</summary>
-        /// <param name="convention">A delegate that maps logical topic names to physical Kafka topic names.</param>
+        /// <param name="configure"></param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithTopicNameConvention(Func<string, string> convention)
+        public IMinimalKafkaBuilder WithTopicNaming(Action<TopicNamingOptions>? configure = null)
         {
-            ArgumentNullException.ThrowIfNull(convention);
-            builder.Services.RemoveAll<ITopicNameConvention>();
-            builder.Services.AddSingleton<ITopicNameConvention>(new DelegatingTopicNameConvention(convention));
+            if (configure is not null)
+            {
+                builder.Services.Configure(configure);
+            }
             return builder;
         }
 
@@ -179,23 +184,79 @@ public static class MinimalKafkaExtensions
     }
 }
 
-internal interface ITopicNameConvention
+internal interface ITopicNamingConvention
 {
-    string Normalize(string topic);
+    string Apply(string topic);
 }
 
-internal sealed class IdentityTopicNameConvention : ITopicNameConvention
+/// <summary>Options that control how logical topic names are converted to physical Kafka topic names.</summary>
+public sealed class TopicNamingOptions
 {
-    public string Normalize(string topic)
+    /// <summary>Prepended to every topic, for example "prod." or "team-orders.".</summary>
+    public string? Prefix { get; set; }
+
+    /// <summary>Appended to every topic.</summary>
+    public string? Suffix { get; set; }
+
+    /// <summary>Lower-cases the logical name before the prefix and suffix are added.</summary>
+    public bool Lowercase { get; set; }
+
+    /// <summary>Replaces <see cref="char"/> separators in the logical name, for example '_' with '.'.</summary>
+    public Dictionary<char, char> ReplaceCharacters { get; } = [];
+
+    /// <summary>Runs on the logical name before the prefix and suffix are added.</summary>
+    public Func<string, string>? Transform { get; set; }
+
+    /// <summary>Logical names for which no convention is applied, such as topics owned by another team.</summary>
+    public HashSet<string> Exclude { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>When set, a resulting name that does not match is rejected. Kafka allows only [a-zA-Z0-9._-].</summary>
+    public string ValidationPattern { get; set; } = "^[a-zA-Z0-9._-]{1,249}$";
+}
+
+internal sealed class TopicNamingConvention(IOptions<TopicNamingOptions> options) : ITopicNamingConvention
+{
+    private readonly TopicNamingOptions _options = options.Value;
+    private readonly Regex? _validation = string.IsNullOrEmpty(options.Value.ValidationPattern)
+        ? null
+        : new Regex(options.Value.ValidationPattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
+    public string Apply(string topic)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
-        return topic.ToLowerInvariant();
+        if (_options.Exclude.Contains(topic))
+        {
+            return topic;
+        }
+
+        var name = topic;
+        foreach (var (from, to) in _options.ReplaceCharacters)
+        {
+            name = name.Replace(from, to);
+        }
+        if (_options.Lowercase)
+        {
+            name = name.ToLowerInvariant();
+        }
+        if (_options.Transform is not null)
+        {
+            name = _options.Transform(name);
+        }
+        name = _options.Prefix + name + _options.Suffix;
+
+        if (_validation is not null && !_validation.IsMatch(name))
+        {
+            throw new InvalidOperationException(
+                $"Topic '{topic}' resolves to '{name}', which violates the naming convention.");
+        }
+        return name;
     }
 }
 
-internal sealed class DelegatingTopicNameConvention(Func<string, string> convention) : ITopicNameConvention
+
+internal sealed class DelegatingTopicNameConvention(Func<string, string> convention) : ITopicNamingConvention
 {
-    public string Normalize(string topic)
+    public string Apply(string topic)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
         var value = convention(topic);
