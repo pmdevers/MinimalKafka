@@ -6,7 +6,7 @@ using System.Runtime.ExceptionServices;
 namespace MinimalKafka.Serialization;
 
 /// <summary>Adapts Confluent's generic, schema registry based serializers to runtime types.</summary>
-internal abstract class SchemaRegistryMessageSerializer : IMessageSerializer
+internal abstract class SchemaRegistryMessageSerializer : IKafkaSerializer
 {
     private readonly ConcurrentDictionary<Type, IKafkaSerializer> _adapters = new();
 

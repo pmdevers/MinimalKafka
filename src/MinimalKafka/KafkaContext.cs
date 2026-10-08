@@ -14,22 +14,22 @@ public delegate Task ConsumerDelegate(KafkaContext context);
 /// <param name="requestServices">The service provider scoped to the handler invocation.</param>
 /// <param name="cancellationToken">The token used to cancel processing.</param>
 public sealed class KafkaContext(
-    ConsumeResult<string, byte[]> consumeResult,
-    IMessageProducer producer,
+    ConsumeResult<byte[], byte[]> consumeResult,
+    IKafkaProducer producer,
     IServiceProvider requestServices,
     CancellationToken cancellationToken)
 {
     /// <summary>The consumed Kafka result.</summary>
-    public ConsumeResult<string, byte[]> ConsumeResult { get; } = consumeResult;
+    public ConsumeResult<byte[], byte[]> ConsumeResult { get; } = consumeResult;
 
     /// <summary>The topic the message was consumed from.</summary>
-    public string Topic => ConsumeResult.Topic;
+    public string Topic { get; } = consumeResult.Topic;
 
     /// <summary>The optional message key.</summary>
-    public string? Key => ConsumeResult.Message.Key;
+    public byte[]? Key { get; } = consumeResult.Message.Key;
 
     /// <summary>The message value.</summary>
-    public byte[]? Value { get; set; } = consumeResult.Message.Value;
+    public byte[]? Value { get; } = consumeResult.Message.Value;
 
     /// <summary>The Kafka headers for the message.</summary>
     public Headers Headers => ConsumeResult.Message.Headers;
@@ -38,7 +38,7 @@ public sealed class KafkaContext(
     public string? Format { get; internal set; }
 
     /// <summary>The producer available for publishing additional messages.</summary>
-    public IMessageProducer Producer { get; } = producer;
+    public IKafkaProducer Producer { get; } = producer;
 
     /// <summary>The service provider scoped to the handler invocation.</summary>
     public IServiceProvider RequestServices { get; } = requestServices;

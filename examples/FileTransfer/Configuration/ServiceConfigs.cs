@@ -1,5 +1,7 @@
-using FileTransfer.Infrastructure;
+using Confluent.Kafka;
 using MinimalKafka;
+using MinimalKafka.Serialization;
+using System.Text.Json.Serialization;
 
 namespace FileTransfer.Configuration;
 
@@ -16,17 +18,23 @@ public static class ServiceConfigs
             services.AddHealthChecks();
             services.AddAntiforgery();
 
-            services.AddMinimalKafka(config =>
-                {
-                    config.WithConfiguration(builder.Configuration.GetSection("Kafka"));
-
-                    config.WithJsonSerializers(x =>
-                    {
-                        x.PropertyNameCaseInsensitive = true;
-                    });
-                    config.WithInMemoryStore();
-                    config.WithAzureBlobFileStore();
-                });
+            builder.Services.AddMinimalKafka(config =>
+            {
+                config
+                    .WithConfiguration(builder.Configuration.GetSection("Kafka"))
+                    .WithAutoOffsetReset(AutoOffsetReset.Earliest)
+                    .WithPartitionsAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
+                    .WithJsonSerializer(
+                        registry =>
+                        {
+                            registry.Url = "http://localhost:8081";
+                        },
+                        configureSerializer: x =>
+                        {
+                            x.Converters.Add(new JsonStringEnumConverter());
+                        }
+                    );
+            });
 
             logger.ServicesRegistered("Configuration");
 

@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace MinimalKafka.Serialization;
 
-internal sealed class JsonMessageSerializer(IOptions<SerializationOptions> options) : IMessageSerializer
+internal sealed class JsonMessageSerializer(IOptions<SerializationOptions> options) : IKafkaSerializer
 {
     public string Format => MessageFormats.Json;
 

@@ -14,7 +14,7 @@ public delegate Task ProducerDelegate(ProducerContext context);
 /// <param name="cancellationToken">The token used to cancel the operation.</param>
 public sealed class ProducerContext(
     string topic,
-    string? key,
+    byte[] key,
     byte[] value,
     Headers headers,
     CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public sealed class ProducerContext(
             : topic;
 
     /// <summary>The optional message key.</summary>
-    public string? Key { get; set; } = key;
+    public byte[] Key { get; set; } = key;
 
     /// <summary>The serialized message value.</summary>
     public byte[] Value
@@ -42,5 +42,5 @@ public sealed class ProducerContext(
     /// <summary>The token used to cancel the operation.</summary>
     public CancellationToken CancellationToken { get; } = cancellationToken;
 
-    internal DeliveryResult<string, byte[]>? DeliveryResult { get; set; }
+    internal DeliveryResult<byte[], byte[]>? DeliveryResult { get; set; }
 }

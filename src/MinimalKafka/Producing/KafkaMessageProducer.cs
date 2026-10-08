@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MinimalKafka.Serialization;
+using System.Text;
 
 namespace MinimalKafka.Producing;
 
@@ -10,32 +11,51 @@ internal sealed class KafkaMessageProducer(
     IOptions<KafkaConsumerOptions> options,
     IServiceScopeFactory scopeFactory,
     ILogger<KafkaMessageProducer> logger,
-    IMessageSerializerRegistry serializers
-    ) : IMessageProducer, IDisposable
+    IKafkaSerializerRegistry serializers,
+    ITopicNameConvention topicNameConvention
+    ) : IKafkaProducer, IDisposable
 {
-    private readonly IProducer<string, byte[]> _producer = new ProducerBuilder<string, byte[]>(options.Value.CreateProducerConfig())
+    private readonly IProducer<byte[], byte[]> _producer = new ProducerBuilder<byte[], byte[]>(options.Value.CreateProducerConfig())
+            .SetKeySerializer(Serializers.ByteArray)
             .SetValueSerializer(Serializers.ByteArray)
             .Build();
 
-    public async Task<DeliveryResult<string, byte[]>> ProduceAsync<TValue>(
+    public async Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
         string topic,
+        TKey key,
         TValue value,
-        string? key = null,
         Headers? headers = null,
         CancellationToken cancellationToken = default,
         string? format = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
+        ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var topicName = topicNameConvention.Normalize(topic);
         var messageHeaders = headers ?? [];
+
         // Raw bytes are sent as-is. Other values use the topic format; the schema subject is derived from the physical topic name.
-        var payload = value as byte[]
-            ?? await serializers.Get(format)
-                .SerializeAsync(value, topic, messageHeaders, cancellationToken)
-                .ConfigureAwait(false);
-        var context = new ProducerContext(topic, key, payload, messageHeaders, cancellationToken);
+        var keyPayload = key switch
+        {
+            byte[] bytes => bytes,
+            string text => Encoding.UTF8.GetBytes(text),
+            _ => await serializers.Get(format)
+                .SerializeAsync(key, topicName, messageHeaders, cancellationToken)
+                .ConfigureAwait(false)
+        };
+
+        var payload = value switch
+        {
+            byte[] bytes => bytes,
+            string text => Encoding.UTF8.GetBytes(text),
+            _ => await serializers.Get(format)
+                .SerializeAsync(value, topicName, messageHeaders, cancellationToken)
+                .ConfigureAwait(false)
+        };
+
+        var context = new ProducerContext(topicName, keyPayload, payload, messageHeaders, cancellationToken);
 
         await using var scope = scopeFactory.CreateAsyncScope();
         var middleware = scope.ServiceProvider.GetServices<IProducerMiddleware>().ToArray();
@@ -56,9 +76,9 @@ internal sealed class KafkaMessageProducer(
     {
         context.DeliveryResult = await _producer.ProduceAsync(
             context.Topic,
-            new Message<string, byte[]>
+            new Message<byte[], byte[]>
             {
-                Key = context.Key!,
+                Key = context.Key,
                 Value = context.Value,
                 Headers = context.Headers
             },

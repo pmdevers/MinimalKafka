@@ -3,7 +3,7 @@ using Confluent.Kafka;
 namespace MinimalKafka.Serialization;
 
 /// <summary>Converts message values between .NET objects and Kafka payload bytes for one format.</summary>
-public interface IMessageSerializer
+public interface IKafkaSerializer
 {
     /// <summary>The format name, see <see cref="MessageFormats"/>.</summary>
     string Format { get; }
@@ -27,8 +27,8 @@ public interface IMessageSerializer
 }
 
 /// <summary>Resolves message serializers by format name.</summary>
-public interface IMessageSerializerRegistry
+public interface IKafkaSerializerRegistry
 {
     /// <summary>Returns the serializer for <paramref name="format"/>, or the default format when null.</summary>
-    IMessageSerializer Get(string? format);
+    IKafkaSerializer Get(string? format);
 }

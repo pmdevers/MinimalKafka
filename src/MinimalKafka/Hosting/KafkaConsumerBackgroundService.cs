@@ -13,13 +13,13 @@ internal sealed class KafkaConsumerBackgroundService(
     TopicRegistry registry,
     IOptions<KafkaConsumerOptions> options,
     IServiceScopeFactory scopeFactory,
-    IMessageProducer producer,
+    IKafkaProducer producer,
     ILogger<KafkaConsumerBackgroundService> logger) : BackgroundService
 {
     private readonly TopicRegistry _registry = registry;
     private readonly IOptions<KafkaConsumerOptions> _options = options;
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
-    private readonly IMessageProducer _producer = producer;
+    private readonly IKafkaProducer _producer = producer;
     private readonly ILogger<KafkaConsumerBackgroundService> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -90,11 +90,12 @@ internal sealed class KafkaConsumerBackgroundService(
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    private IConsumer<string, byte[]> CreateConsumer()
+    private IConsumer<byte[], byte[]> CreateConsumer()
     {
         var handlers = _options.Value.Handlers;
 
-        return new ConsumerBuilder<string, byte[]>(_options.Value.CreateConsumerConfig())
+        return new ConsumerBuilder<byte[], byte[]>(_options.Value.CreateConsumerConfig())
+            .SetKeyDeserializer(Deserializers.ByteArray)
             .SetValueDeserializer(Deserializers.ByteArray)
             .SetStatisticsHandler((consumer, statistics) => handlers.StatisticsHandler?.Invoke(consumer, statistics))
             .SetErrorHandler((consumer, error) =>

@@ -91,7 +91,7 @@ internal static class HandlerAdapter
 
         if (keyAttribute is not null)
         {
-            return ConvertText(context.Key, type, parameter);
+            return await ConvertKeyAsync(context, type, parameter).ConfigureAwait(false);
         }
 
         if (valueAttribute is not null)
@@ -150,7 +150,38 @@ internal static class HandlerAdapter
             return Encoding.UTF8.GetString(value);
         }
 
-        var serializer = context.RequestServices.GetRequiredService<IMessageSerializerRegistry>().Get(context.Format);
+        var serializer = context.RequestServices.GetRequiredService<IKafkaSerializerRegistry>().Get(context.Format);
+        var result = await serializer
+            .DeserializeAsync(value, type, context.Topic, context.Headers, context.CancellationToken)
+            .ConfigureAwait(false);
+        return result
+            ?? (IsNullable(type)
+                ? null
+                : throw new InvalidOperationException($"Kafka value deserialized to null for handler parameter '{parameter.Name}'."));
+    }
+
+    private static async Task<object?> ConvertKeyAsync(KafkaContext context, Type type, ParameterInfo parameter)
+    {
+        var value = context.Key;
+        if (value is null)
+        {
+            if (IsNullable(type))
+            {
+                return null;
+            }
+            throw new InvalidOperationException($"Kafka value is null for required handler parameter '{parameter.Name}'.");
+        }
+
+        if (type == typeof(byte[]))
+        {
+            return value;
+        }
+        if (type == typeof(string))
+        {
+            return Encoding.UTF8.GetString(value);
+        }
+
+        var serializer = context.RequestServices.GetRequiredService<IKafkaSerializerRegistry>().Get(context.Format);
         var result = await serializer
             .DeserializeAsync(value, type, context.Topic, context.Headers, context.CancellationToken)
             .ConfigureAwait(false);

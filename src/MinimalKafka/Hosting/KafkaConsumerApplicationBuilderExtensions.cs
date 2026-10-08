@@ -4,12 +4,11 @@ using MinimalKafka.Runtime;
 
 namespace MinimalKafka;
 
-/// <summary>
-/// 
-/// </summary>
+/// <summary>Extension methods for mapping Kafka topics in an application builder.</summary>
 public static class KafkaConsumerApplicationBuilderExtensions
 {
-    extension(IApplicationBuilder builder)
+    extension<T>(T builder)
+        where T : IApplicationBuilder
     {
         /// <summary>
         /// Registers a topic handler and returns a builder for topic-specific configuration.
@@ -19,8 +18,9 @@ public static class KafkaConsumerApplicationBuilderExtensions
         /// <returns>A <see cref="TopicBuilder"/> for further topic configuration.</returns>
         public TopicBuilder MapTopic(string topic, Delegate handler)
         {
+            var topicName = builder.ApplicationServices.GetRequiredService<ITopicNameConvention>().Normalize(topic);
             var registration = builder.ApplicationServices.GetRequiredService<TopicRegistry>()
-                .Add(topic, handler);
+                .Add(topicName, handler);
 
             return new TopicBuilder(registration);
         }

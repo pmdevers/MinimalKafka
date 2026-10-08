@@ -1,29 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>4ccc947d-36d3-4464-b8f8-695155c5984f</UserSecretsId>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>4ccc947d-36d3-4464-b8f8-695155c5984f</UserSecretsId>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Aggregate\**" />
-    <Compile Remove="Branch\**" />
-    <Compile Remove="Join\**" />
-    <Content Remove="Aggregate\**" />
-    <Content Remove="Branch\**" />
-    <Content Remove="Join\**" />
-    <EmbeddedResource Remove="Aggregate\**" />
-    <EmbeddedResource Remove="Branch\**" />
-    <EmbeddedResource Remove="Join\**" />
-    <None Remove="Aggregate\**" />
-    <None Remove="Branch\**" />
-    <None Remove="Join\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Aggregate\**" />
+		<Compile Remove="Branch\**" />
+		<Compile Remove="Join\**" />
+		<Content Remove="Aggregate\**" />
+		<Content Remove="Branch\**" />
+		<Content Remove="Join\**" />
+		<EmbeddedResource Remove="Aggregate\**" />
+		<EmbeddedResource Remove="Branch\**" />
+		<EmbeddedResource Remove="Join\**" />
+		<None Remove="Aggregate\**" />
+		<None Remove="Branch\**" />
+		<None Remove="Join\**" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+		<PackageReference Include="Scalar.AspNetCore" />
+		<PackageReference Include="Serilog.Extensions.Logging" />
+		<PackageReference Include="Serilog.Settings.Configuration" />
+		<PackageReference Include="Serilog.Sinks.Console" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
+	</ItemGroup>
 
 </Project>

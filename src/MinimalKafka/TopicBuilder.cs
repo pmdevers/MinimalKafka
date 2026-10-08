@@ -28,8 +28,7 @@ public sealed class TopicBuilder
     public TopicBuilder Use<TMiddleware>(params object[] arguments)
         where TMiddleware : class, IConsumerMiddleware
     {
-        _registration.Middleware.Add(services =>
-            ActivatorUtilities.CreateInstance<TMiddleware>(services, arguments));
+        _registration.Middleware.Add(services => ActivatorUtilities.CreateInstance<TMiddleware>(services, arguments));
         return this;
     }
 
@@ -41,7 +40,9 @@ public sealed class TopicBuilder
     public TopicBuilder Use(Func<KafkaContext, ConsumerDelegate, Task> middleware)
     {
         ArgumentNullException.ThrowIfNull(middleware);
+
         _registration.Middleware.Add(_ => new DelegateMiddleware(middleware));
+
         return this;
     }
 

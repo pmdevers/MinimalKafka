@@ -50,17 +50,17 @@ public sealed class KafkaConsumerOptions
 
 internal sealed class KafkaConsumerHandlers
 {
-    public Action<IConsumer<string, byte[]>, string>? StatisticsHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, string>? StatisticsHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, Error>? ErrorHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, Error>? ErrorHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, LogMessage>? LogHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, LogMessage>? LogHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, List<TopicPartition>>? PartitionsAssignedHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, List<TopicPartition>>? PartitionsAssignedHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, List<TopicPartitionOffset>>? PartitionsLostHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>>? PartitionsLostHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, List<TopicPartitionOffset>>? PartitionsRevokedHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>>? PartitionsRevokedHandler { get; set; }
 
-    public Action<IConsumer<string, byte[]>, string>? OAuthBearerTokenRefreshHandler { get; set; }
+    public Action<IConsumer<byte[], byte[]>, string>? OAuthBearerTokenRefreshHandler { get; set; }
 }
