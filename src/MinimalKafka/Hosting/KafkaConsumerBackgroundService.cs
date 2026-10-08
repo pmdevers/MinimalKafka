@@ -1,6 +1,5 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,30 +9,18 @@ using MinimalKafka.Runtime;
 
 namespace MinimalKafka.Hosting;
 
-internal sealed class KafkaConsumerBackgroundService : BackgroundService
+internal sealed class KafkaConsumerBackgroundService(
+    TopicRegistry registry,
+    IOptions<KafkaConsumerOptions> options,
+    IServiceScopeFactory scopeFactory,
+    IMessageProducer producer,
+    ILogger<KafkaConsumerBackgroundService> logger) : BackgroundService
 {
-    private readonly TopicRegistry _registry;
-    private readonly IOptions<KafkaConsumerOptions> _options;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IMessageProducer _producer;
-    private readonly ITopicNamingConvention? _naming;
-    private readonly ILogger<KafkaConsumerBackgroundService> _logger;
-
-    public KafkaConsumerBackgroundService(
-        TopicRegistry registry,
-        IOptions<KafkaConsumerOptions> options,
-        IServiceScopeFactory scopeFactory,
-        IMessageProducer producer,
-        IEnumerable<ITopicNamingConvention> naming,
-        ILogger<KafkaConsumerBackgroundService> logger)
-    {
-        _registry = registry;
-        _options = options;
-        _scopeFactory = scopeFactory;
-        _producer = producer;
-        _naming = naming.LastOrDefault();
-        _logger = logger;
-    }
+    private readonly TopicRegistry _registry = registry;
+    private readonly IOptions<KafkaConsumerOptions> _options = options;
+    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+    private readonly IMessageProducer _producer = producer;
+    private readonly ILogger<KafkaConsumerBackgroundService> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -47,13 +34,13 @@ internal sealed class KafkaConsumerBackgroundService : BackgroundService
             return;
         }
 
-        using var consumer = new ConsumerBuilder<string, byte[]>(_options.Value.CreateConsumerConfig())
-            .SetValueDeserializer(Deserializers.ByteArray)
-            .Build();
+        using var consumer = CreateConsumer();
         var topics = ResolveTopics();
+
         consumer.Subscribe(topics.Keys);
         _logger.LogInformation("Subscribed Kafka consumer to {Topics}.", string.Join(", ", topics.Keys));
 
+#pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -70,9 +57,11 @@ internal sealed class KafkaConsumerBackgroundService : BackgroundService
                 {
                     Format = registration.Format
                 };
+
                 var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>()
                     .Concat(registration.Middleware.Select(create => create(scope.ServiceProvider)))
                     .ToArray();
+
                 ConsumerDelegate pipeline = registration.Handler;
                 for (var index = middleware.Length - 1; index >= 0; index--)
                 {
@@ -85,8 +74,9 @@ internal sealed class KafkaConsumerBackgroundService : BackgroundService
                 consumer.Commit(result);
             }
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (stoppingToken.IsCancellationRequested)
         {
+            _logger.LogInformation(ex, "Kafka consumer stopped OperationCancleled.");
         }
         catch (Exception exception)
         {
@@ -97,6 +87,49 @@ internal sealed class KafkaConsumerBackgroundService : BackgroundService
         {
             consumer.Close();
         }
+#pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
+    }
+
+    private IConsumer<string, byte[]> CreateConsumer()
+    {
+        var handlers = _options.Value.Handlers;
+
+        return new ConsumerBuilder<string, byte[]>(_options.Value.CreateConsumerConfig())
+            .SetValueDeserializer(Deserializers.ByteArray)
+            .SetStatisticsHandler((consumer, statistics) => handlers.StatisticsHandler?.Invoke(consumer, statistics))
+            .SetErrorHandler((consumer, error) =>
+            {
+
+                if (handlers.ErrorHandler == null)
+                {
+                    var message = $"[{GetLocal(error)}] {error.Code} - {error.Reason}";
+                    _logger.LogError(message);
+
+                    static string GetLocal(Error e)
+                    {
+                        string logVar = string.Empty;
+                        if (e.IsLocalError)
+                        {
+                            logVar = $"{logVar}LOCAL";
+                        }
+                        if (e.IsBrokerError)
+                        {
+                            logVar = $"{logVar}BROKER";
+                        }
+
+                        return logVar;
+                    }
+                }
+
+                handlers.ErrorHandler?.Invoke(consumer, error);
+            })
+
+            .SetLogHandler((consumer, logMessage) => handlers.LogHandler?.Invoke(consumer, logMessage))
+            .SetPartitionsAssignedHandler((consumer, partitions) => handlers.PartitionsAssignedHandler?.Invoke(consumer, partitions))
+            .SetPartitionsLostHandler((consumer, partitions) => handlers.PartitionsLostHandler?.Invoke(consumer, partitions))
+            .SetPartitionsRevokedHandler((consumer, partitions) => handlers.PartitionsRevokedHandler?.Invoke(consumer, partitions))
+            .SetOAuthBearerTokenRefreshHandler((consumer, config) => handlers.OAuthBearerTokenRefreshHandler?.Invoke(consumer, config))
+            .Build();
     }
 
     private Dictionary<string, TopicRegistration> ResolveTopics()
@@ -104,8 +137,8 @@ internal sealed class KafkaConsumerBackgroundService : BackgroundService
         var topics = new Dictionary<string, TopicRegistration>(StringComparer.Ordinal);
         foreach (var registration in _registry.Topics.Values)
         {
-            var name = _naming?.Apply(registration.Topic) ?? registration.Topic;
-            if (!topics.TryAdd(name, registration))
+            var name = registration.Topic;
+            if (!topics.TryAdd(registration.Topic, registration))
             {
                 throw new InvalidOperationException(
                     $"Topics '{topics[name].Topic}' and '{registration.Topic}' both resolve to Kafka topic '{name}'.");

@@ -8,8 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MinimalKafka.Aggregates\MinimalKafka.Aggregates.csproj" />
-    <ProjectReference Include="..\..\src\MinimalKafka.RocksDB\MinimalKafka.RocksDB.csproj" />
+    <Compile Remove="Aggregate\**" />
+    <Compile Remove="Branch\**" />
+    <Compile Remove="Join\**" />
+    <Content Remove="Aggregate\**" />
+    <Content Remove="Branch\**" />
+    <Content Remove="Join\**" />
+    <EmbeddedResource Remove="Aggregate\**" />
+    <EmbeddedResource Remove="Branch\**" />
+    <EmbeddedResource Remove="Join\**" />
+    <None Remove="Aggregate\**" />
+    <None Remove="Branch\**" />
+    <None Remove="Join\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
   </ItemGroup>
 

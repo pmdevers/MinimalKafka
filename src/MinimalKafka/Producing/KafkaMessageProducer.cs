@@ -1,33 +1,21 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MinimalKafka.Serialization;
 
 namespace MinimalKafka.Producing;
 
-internal sealed class KafkaMessageProducer : IMessageProducer, IDisposable
+internal sealed class KafkaMessageProducer(
+    IOptions<KafkaConsumerOptions> options,
+    IServiceScopeFactory scopeFactory,
+    ILogger<KafkaMessageProducer> logger,
+    IMessageSerializerRegistry serializers
+    ) : IMessageProducer, IDisposable
 {
-    private readonly IProducer<string, byte[]> _producer;
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<KafkaMessageProducer> _logger;
-    private readonly IMessageSerializerRegistry _serializers;
-    private readonly ITopicNamingConvention? _naming;
-
-    public KafkaMessageProducer(
-        IOptions<KafkaConsumerOptions> options,
-        IServiceScopeFactory scopeFactory,
-        ILogger<KafkaMessageProducer> logger,
-        IMessageSerializerRegistry serializers,
-        IEnumerable<ITopicNamingConvention> naming)
-    {
-        _serializers = serializers;
-        _naming = naming.LastOrDefault();
-        _producer = new ProducerBuilder<string, byte[]>(options.Value.CreateProducerConfig())
+    private readonly IProducer<string, byte[]> _producer = new ProducerBuilder<string, byte[]>(options.Value.CreateProducerConfig())
             .SetValueSerializer(Serializers.ByteArray)
             .Build();
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-    }
 
     public async Task<DeliveryResult<string, byte[]>> ProduceAsync<TValue>(
         string topic,
@@ -44,12 +32,12 @@ internal sealed class KafkaMessageProducer : IMessageProducer, IDisposable
         var messageHeaders = headers ?? [];
         // Raw bytes are sent as-is. Other values use the topic format; the schema subject is derived from the physical topic name.
         var payload = value as byte[]
-            ?? await _serializers.Get(format)
-                .SerializeAsync(value, _naming?.Apply(topic) ?? topic, messageHeaders, cancellationToken)
+            ?? await serializers.Get(format)
+                .SerializeAsync(value, topic, messageHeaders, cancellationToken)
                 .ConfigureAwait(false);
         var context = new ProducerContext(topic, key, payload, messageHeaders, cancellationToken);
 
-        await using var scope = _scopeFactory.CreateAsyncScope();
+        await using var scope = scopeFactory.CreateAsyncScope();
         var middleware = scope.ServiceProvider.GetServices<IProducerMiddleware>().ToArray();
         ProducerDelegate pipeline = PublishAsync;
         for (var index = middleware.Length - 1; index >= 0; index--)
@@ -76,7 +64,7 @@ internal sealed class KafkaMessageProducer : IMessageProducer, IDisposable
             },
             context.CancellationToken).ConfigureAwait(false);
 
-        _logger.LogDebug(
+        logger.LogDebug(
             "Produced Kafka message to {Topic} partition {Partition} at offset {Offset}.",
             context.DeliveryResult.Topic,
             context.DeliveryResult.Partition,

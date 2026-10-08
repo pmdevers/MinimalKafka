@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace MinimalKafka.Serialization;
 
+/// <summary>Extension methods for configuring message serialization formats.</summary>
 public static class SerializationBuilderExtensions
 {
     /// <summary>Sets the format used for topics and produce calls that do not specify one. JSON is the initial default.</summary>
@@ -17,7 +18,11 @@ public static class SerializationBuilderExtensions
         return builder;
     }
 
-    public static IMinimalKafkaBuilder ConfigureJson(
+    /// <summary>Configures the JSON serializer options used for the JSON message format.</summary>
+    /// <param name="builder">The MinimalKafka builder.</param>
+    /// <param name="configure">Applies configuration to the JSON serializer options.</param>
+    /// <returns>The builder instance.</returns>
+    public static IMinimalKafkaBuilder WithJsonSerializer(
         this IMinimalKafkaBuilder builder,
         Action<System.Text.Json.JsonSerializerOptions> configure)
     {
@@ -28,7 +33,7 @@ public static class SerializationBuilderExtensions
     }
 
     /// <summary>Adds the Avro format using Confluent Schema Registry. Types must be generated Avro classes or GenericRecord.</summary>
-    public static IMinimalKafkaBuilder AddAvro(
+    public static IMinimalKafkaBuilder WithAvroSerializer(
         this IMinimalKafkaBuilder builder,
         Action<SchemaRegistryConfig>? configureRegistry = null,
         Action<AvroSerializerConfig>? configureSerializer = null)
@@ -44,7 +49,7 @@ public static class SerializationBuilderExtensions
     }
 
     /// <summary>Adds the Protobuf format using Confluent Schema Registry. Types must be protoc generated messages.</summary>
-    public static IMinimalKafkaBuilder AddProtobuf(
+    public static IMinimalKafkaBuilder WithProtobufSerializer(
         this IMinimalKafkaBuilder builder,
         Action<SchemaRegistryConfig>? configureRegistry = null,
         Action<ProtobufSerializerConfig>? configureSerializer = null)

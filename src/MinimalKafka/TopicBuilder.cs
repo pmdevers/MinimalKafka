@@ -1,15 +1,19 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Middleware;
 using MinimalKafka.Runtime;
 
 namespace MinimalKafka;
 
+/// <summary>
+/// Builds per-topic consumer configuration, including message format and middleware pipeline.
+/// </summary>
 public sealed class TopicBuilder
 {
     private readonly TopicRegistration _registration;
 
     internal TopicBuilder(TopicRegistration registration) => _registration = registration;
 
+    /// <summary>Gets the Kafka topic name for this builder.</summary>
     public string Topic => _registration.Topic;
 
     /// <summary>Sets the message format used to deserialize values of this topic, see <see cref="Serialization.MessageFormats"/>.</summary>
@@ -29,6 +33,11 @@ public sealed class TopicBuilder
         return this;
     }
 
+    /// <summary>Adds an inline middleware delegate to the topic pipeline.</summary>
+    /// <param name="middleware">
+    /// A delegate that receives the current <see cref="KafkaContext"/> and the next <see cref="ConsumerDelegate"/> in the pipeline.
+    /// </param>
+    /// <returns>The current <see cref="TopicBuilder"/> instance.</returns>
     public TopicBuilder Use(Func<KafkaContext, ConsumerDelegate, Task> middleware)
     {
         ArgumentNullException.ThrowIfNull(middleware);

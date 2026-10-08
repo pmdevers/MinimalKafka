@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace MinimalKafka.Attributes;
 
+/// <summary>Binds a handler parameter from the Kafka message value.</summary>
 [AttributeUsage(AttributeTargets.Parameter)]
 public sealed class FromValueAttribute : Attribute
 {

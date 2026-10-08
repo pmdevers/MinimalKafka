@@ -1,42 +1,31 @@
 using Confluent.Kafka;
-using Microsoft.AspNetCore.Mvc;
 using MinimalKafka;
-using MinimalKafka.Middlewares.DeadletterQueue;
+using MinimalKafka.Attributes;
+using MinimalKafka.Serialization;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMinimalKafka(config =>
- {
-     config
-           .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-           .WithOffsetReset(AutoOffsetReset.Earliest)
-           .WithPartitionAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
-           .WithJsonSerializers(x =>
-           {
-               x.Converters.Add(new JsonStringEnumConverter());
-           })
-           .WithRocksDB(x =>
-           {
-               x.DataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RocksDB");
-           });
+{
+    config
+        .WithConfiguration(builder.Configuration.GetSection("Kafka"))
+        .WithAutoOffsetReset(AutoOffsetReset.Earliest)
+        .WithPartitionsAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
 
- });
+        .WithJsonSerializer(x =>
+        {
+            x.Converters.Add(new JsonStringEnumConverter());
+        });
+});
 
 var app = builder.Build();
 
 
-app.MapTopic("my-topic", ([FromKey] int key, [FromValue] string value) =>
+app.MapTopic("my-topic", async (KafkaContext context, [FromKey] int key, [FromValue] string value) =>
 {
-    throw new NotImplementedException();
-})
-    .WithDeadLetterQueue();
-
-app.MapGet("/{topic}/{partition}/{offset}", (
-    [FromKeyedServices] IDeadLetterResolver deadLetterResolver,
-    [FromRoute] string topic,
-    [FromRoute] int partition,
-    [FromRoute] long offset) => deadLetterResolver.Resolve(topic, partition, offset));
+    await context.Producer.ProduceAsync("other-topic", key, value);
+});
 
 //app.MapJoinExample();
 //app.MapAggregate<Test, Guid, TestCommands>("tests");

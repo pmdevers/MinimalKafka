@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 
 namespace MinimalKafka;
 
@@ -9,31 +9,33 @@ namespace MinimalKafka;
 public sealed class KafkaConsumerOptions
 {
     /// <summary>Settings applied to both the consumer and the producer, such as bootstrap.servers and security.*.</summary>
-    public Dictionary<string, string> Common { get; } = new(StringComparer.Ordinal)
-    {
-        ["bootstrap.servers"] = "localhost:9092"
-    };
+    public Dictionary<string, string> Common { get; set; } = new ClientConfig().ToDictionary();
 
     /// <summary>Consumer-only settings. These override <see cref="Common"/>.</summary>
-    public Dictionary<string, string> Consumer { get; } = new(StringComparer.Ordinal)
+    public Dictionary<string, string> Consumer { get; set; } = new ConsumerConfig()
     {
-        ["group.id"] = "kafka-consumer",
-        ["auto.offset.reset"] = "earliest"
-    };
+        GroupId = AppDomain.CurrentDomain.FriendlyName,
+        ClientId = Environment.MachineName
+    }.ToDictionary();
 
     /// <summary>Producer-only settings. These override <see cref="Common"/>.</summary>
-    public Dictionary<string, string> Producer { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> Producer { get; set; } = new ProducerConfig()
+        .ToDictionary();
+
+    internal KafkaConsumerHandlers Handlers { get; } = new();
 
     internal ConsumerConfig CreateConsumerConfig()
     {
-        var config = new ConsumerConfig(Merge(Consumer));
-        // Offsets are committed explicitly after a message is handled successfully.
-        config.EnableAutoCommit = false;
-        config.EnableAutoOffsetStore = false;
+        var config = new ConsumerConfig(Merge(Consumer.ToDictionary()))
+        {
+            // Offsets are committed explicitly after a message is handled successfully.
+            EnableAutoCommit = false,
+            EnableAutoOffsetStore = false
+        };
         return config;
     }
 
-    internal ProducerConfig CreateProducerConfig() => new(Merge(Producer));
+    internal ProducerConfig CreateProducerConfig() => new(Merge(Producer.ToDictionary()));
 
     private Dictionary<string, string> Merge(Dictionary<string, string> specific)
     {
@@ -44,4 +46,21 @@ public sealed class KafkaConsumerOptions
         }
         return merged;
     }
+}
+
+internal sealed class KafkaConsumerHandlers
+{
+    public Action<IConsumer<string, byte[]>, string>? StatisticsHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, Error>? ErrorHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, LogMessage>? LogHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, List<TopicPartition>>? PartitionsAssignedHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, List<TopicPartitionOffset>>? PartitionsLostHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, List<TopicPartitionOffset>>? PartitionsRevokedHandler { get; set; }
+
+    public Action<IConsumer<string, byte[]>, string>? OAuthBearerTokenRefreshHandler { get; set; }
 }

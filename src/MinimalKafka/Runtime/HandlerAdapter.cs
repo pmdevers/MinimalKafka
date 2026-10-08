@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Attributes;
+using MinimalKafka.Serialization;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -11,9 +12,10 @@ internal static class HandlerAdapter
     public static ConsumerDelegate Create(Delegate handler)
     {
         var method = handler.Method;
-        if (method.ReturnType != typeof(Task))
+        var returnType = method.ReturnType;
+        if (returnType != typeof(Task) && returnType != typeof(void))
         {
-            throw new ArgumentException("A consumer handler must return Task.", nameof(handler));
+            throw new ArgumentException("A consumer handler must return either Task or void.", nameof(handler));
         }
         if (handler.GetInvocationList().Length != 1)
         {
@@ -26,6 +28,8 @@ internal static class HandlerAdapter
             ValidateBinding(parameter);
         }
 
+        var isVoidReturn = returnType == typeof(void);
+
         return async context =>
         {
             var arguments = new object?[parameters.Length];
@@ -35,6 +39,13 @@ internal static class HandlerAdapter
             }
 
             var result = handler.DynamicInvoke(arguments);
+
+            if (isVoidReturn)
+            {
+                // Void handlers are automatically wrapped in a completed Task
+                return;
+            }
+
             if (result is not Task task)
             {
                 throw new InvalidOperationException($"Consumer handler '{method.Name}' did not return a Task.");
