@@ -2,10 +2,12 @@ using Examples.Features.BasicSubscribe;
 using Examples.Features.ClaimCheck;
 using Examples.Features.Movies;
 using Examples.Features.Resilience;
+using Examples.Features.Streams;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using MinimalKafka;
 using MinimalKafka.Middleware.Resilience;
+using MinimalKafka.Stream;
 
 namespace FileTransfer.Features;
 
@@ -37,7 +39,24 @@ public static class FeatureExtentions
 
             var claimsCheck = app.MapGroup("claim-check");
 
-            app.MapPost(UploadFile.Route, UploadFile.Handle);
+            claimsCheck.MapGet("/", UploadFile.GetFiles);
+            claimsCheck.MapPost(UploadFile.Route, UploadFile.Handle);
+            app.MapTopic(UploadFile.Topic, UploadFile.Consumer);
+
+            var stream = app.MapGroup("stream");
+
+            stream.MapPost("/orders", StreamExamples.CreateOrderAsync);
+            stream.MapPost("/payments", StreamExamples.CreatePaymentAsync);
+            stream.MapGet("/results", StreamExamples.GetResults);
+            stream.MapDelete("/results", StreamExamples.ClearResults);
+
+            app.MapStream<Guid, StreamExamples.OrderReceived>(StreamExamples.OrdersTopic)
+                .Join<Guid, StreamExamples.PaymentReceived>(StreamExamples.PaymentsTopic)
+                .OnKey()
+                .Into(StreamExamples.ProcessJoinAsync);
+
+            app.MapStream<Guid, StreamExamples.OrderPaymentSummary>(StreamExamples.ResultsTopic)
+                .Into(StreamExamples.TrackResultAsync);
 
             return app;
         }

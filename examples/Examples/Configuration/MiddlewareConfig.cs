@@ -1,3 +1,4 @@
+using Examples.Features.UI;
 using FileTransfer.Features;
 using Scalar.AspNetCore;
 
@@ -22,7 +23,22 @@ public static class MiddlewareConfig
 
             app.UseAntiforgery();
 
+            var fileProvider = UiOptions.CreateFileProvider();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = fileProvider,
+                RequestPath = ""
+            });
+
             app.MapFeatures();
+
+            app.MapFallback(async context =>
+            {
+                var file = fileProvider.GetFileInfo("index.html");
+                context.Response.ContentType = "text/html";
+                await context.Response.SendFileAsync(file);
+            });
 
             return app;
         }

@@ -9,6 +9,7 @@ using MinimalKafka.Middleware;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
 using MinimalKafka.Serialization;
+using MinimalKafka.Stream;
 using System.Text.RegularExpressions;
 
 namespace MinimalKafka;
@@ -29,6 +30,7 @@ public static class MinimalKafkaExtensions
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IKafkaSerializer, JsonMessageSerializer>());
             services.TryAddSingleton<ITopicNamingConvention, TopicNamingConvention>();
             services.TryAddSingleton<TopicRegistry>();
+            services.TryAddSingleton<IKafkaStoreFactory, InMemoryKafkaStoreFactory>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
 

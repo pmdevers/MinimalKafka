@@ -128,7 +128,7 @@ public class TopicBuilderTests
                 {
                     Key = [],
                     Value = [],
-                    Headers = new Headers()
+                    Headers = []
                 }
             },
             Substitute.For<IKafkaProducer>(),

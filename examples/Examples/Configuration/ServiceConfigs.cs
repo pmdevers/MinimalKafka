@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Examples.Infrastructure.ClaimCheck;
 using MinimalKafka;
 using MinimalKafka.Serialization;
 using System.Text.Json.Serialization;
@@ -17,19 +18,19 @@ public static class ServiceConfigs
             services.AddOpenApi();
             services.AddHealthChecks();
             services.AddAntiforgery();
+            services.AddClaimCheckStorage(builder.Configuration);
 
             services.AddMinimalKafka(config =>
-                {
-                    config
-                        .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-                        .WithAutoOffsetReset(AutoOffsetReset.Earliest)
-                        .WithPartitionsAssignedHandler((_, p) => p.Select(tp => new TopicPartitionOffset(tp, Offset.Beginning)))
-                        .WithJsonSerializer(configureSerializer: x =>
-                        {
-                            x.Converters.Add(new JsonStringEnumConverter());
-                        })
-                        .WithClaimCheck();
-                });
+            {
+                config
+                    .WithConfiguration(builder.Configuration.GetSection("Kafka"))
+                    .WithAutoOffsetReset(AutoOffsetReset.Earliest)
+                    .WithJsonSerializer(configureSerializer: x =>
+                    {
+                        x.Converters.Add(new JsonStringEnumConverter());
+                    })
+                    .WithClaimCheck();
+            });
 
             logger.ServicesRegistered("Configuration");
 

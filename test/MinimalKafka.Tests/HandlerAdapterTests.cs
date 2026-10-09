@@ -21,7 +21,7 @@ public class HandlerAdapterTests
             topic: "orders",
             key: Encoding.UTF8.GetBytes("customer-1"),
             value: Encoding.UTF8.GetBytes("payload"),
-            headers: new Headers { new Header("trace-id", Encoding.UTF8.GetBytes("42")) },
+            headers: [new Header("trace-id", Encoding.UTF8.GetBytes("42"))],
             provider,
             token);
 

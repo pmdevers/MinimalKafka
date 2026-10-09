@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\..\examples\Examples\Examples.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
   </ItemGroup>
   <ItemGroup>
