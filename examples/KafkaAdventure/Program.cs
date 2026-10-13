@@ -16,7 +16,10 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMinimalKafka(x =>
 {
     x.WithConfiguration(builder.Configuration.GetSection("Kafka"))
-    .WithTopicNaming(opt => opt.Suffix = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower())
+     .WithTopicNaming(opt =>
+     {
+         opt.Suffix = $"-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}";
+     })
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
      .WithAutoOffsetReset(AutoOffsetReset.Earliest)
      .WithJsonSerializer(configureSerializer: x =>
@@ -24,6 +27,7 @@ builder.Services.AddMinimalKafka(x =>
          x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
          x.Converters.Add(new JsonStringEnumConverter());
      })
+     .WithConsumerDurationLogging()
      .WithRocksDB();
 });
 

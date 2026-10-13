@@ -3,255 +3,130 @@ POST HTTPs://localhost:63938/locations
 Content-Type: application/json
 
 [
-    {
-        "id": 1,
-        "name": "Chained Monastery",
-        "description": "A ruined place of worship, its halls lined with rusted chains. An ominous altar rests at the center of a secret chamber, whispering dark truths.",
-        "exits": {
-            "north": 4,
-            "south": 5,
-            "east": 3,
-            "west": 2
-        }
-    },
-    {
-        "id": 2,
-        "name": "Hall of Chains",
-        "description": "A corridor where shackles still hang from the walls.",
-        "exits": {
-            "east": 1
-        }
-    },
-    {
-        "id": 3,
-        "name": "Abandoned Courtyard",
-        "description": "Overgrown with weeds, an old statue of a forgotten deity stands here.",
-        "exits": {
-            "west": 1,
-            "north": 6
-        }
-    },
-    {
-        "id": 4,
-        "name": "Monastery Library",
-        "description": "Ancient texts warn of something beneath the land.",
-        "exits": {
-            "south": 1,
-            "north": 7
-        }
-    },
-    {
-        "id": 5,
-        "name": "Underground Cells",
-        "description": "Holding cells filled with skeletal remains.",
-        "exits": {
-            "north": 1,
-            "south": 8
-        }
-    },
-    {
-        "id": 6,
-        "name": "Silent Chapel",
-        "description": "Stained-glass windows depict a forgotten ritual.",
-        "exits": {
-            "south": 3,
-            "east": 9
-        }
-    },
-    {
-        "id": 7,
-        "name": "Bell Tower",
-        "description": "The bell is missing, but something moves in the shadows above.",
-        "exits": {
-            "south": 4
-        }
-    },
-    {
-        "id": 8,
-        "name": "The Hidden Crypt",
-        "description": "Something is scratching from inside a sealed tomb.",
-        "exits": {
-            "north": 5,
-            "east": 10
-        }
-    },
-    {
-        "id": 9,
-        "name": "Cloister Garden",
-        "description": "A once-beautiful garden, now decayed.",
-        "exits": {
-            "west": 6
-        }
-    },
-    {
-        "id": 10,
-        "name": "Graveyard",
-        "description": "Graves are disturbed, with claw marks on some coffins.",
-        "exits": {
-            "west": 8,
-            "south": 11
-        }
-    },
-    {
-        "id": 11,
-        "name": "Broken Bridge",
-        "description": "The way forward has collapsed, but a rope dangles nearby.",
-        "exits": {
-            "north": 10,
-            "south": 12
-        }
-    },
-    {
-        "id": 12,
-        "name": "Cave Entrance",
-        "description": "A hidden tunnel leading beneath the monastery.",
-        "exits": {
-            "north": 11,
-            "east": 13
-        }
-    },
-    {
-        "id": 13,
-        "name": "Flooded Passage",
-        "description": "Water rises up to your knees.",
-        "exits": {
-            "west": 12,
-            "south": 14
-        }
-    },
-    {
-        "id": 14,
-        "name": "The Labyrinthine Corridors",
-        "description": "Twisting passages with no clear way forward.",
-        "exits": {
-            "north": 13,
-            "south": 15
-        }
-    },
-    {
-        "id": 15,
-        "name": "The Chained Monastery (Secret Room)",
-        "description": "A secret room with an ominous altar at its center.",
-        "exits": {
-            "north": 14,
-            "south": 16
-        }
-    },
-    {
-        "id": 16,
-        "name": "The Abyssal Rift",
-        "description": "A bottomless pit, whispering your name.",
-        "exits": {
-            "north": 15
-        }
-    },
-    {
-        "id": 17,
-        "name": "The Ruined Stable",
-        "description": "Old horseshoes litter the ground.",
-        "exits": {
-            "east": 18
-        }
-    },
-    {
-        "id": 18,
-        "name": "The Old Well",
-        "description": "A faint voice calls from below.",
-        "exits": {
-            "west": 17
-        }
-    },
-    {
-        "id": 19,
-        "name": "The Whispering Woods",
-        "description": "Trees murmur in unknown tongues.",
-        "exits": {
-            "north": 20
-        }
-    },
-    {
-        "id": 20,
-        "name": "The Fog-Covered Path",
-        "description": "Visibility is near zero.",
-        "exits": {
-            "south": 19,
-            "east": 21
-        }
-    },
-    {
-        "id": 21,
-        "name": "The Ruined Chapel",
-        "description": "Candles burn, though the place is deserted.",
-        "exits": {
-            "west": 20,
-            "north": 22
-        }
-    },
-    {
-        "id": 22,
-        "name": "The Shadow Grove",
-        "description": "Sunlight never reaches this place.",
-        "exits": {
-            "south": 21
-        }
-    },
-    {
-        "id": 23,
-        "name": "The Forbidden Staircase",
-        "description": "A path leading underground.",
-        "exits": {
-            "north": 24
-        }
-    },
-    {
-        "id": 24,
-        "name": "The Endless Hallway",
-        "description": "No matter how far you walk, the doors remain the same.",
-        "exits": {
-            "south": 23,
-            "east": 25
-        }
-    },
-    {
-        "id": 25,
-        "name": "The Hidden Observatory",
-        "description": "A celestial map points to an ancient power.",
-        "exits": {
-            "west": 24
-        }
-    },
-    {
-        "id": 26,
-        "name": "The Chamber of Echoes",
-        "description": "Voices repeat your every word.",
-        "exits": {
-            "north": 27
-        }
-    },
-    {
-        "id": 27,
-        "name": "The Eldritch Altar",
-        "description": "The culmination of the monastery\u2019s dark history.",
-        "exits": {
-            "south": 26,
-            "east": 28
-        }
-    },
-    {
-        "id": 28,
-        "name": "The Door of Chains",
-        "description": "Sealed with runes, it requires something\u2026 or someone.",
-        "exits": {
-            "west": 27,
-            "north": 29
-        }
-    },
-    {
-        "id": 29,
-        "name": "The Final Chamber",
-        "description": "A choice must be made: seal the darkness or embrace it?",
-        "exits": {
-            "south": 28
-        }
+  {
+    "id": 1,
+    "name": "Shipwreck Beach",
+    "description": "You wake on cold sand among splintered planks. A lighthouse looms on the cliffs above, its lamp dark for decades.",
+    "exits": {
+      "stairs": 6,
+      "pools": 3,
+      "hut": 2
     }
+  },
+  {
+    "id": 2,
+    "name": "Fisherman's Hut",
+    "description": "A sagging shack filled with torn nets. A logbook on the table ends mid-sentence.",
+    "exits": {
+      "beach": 1
+    }
+  },
+  {
+    "id": 3,
+    "name": "Tide Pools",
+    "description": "Strange pale creatures drift in the pools, turning to watch you pass.",
+    "exits": {
+      "beach": 1,
+      "cave": 4
+    }
+  },
+  {
+    "id": 4,
+    "name": "Sea Cave",
+    "description": "Waves boom against the walls. Carved symbols glow faintly beneath the waterline.",
+    "exits": {
+      "pools": 3,
+      "tunnel": 5
+    }
+  },
+  {
+    "id": 5,
+    "name": "Smugglers' Tunnel",
+    "description": "A narrow passage lined with rotting crates, sloping upward into darkness.",
+    "exits": {
+      "cave": 4,
+      "cellar": 10
+    }
+  },
+  {
+    "id": 6,
+    "name": "Cliffside Stairs",
+    "description": "Slick stone steps wind up the cliff face. The wind tries to pull you over the edge.",
+    "exits": {
+      "beach": 1,
+      "cottage": 7
+    }
+  },
+  {
+    "id": 7,
+    "name": "Keeper's Cottage",
+    "description": "A cold hearth and a portrait of the keeper, whose eyes have been scratched out.",
+    "exits": {
+      "stairs": 6,
+      "lighthouse": 9,
+      "cemetery": 8
+    }
+  },
+  {
+    "id": 8,
+    "name": "Overgrown Cemetery",
+    "description": "Every headstone bears the same date. One grave lies open and empty.",
+    "exits": {
+      "cottage": 7
+    }
+  },
+  {
+    "id": 9,
+    "name": "Lighthouse Base",
+    "description": "An iron door hangs open. A spiral staircase climbs upward; a trapdoor leads down.",
+    "exits": {
+      "cottage": 7,
+      "staircase": 11,
+      "cellar": 10
+    }
+  },
+  {
+    "id": 10,
+    "name": "Lighthouse Cellar",
+    "description": "Barrels of lamp oil and a sealed chest stamped with the keeper's crest.",
+    "exits": {
+      "lighthouse": 9,
+      "tunnel": 5
+    }
+  },
+  {
+    "id": 11,
+    "name": "Spiral Staircase",
+    "description": "The steps groan beneath you. Footprints of wet sand lead up ahead of you.",
+    "exits": {
+      "lighthouse": 9,
+      "watchroom": 12
+    }
+  },
+  {
+    "id": 12,
+    "name": "Watch Room",
+    "description": "Charts of the coast cover the walls, each marking a ship that never arrived.",
+    "exits": {
+      "staircase": 11,
+      "lantern": 13
+    }
+  },
+  {
+    "id": 13,
+    "name": "Lantern Room",
+    "description": "The great lens is cracked. Something beneath the sea seems to wait for the light.",
+    "exits": {
+      "watchroom": 12,
+      "gallery": 14
+    }
+  },
+  {
+    "id": 14,
+    "name": "Gallery Walkway",
+    "description": "A railing circles the tower. Far below, a shape rises from the waves.",
+    "exits": {
+      "lantern": 13
+    }
+  }
 ]

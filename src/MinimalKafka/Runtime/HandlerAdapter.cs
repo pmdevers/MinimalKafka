@@ -23,19 +23,15 @@ internal static class HandlerAdapter
         }
 
         var parameters = method.GetParameters();
-        foreach (var parameter in parameters)
-        {
-            ValidateBinding(parameter);
-        }
-
+        var bindings = BuildBindings(parameters);
         var isVoidReturn = returnType == typeof(void);
 
         return async context =>
         {
-            var arguments = new object?[parameters.Length];
-            for (var index = 0; index < parameters.Length; index++)
+            var arguments = new object?[bindings.Length];
+            for (var index = 0; index < bindings.Length; index++)
             {
-                arguments[index] = await BindAsync(parameters[index], context).ConfigureAwait(false);
+                arguments[index] = await BindAsync(bindings[index], context).ConfigureAwait(false);
             }
 
             var result = handler.DynamicInvoke(arguments);
@@ -55,79 +51,156 @@ internal static class HandlerAdapter
         };
     }
 
-    private static async ValueTask<object?> BindAsync(ParameterInfo parameter, KafkaContext context)
+    private static BindingPlan[] BuildBindings(ParameterInfo[] parameters)
     {
+        var bindings = new BindingPlan[parameters.Length];
+        var hasExplicitKey = false;
+        var hasExplicitValue = false;
+
+        for (var index = 0; index < parameters.Length; index++)
+        {
+            var parameter = parameters[index];
+            if (parameter.ParameterType == typeof(KafkaContext))
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.KafkaContext, null);
+                continue;
+            }
+
+            if (parameter.ParameterType == typeof(CancellationToken))
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.CancellationToken, null);
+                continue;
+            }
+
+            if (parameter.IsDefined(typeof(FromKeyAttribute)))
+            {
+                hasExplicitKey = true;
+            }
+
+            if (parameter.IsDefined(typeof(FromValueAttribute)))
+            {
+                hasExplicitValue = true;
+            }
+        }
+
+        var implicitKeyAssigned = false;
+        var implicitValueAssigned = false;
+
+        for (var index = 0; index < parameters.Length; index++)
+        {
+            var parameter = parameters[index];
+            var type = parameter.ParameterType;
+            if (type == typeof(KafkaContext))
+            {
+                continue;
+            }
+
+            if (type == typeof(CancellationToken))
+            {
+                continue;
+            }
+
+            var serviceAttribute = parameter.GetCustomAttribute<FromServicesAttribute>();
+            var keyAttribute = parameter.GetCustomAttribute<FromKeyAttribute>();
+            var valueAttribute = parameter.GetCustomAttribute<FromValueAttribute>();
+            var headerAttribute = parameter.GetCustomAttribute<FromHeaderAttribute>();
+            var bindingCount = (serviceAttribute is null ? 0 : 1)
+                + (keyAttribute is null ? 0 : 1)
+                + (valueAttribute is null ? 0 : 1)
+                + (headerAttribute is null ? 0 : 1);
+
+            if (bindingCount > 1)
+            {
+                throw new ArgumentException(
+                    $"Handler parameter '{parameter.Name}' must have exactly one binding attribute, except KafkaContext and CancellationToken.");
+            }
+
+            if (headerAttribute is not null && string.IsNullOrWhiteSpace(headerAttribute.Name))
+            {
+                throw new ArgumentException($"Handler parameter '{parameter.Name}' must specify a Kafka header name.");
+            }
+
+            if (serviceAttribute is not null)
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Services, null);
+                continue;
+            }
+
+            if (keyAttribute is not null)
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Key, null);
+                continue;
+            }
+
+            if (valueAttribute is not null)
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Value, null);
+                continue;
+            }
+
+            if (headerAttribute is not null)
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Header, headerAttribute);
+                continue;
+            }
+
+            if (!hasExplicitKey && !implicitKeyAssigned && string.Equals(parameter.Name, "key", StringComparison.OrdinalIgnoreCase))
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Key, null);
+                implicitKeyAssigned = true;
+                continue;
+            }
+
+            if (!hasExplicitValue && !implicitValueAssigned && string.Equals(parameter.Name, "value", StringComparison.OrdinalIgnoreCase))
+            {
+                bindings[index] = new BindingPlan(parameter, BindingKind.Value, null);
+                implicitValueAssigned = true;
+                continue;
+            }
+
+            bindings[index] = new BindingPlan(parameter, BindingKind.Services, null);
+        }
+
+        return bindings;
+    }
+
+    private static async ValueTask<object?> BindAsync(BindingPlan binding, KafkaContext context)
+    {
+        var parameter = binding.Parameter;
         var type = parameter.ParameterType;
-        if (type == typeof(KafkaContext))
+        return binding.Kind switch
         {
-            return context;
-        }
-
-        if (type == typeof(CancellationToken))
-        {
-            return context.CancellationToken;
-        }
-
-        var serviceAttribute = parameter.GetCustomAttribute<FromServicesAttribute>();
-        var keyAttribute = parameter.GetCustomAttribute<FromKeyAttribute>();
-        var valueAttribute = parameter.GetCustomAttribute<FromValueAttribute>();
-        var headerAttribute = parameter.GetCustomAttribute<FromHeaderAttribute>();
-        var bindingCount = (serviceAttribute is null ? 0 : 1)
-            + (keyAttribute is null ? 0 : 1)
-            + (valueAttribute is null ? 0 : 1)
-            + (headerAttribute is null ? 0 : 1);
-        if (bindingCount != 1)
-        {
-            throw new InvalidOperationException(
-                $"Handler parameter '{parameter.Name}' must have exactly one binding attribute, except KafkaContext and CancellationToken.");
-        }
-
-        if (serviceAttribute is not null)
-        {
-            return context.RequestServices.GetService(type)
+            BindingKind.KafkaContext => context,
+            BindingKind.CancellationToken => context.CancellationToken,
+            BindingKind.Services => context.RequestServices.GetService(type)
                 ?? throw new InvalidOperationException(
-                    $"Service '{type.FullName}' required by handler parameter '{parameter.Name}' is not registered.");
-        }
+                    $"Service '{type.FullName}' required by handler parameter '{parameter.Name}' is not registered."),
+            BindingKind.Key => await ConvertKeyAsync(context, type, parameter).ConfigureAwait(false),
+            BindingKind.Value => await ConvertValueAsync(context, type, parameter).ConfigureAwait(false),
+            BindingKind.Header => ConvertHeader(context, binding.Header!, type, parameter),
+            _ => throw new InvalidOperationException($"Unsupported binding kind '{binding.Kind}'."),
+        };
+    }
 
-        if (keyAttribute is not null)
-        {
-            return await ConvertKeyAsync(context, type, parameter).ConfigureAwait(false);
-        }
-
-        if (valueAttribute is not null)
-        {
-            return await ConvertValueAsync(context, type, parameter).ConfigureAwait(false);
-        }
-
-        var header = context.Headers.LastOrDefault(item => item.Key == headerAttribute!.Name);
+    private static object? ConvertHeader(KafkaContext context, FromHeaderAttribute headerAttribute, Type type, ParameterInfo parameter)
+    {
+        var header = context.Headers.LastOrDefault(item => item.Key == headerAttribute.Name);
         var headerValue = header?.GetValueBytes();
         var text = headerValue is null ? null : Encoding.UTF8.GetString(headerValue);
         return ConvertText(text, type, parameter);
     }
 
-    private static void ValidateBinding(ParameterInfo parameter)
+    private enum BindingKind
     {
-        var type = parameter.ParameterType;
-        if (type == typeof(KafkaContext) || type == typeof(CancellationToken))
-        {
-            return;
-        }
-
-        var services = parameter.IsDefined(typeof(FromServicesAttribute));
-        var key = parameter.IsDefined(typeof(FromKeyAttribute));
-        var value = parameter.IsDefined(typeof(FromValueAttribute));
-        var header = parameter.GetCustomAttribute<FromHeaderAttribute>();
-        var bindingCount = (services ? 1 : 0) + (key ? 1 : 0) + (value ? 1 : 0) + (header is null ? 0 : 1);
-        if (bindingCount != 1)
-        {
-            throw new ArgumentException(
-                $"Handler parameter '{parameter.Name}' must have exactly one binding attribute, except KafkaContext and CancellationToken.");
-        }
-        if (header is not null && string.IsNullOrWhiteSpace(header.Name))
-        {
-            throw new ArgumentException($"Handler parameter '{parameter.Name}' must specify a Kafka header name.");
-        }
+        KafkaContext,
+        CancellationToken,
+        Services,
+        Key,
+        Value,
+        Header
     }
+
+    private readonly record struct BindingPlan(ParameterInfo Parameter, BindingKind Kind, FromHeaderAttribute? Header);
 
     private static async Task<object?> ConvertValueAsync(KafkaContext context, Type type, ParameterInfo parameter)
     {

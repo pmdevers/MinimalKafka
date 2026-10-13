@@ -1,0 +1,128 @@
+[
+  {
+    "id": 1,
+    "name": "Shipwreck Beach",
+    "description": "You wake on cold sand among splintered planks. A lighthouse looms on the cliffs above, its lamp dark for decades.",
+    "exits": {
+      "stairs": 6,
+      "pools": 3,
+      "hut": 2
+    }
+  },
+  {
+    "id": 2,
+    "name": "Fisherman's Hut",
+    "description": "A sagging shack filled with torn nets. A logbook on the table ends mid-sentence.",
+    "exits": {
+      "beach": 1
+    }
+  },
+  {
+    "id": 3,
+    "name": "Tide Pools",
+    "description": "Strange pale creatures drift in the pools, turning to watch you pass.",
+    "exits": {
+      "beach": 1,
+      "cave": 4
+    }
+  },
+  {
+    "id": 4,
+    "name": "Sea Cave",
+    "description": "Waves boom against the walls. Carved symbols glow faintly beneath the waterline.",
+    "exits": {
+      "pools": 3,
+      "tunnel": 5
+    }
+  },
+  {
+    "id": 5,
+    "name": "Smugglers' Tunnel",
+    "description": "A narrow passage lined with rotting crates, sloping upward into darkness.",
+    "exits": {
+      "cave": 4,
+      "cellar": 10
+    }
+  },
+  {
+    "id": 6,
+    "name": "Cliffside Stairs",
+    "description": "Slick stone steps wind up the cliff face. The wind tries to pull you over the edge.",
+    "exits": {
+      "beach": 1,
+      "cottage": 7
+    }
+  },
+  {
+    "id": 7,
+    "name": "Keeper's Cottage",
+    "description": "A cold hearth and a portrait of the keeper, whose eyes have been scratched out.",
+    "exits": {
+      "stairs": 6,
+      "lighthouse": 9,
+      "cemetery": 8
+    }
+  },
+  {
+    "id": 8,
+    "name": "Overgrown Cemetery",
+    "description": "Every headstone bears the same date. One grave lies open and empty.",
+    "exits": {
+      "cottage": 7
+    }
+  },
+  {
+    "id": 9,
+    "name": "Lighthouse Base",
+    "description": "An iron door hangs open. A spiral staircase climbs upward; a trapdoor leads down.",
+    "exits": {
+      "cottage": 7,
+      "staircase": 11,
+      "cellar": 10
+    }
+  },
+  {
+    "id": 10,
+    "name": "Lighthouse Cellar",
+    "description": "Barrels of lamp oil and a sealed chest stamped with the keeper's crest.",
+    "exits": {
+      "lighthouse": 9,
+      "tunnel": 5
+    }
+  },
+  {
+    "id": 11,
+    "name": "Spiral Staircase",
+    "description": "The steps groan beneath you. Footprints of wet sand lead up ahead of you.",
+    "exits": {
+      "lighthouse": 9,
+      "watchroom": 12
+    }
+  },
+  {
+    "id": 12,
+    "name": "Watch Room",
+    "description": "Charts of the coast cover the walls, each marking a ship that never arrived.",
+    "exits": {
+      "staircase": 11,
+      "lantern": 13
+    }
+  },
+  {
+    "id": 13,
+    "name": "Lantern Room",
+    "description": "The great lens is cracked. Something beneath the sea seems to wait for the light.",
+    "exits": {
+      "watchroom": 12,
+      "gallery": 14
+    }
+  },
+  {
+    "id": 14,
+    "name": "Gallery Walkway",
+    "description": "A railing circles the tower. Far below, a shape rises from the waves.",
+    "exits": {
+      "lantern": 13
+    }
+  }
+]

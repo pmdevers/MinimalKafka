@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MinimalKafka.Hosting;
 using MinimalKafka.Middleware;
+using MinimalKafka.Middleware.Diagnostics;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
 using MinimalKafka.Serialization;
@@ -174,6 +175,12 @@ public static class MinimalKafkaExtensions
         {
             builder.Services.AddScoped<IConsumerMiddleware, TMiddleware>();
             return builder;
+        }
+
+        /// <summary>Adds a consumer middleware that logs how long each message took to process.</summary>
+        public IMinimalKafkaBuilder WithConsumerDurationLogging()
+        {
+            return UseConsumerMiddleware<ConsumerDurationMiddleware>(builder);
         }
 
         /// <summary>Adds a producer middleware. Middleware runs in the order it is added.</summary>

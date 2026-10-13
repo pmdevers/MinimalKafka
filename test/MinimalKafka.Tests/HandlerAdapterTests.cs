@@ -37,6 +37,29 @@ public class HandlerAdapterTests
     }
 
     [Fact]
+    public async Task Create_ShouldFallback_To_Key_Value_And_Services_When_Attributes_Are_Missing()
+    {
+        var services = new ServiceCollection();
+        var state = new HandlerState();
+        services.AddSingleton(state);
+        var provider = services.BuildServiceProvider();
+        var context = CreateContext(
+            topic: "orders",
+            key: Encoding.UTF8.GetBytes("customer-1"),
+            value: Encoding.UTF8.GetBytes("payload"),
+            headers: [],
+            provider,
+            CancellationToken.None);
+
+        var sut = HandlerAdapter.Create(ImplicitHandle);
+
+        await sut(context);
+
+        Assert.Equal("customer-1", state.Key);
+        Assert.Equal("payload", state.Value);
+    }
+
+    [Fact]
     public void Create_ShouldThrow_When_Handler_Returns_Unsupported_Type()
     {
         var exception = Assert.Throws<ArgumentException>(() => HandlerAdapter.Create((Func<Task<int>>)BadHandler));
@@ -65,6 +88,13 @@ public class HandlerAdapterTests
         state.TraceId = traceId;
         state.Context = context;
         state.CancellationToken = cancellationToken;
+        return Task.CompletedTask;
+    }
+
+    private static Task ImplicitHandle(string key, string value, HandlerState state)
+    {
+        state.Key = key;
+        state.Value = value;
         return Task.CompletedTask;
     }
 

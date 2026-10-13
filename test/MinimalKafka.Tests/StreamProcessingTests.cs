@@ -135,6 +135,50 @@ public class StreamProcessingTests
     }
 
     [Fact]
+    public async Task MapStream_Join_OnPredicate_WithoutKeyParameter_ShouldSupportDifferentCurrentKeyTypes()
+    {
+        var provider = BuildServiceProvider(out _);
+        IApplicationBuilder app = new ApplicationBuilder(provider);
+        var registry = provider.GetRequiredService<TopicRegistry>();
+        var results = new List<(string Topic, JoinLocation? Location, JoinPlayerPosition? Position)>();
+
+        app.MapStream<int, JoinLocation>("locations")
+            .InnerJoin<Guid, JoinPlayerPosition>("positions")
+            .On((location, position) => location.Id == position.LocationId)
+            .Into((context, value) =>
+            {
+                results.Add((context.TopicName, value.Item1, value.Item2));
+                return Task.CompletedTask;
+            });
+
+        var location = new JoinLocation(7, "seven");
+        var position = new JoinPlayerPosition(Guid.Parse("99999999-9999-9999-9999-999999999999"), 7);
+
+        await registry.Topics["locations"].Handler(await CreateContextAsync(provider, "locations", location.Id, location));
+        await registry.Topics["positions"].Handler(await CreateContextAsync(provider, "positions", position.PlayerId, position));
+
+        results.Should().HaveCount(1);
+        results[0].Topic.Should().Be("positions");
+        results[0].Location.Should().Be(location);
+        results[0].Position.Should().Be(position);
+    }
+
+    [Fact]
+    public void MapStream_Join_OnPredicate_WithKeyParameter_ShouldThrow_WhenKeyTypesDiffer()
+    {
+        var provider = BuildServiceProvider(out _);
+        IApplicationBuilder app = new ApplicationBuilder(provider);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            app.MapStream<int, JoinLocation>("locations")
+                .InnerJoin<Guid, JoinPlayerPosition>("positions")
+                .On((location, position) => location.Id == position.LocationId)
+                .Into((context, key, value) => Task.CompletedTask));
+
+        exception.Message.Should().Contain("requires both topics to use the same key type");
+    }
+
+    [Fact]
     public async Task MapStream_Join_OnPredicate_ShouldYieldUnmatchedResultForLeftJoin()
     {
         var provider = BuildServiceProvider(out _);
@@ -278,6 +322,10 @@ public class StreamProcessingTests
     private sealed record ValueJoinedOrder(Guid Id, string CustomerCode);
 
     private sealed record ValueJoinedPayment(Guid Id, string CustomerCode, decimal Amount);
+
+    private sealed record JoinLocation(int Id, string Name);
+
+    private sealed record JoinPlayerPosition(Guid PlayerId, int LocationId);
 
     private sealed record RoutedOrder(Guid Id, string Type)
     {

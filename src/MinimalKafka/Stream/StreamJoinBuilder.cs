@@ -200,17 +200,27 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
         public void Into(Func<StreamContext, TKey, (TValue? Item1, TOtherValue? Item2), Task> processor)
         {
             ArgumentNullException.ThrowIfNull(processor);
-            Register(async (streamContext, key, values) => await processor(streamContext, key, values).ConfigureAwait(false));
+            EnsureKeyTypesMatch();
+            Register(true, async (streamContext, key, values) => await processor(streamContext, key, values).ConfigureAwait(false));
         }
 
         /// <summary>Registers a join processor that receives only the joined values.</summary>
         public void Into(Func<StreamContext, (TValue? Item1, TOtherValue? Item2), Task> processor)
         {
             ArgumentNullException.ThrowIfNull(processor);
-            Register(async (streamContext, _, values) => await processor(streamContext, values).ConfigureAwait(false));
+            Register(false, async (streamContext, _, values) => await processor(streamContext, values).ConfigureAwait(false));
         }
 
-        private void Register(Func<StreamContext, TKey, (TValue? Item1, TOtherValue? Item2), Task> processor)
+        private void EnsureKeyTypesMatch()
+        {
+            if (typeof(TKey) != typeof(TOtherKey))
+            {
+                throw new InvalidOperationException(
+                    $"Predicate join overload with a key parameter requires both topics to use the same key type, but '{_leftTopicName}' uses '{typeof(TKey).FullName}' and '{_rightTopicName}' uses '{typeof(TOtherKey).FullName}'.");
+            }
+        }
+
+        private void Register(bool passKey, Func<StreamContext, TKey, (TValue? Item1, TOtherValue? Item2), Task> processor)
         {
             _registry.Add(_leftTopicName, (Func<KafkaContext, Task>)(async context =>
             {
@@ -220,6 +230,7 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
                     currentTopic: _leftTopicName,
                     otherTopic: _rightTopicName,
                     useLeftCurrentValue: true,
+                    passKey,
                     processor).ConfigureAwait(false);
             }));
 
@@ -231,6 +242,7 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
                     currentTopic: _rightTopicName,
                     otherTopic: _leftTopicName,
                     useLeftCurrentValue: false,
+                    passKey,
                     processor).ConfigureAwait(false);
             }));
         }
@@ -240,15 +252,18 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
             string currentTopic,
             string otherTopic,
             bool useLeftCurrentValue,
+            bool passKey,
             Func<StreamContext, TKey, (TValue? Item1, TOtherValue? Item2), Task> processor)
         {
-            var key = await StreamSerialization.DeserializeAsync<TKey>(
-                context.RequestServices,
-                context.Key,
-                currentTopic,
-                context.Headers,
-                ResolveFormat(currentTopic),
-                context.CancellationToken).ConfigureAwait(false);
+            var key = passKey
+                ? await StreamSerialization.DeserializeAsync<TKey>(
+                    context.RequestServices,
+                    context.Key,
+                    currentTopic,
+                    context.Headers,
+                    ResolveFormat(currentTopic),
+                    context.CancellationToken).ConfigureAwait(false)
+                : default;
 
             var currentLeftValue = useLeftCurrentValue
                 ? await StreamSerialization.DeserializeAsync<TValue>(

@@ -4,8 +4,13 @@ const gamewindow = document.getElementById("gamewindow");
 
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/kafka-adventure/input")
+    .withAutomaticReconnect()
     .configureLogging(signalR.LogLevel.Information)
     .build();
+
+const gameId = generateUUID();
+
+connection.on("ReceiveMessage", addResponse);
 
 inputField.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
@@ -23,9 +28,8 @@ function scrollToBottom() {
     bdy.scrollTop = bdy.scrollHeight;
 }
 
-function executeCommand(command) {
-    const gameId = localStorage.getItem('gameid');
-    connection.send("SendMessage", gameId, command);
+async function executeCommand(command) {
+    await connection.send("SendMessage", gameId, command);
 
     const output = document.createElement("p");
     output.innerHTML = `<span class="text-green-500">$</span> ${command}`;
@@ -41,7 +45,12 @@ function addResponse(res) {
 
     function typeWriter() {
         if (i < res.length) {
-            response.innerHTML += res.charAt(i);
+            const c = res.charAt(i);
+            if (c === "\n") {
+                response.innerHTML += "<br>";
+            } else if (c !== "\r") {
+                response.innerHTML += c;
+            }
             i++;
             setTimeout(typeWriter, 10);
         }
@@ -84,22 +93,15 @@ function generateUUID() { // Public Domain/MIT
 
 async function start() {
     try {
-        let gameId = localStorage.getItem('gameid');
-        if (gameId == null) {
-            gameId = generateUUID();
-            localStorage.setItem('gameid', gameId);
-        }
-
         await connection.start();
-        connection.on("ReceiveMessage", addResponse);
-        connection.send("JoinGame", gameId);
+        await connection.invoke("JoinGame", gameId);
     } catch (err) {
         setTimeout(start, 5000);
     }
 };
 
-connection.onclose(async () => {
-    await start();
+connection.onreconnected(async () => {
+    await connection.invoke("JoinGame", gameId);
 });
 
 start();
