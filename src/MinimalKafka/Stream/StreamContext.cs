@@ -33,8 +33,8 @@ public sealed class StreamContext(KafkaContext context)
         TKey key,
         TValue value,
         Headers? headers = null,
-        CancellationToken cancellationToken = default,
-        string? format = null)
+        string? format = null,
+        CancellationToken cancellationToken = default)
     {
         var effectiveCancellationToken = cancellationToken == default ? CancellationToken : cancellationToken;
         return Producer.ProduceAsync(topic, key, value, headers, effectiveCancellationToken, format);

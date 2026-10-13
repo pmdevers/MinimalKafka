@@ -1,5 +1,4 @@
 ﻿using KafkaAdventure.Domain;
-using MinimalKafka;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
@@ -37,6 +36,6 @@ public static class LookProccessor
                    await c.ProduceAsync("game-response", k,
                         new AppResponse(command.Command, $"[{exit.Key}] - {exitLocation?.Description}"));
                }
-           }).WithGroupId("game-look-group");
+           });
     }
 }

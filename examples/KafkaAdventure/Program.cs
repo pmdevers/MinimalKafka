@@ -3,6 +3,7 @@ using KafkaAdventure.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using MinimalKafka;
+using MinimalKafka.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,11 +16,10 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMinimalKafka(x =>
 {
     x.WithConfiguration(builder.Configuration.GetSection("Kafka"))
-     .WithTopicFormatter((topic) => $"{topic}-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}")
+    .WithTopicNaming(opt => opt.Suffix = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower())
      .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
-     .WithOffsetReset(AutoOffsetReset.Earliest)
-
-     .WithJsonSerializers(x =>
+     .WithAutoOffsetReset(AutoOffsetReset.Earliest)
+     .WithJsonSerializer(configureSerializer: x =>
      {
          x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
          x.Converters.Add(new JsonStringEnumConverter());

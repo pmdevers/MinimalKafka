@@ -10,7 +10,7 @@ public static class HelpProcessor
     {
         builder.MapTopic("game-help", async (KafkaContext context, Guid key, AppCommand value) =>
         {
-            await context.ProduceAsync("game-response", key,
+            await context.Producer.ProduceAsync("game-response", key,
                 new AppResponse(value.Command, "Commands: go [north/south/east/west], look, take [item], inventory"));
         });
     }

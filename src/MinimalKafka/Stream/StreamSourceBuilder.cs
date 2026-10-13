@@ -107,6 +107,13 @@ public sealed class StreamSourceBuilder<TKey, TValue>
         });
     }
 
+    /// <summary>Materializes the consumed messages into the specified store topic.</summary>
+    public void ToTable(string topic)
+    {
+        var topicName = ResolveTopic(topic);
+        Register(context => StoreCurrentMessageAsync(context, topicName));
+    }
+
     private void Register(Func<KafkaContext, Task> handler)
     {
         _registry.Add(_topicName, handler);
@@ -118,15 +125,23 @@ public sealed class StreamSourceBuilder<TKey, TValue>
         return _builder.ApplicationServices.GetRequiredService<ITopicNamingConvention>().Apply(topic);
     }
 
-    internal static async Task StoreCurrentMessageAsync(KafkaContext context)
+    internal static Task StoreCurrentMessageAsync(KafkaContext context)
     {
+        return StoreCurrentMessageAsync(context, context.Topic);
+    }
+
+    internal static async Task StoreCurrentMessageAsync(KafkaContext context, string topicName)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentException.ThrowIfNullOrWhiteSpace(topicName);
+
         if (context.Key is null || context.Value is null)
         {
             return;
         }
 
         var storeFactory = context.RequestServices.GetRequiredService<IKafkaStoreFactory>();
-        var store = storeFactory.GetStore(context.Topic);
+        var store = storeFactory.GetStore(topicName);
         await store.AddOrUpdate(context.Key, context.Value).ConfigureAwait(false);
     }
 }

@@ -75,6 +75,98 @@ public class StreamProcessingTests
     }
 
     [Fact]
+    public async Task MapStream_Join_OnPredicate_ShouldInvokeProcessorFromRightSide()
+    {
+        var provider = BuildServiceProvider(out _);
+        IApplicationBuilder app = new ApplicationBuilder(provider);
+        var registry = provider.GetRequiredService<TopicRegistry>();
+        var results = new List<(Guid Key, ValueJoinedOrder? Order, ValueJoinedPayment? Payment, string Topic)>();
+
+        app.MapStream<Guid, ValueJoinedOrder>("orders")
+            .InnerJoin<Guid, ValueJoinedPayment>("payments")
+            .On((order, payment) => order.CustomerCode == payment.CustomerCode)
+            .Into((context, key, value) =>
+            {
+                results.Add((key, value.Item1, value.Item2, context.TopicName));
+                return Task.CompletedTask;
+            });
+
+        var order = new ValueJoinedOrder(Guid.Parse("44444444-4444-4444-4444-444444444444"), "customer-a");
+        var payment = new ValueJoinedPayment(Guid.Parse("55555555-5555-5555-5555-555555555555"), "customer-a", 25m);
+
+        await registry.Topics["orders"].Handler(await CreateContextAsync(provider, "orders", order.Id, order));
+        await registry.Topics["payments"].Handler(await CreateContextAsync(provider, "payments", payment.Id, payment));
+
+        results.Should().HaveCount(1);
+        results[0].Topic.Should().Be("payments");
+        results[0].Key.Should().Be(payment.Id);
+        results[0].Order.Should().Be(order);
+        results[0].Payment.Should().Be(payment);
+    }
+
+    [Fact]
+    public async Task MapStream_Join_OnPredicate_ShouldInvokeProcessorForEachStoredMatch()
+    {
+        var provider = BuildServiceProvider(out _);
+        IApplicationBuilder app = new ApplicationBuilder(provider);
+        var registry = provider.GetRequiredService<TopicRegistry>();
+        var results = new List<(Guid Key, ValueJoinedOrder? Order, ValueJoinedPayment? Payment, string Topic)>();
+
+        app.MapStream<Guid, ValueJoinedOrder>("orders")
+            .InnerJoin<Guid, ValueJoinedPayment>("payments")
+            .On((order, payment) => order.CustomerCode == payment.CustomerCode)
+            .Into((context, key, value) =>
+            {
+                results.Add((key, value.Item1, value.Item2, context.TopicName));
+                return Task.CompletedTask;
+            });
+
+        var payment1 = new ValueJoinedPayment(Guid.Parse("66666666-6666-6666-6666-666666666666"), "customer-b", 10m);
+        var payment2 = new ValueJoinedPayment(Guid.Parse("77777777-7777-7777-7777-777777777777"), "customer-b", 20m);
+        var order = new ValueJoinedOrder(Guid.Parse("88888888-8888-8888-8888-888888888888"), "customer-b");
+
+        await registry.Topics["payments"].Handler(await CreateContextAsync(provider, "payments", payment1.Id, payment1));
+        await registry.Topics["payments"].Handler(await CreateContextAsync(provider, "payments", payment2.Id, payment2));
+        await registry.Topics["orders"].Handler(await CreateContextAsync(provider, "orders", order.Id, order));
+
+        results.Should().HaveCount(2);
+        results.Should().OnlyContain(result => result.Topic == "orders" && result.Key == order.Id && result.Order == order);
+        results.Select(result => result.Payment).Should().BeEquivalentTo([payment1, payment2]);
+    }
+
+    [Fact]
+    public async Task MapStream_Join_OnPredicate_ShouldYieldUnmatchedResultForLeftJoin()
+    {
+        var provider = BuildServiceProvider(out _);
+        IApplicationBuilder app = new ApplicationBuilder(provider);
+        var registry = provider.GetRequiredService<TopicRegistry>();
+        var results = new List<(Guid Key, ValueJoinedOrder? Order, ValueJoinedPayment? Payment, string Topic)>();
+
+        app.MapStream<Guid, ValueJoinedOrder>("orders")
+            .Join<Guid, ValueJoinedPayment>("payments")
+            .On((order, payment) => order.CustomerCode == payment.CustomerCode)
+            .Into((context, key, value) =>
+            {
+                results.Add((key, value.Item1, value.Item2, context.TopicName));
+                return Task.CompletedTask;
+            });
+
+        var unmatchedPayment = new ValueJoinedPayment(Guid.Parse("99999999-9999-9999-9999-999999999999"), "customer-x", 15m);
+        var unmatchedOrder = new ValueJoinedOrder(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "customer-y");
+
+        await registry.Topics["payments"].Handler(await CreateContextAsync(provider, "payments", unmatchedPayment.Id, unmatchedPayment));
+        results.Clear();
+
+        await registry.Topics["orders"].Handler(await CreateContextAsync(provider, "orders", unmatchedOrder.Id, unmatchedOrder));
+
+        results.Should().HaveCount(1);
+        results[0].Topic.Should().Be("orders");
+        results[0].Key.Should().Be(unmatchedOrder.Id);
+        results[0].Order.Should().Be(unmatchedOrder);
+        results[0].Payment.Should().BeNull();
+    }
+
+    [Fact]
     public async Task MapStream_Branch_ShouldRouteMatchingBranchOrDefault()
     {
         var provider = BuildServiceProvider(out var producer);
@@ -182,6 +274,10 @@ public class StreamProcessingTests
     {
         public static readonly PaymentReceived Sample = new(Guid.Parse("11111111-1111-1111-1111-111111111111"), 19.95m);
     }
+
+    private sealed record ValueJoinedOrder(Guid Id, string CustomerCode);
+
+    private sealed record ValueJoinedPayment(Guid Id, string CustomerCode, decimal Amount);
 
     private sealed record RoutedOrder(Guid Id, string Type)
     {

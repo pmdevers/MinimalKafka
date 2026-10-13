@@ -1,6 +1,6 @@
 ﻿using KafkaAdventure.Domain;
 using Microsoft.AspNetCore.SignalR;
-using MinimalKafka;
+using MinimalKafka.Producing;
 
 namespace KafkaAdventure.Features;
 

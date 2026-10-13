@@ -1,5 +1,4 @@
 ﻿using KafkaAdventure.Domain;
-using MinimalKafka;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;

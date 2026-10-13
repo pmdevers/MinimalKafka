@@ -6,27 +6,24 @@ using MinimalKafka.Stream;
 
 namespace MinimalKafka.Aggregates;
 
-
 /// <summary>
-/// 
+/// Extension methods for mapping aggregate command and state streams.
 /// </summary>
 public static class AggregateExtensions
 {
     extension(IApplicationBuilder builder)
     {
         /// <summary>
-        /// Maps an aggregate command stream to an aggregate state stream using the specified topic,
+        /// Maps an aggregate command stream to an aggregate state stream for the specified aggregate type.
+        /// Handles aggregate initialization, version checking, state updates, and error publishing.
         /// </summary>
-        /// <typeparam name="TKey">The type of the aggregate key (identifier).</typeparam>
+        /// <typeparam name="TKey">The type of the aggregate key.</typeparam>
         /// <typeparam name="TCommand">The type of command applied to the aggregate.</typeparam>
-        /// <typeparam name="TAggregate">The type representing the aggregate, which implements <see cref="IAggregate{TKey, TAggregate, TCommand}"/>.</typeparam>
-        /// <param name="topicName">The name of the Kafka topic for aggregate commands and states.</param>
-        /// <param name="commandSuffix">The suffix that is appended to the name for use of the command topic.</param>
-        /// <param name="commandErrorSuffix">The suffix that is appended to the name for use of the command error topic.</param>
-        /// <returns>
-        /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
-        /// </returns>
-        public IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
+        /// <typeparam name="TAggregate">The aggregate state type.</typeparam>
+        /// <param name="topicName">The logical topic name for aggregate state.</param>
+        /// <param name="commandSuffix">The suffix appended to the topic name for the command topic.</param>
+        /// <param name="commandErrorSuffix">The suffix appended to the topic name for the command error topic.</param>
+        public StreamJoinBuilder<TKey, TCommand, TKey, TAggregate>.KeyJoinedStreamBuilder MapAggregate<TAggregate, TKey, TCommand>(
             string topicName,
             string commandSuffix = "-commands",
             string commandErrorSuffix = "-errors")
@@ -34,96 +31,65 @@ public static class AggregateExtensions
             where TAggregate : IAggregate<TKey, TAggregate, TCommand>
             where TCommand : ICommand<TKey>
         {
-            var sb = builder.ApplicationServices.GetRequiredService<IKafkaBuilder>();
-            return sb.MapAggregate<TAggregate, TKey, TCommand>(topicName, commandSuffix, commandErrorSuffix);
-        }
-    }
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(topicName);
 
-    extension(IKafkaBuilder builder)
-    {
-        /// <summary>
-        /// Maps an aggregate command stream to an aggregate state stream for the specified aggregate type.
-        /// Handles aggregate initialization, version checking, state updates, and error publishing.
-        /// </summary>
-        /// <typeparam name="TKey">The type of the aggregate key (identifier).</typeparam>
-        /// <typeparam name="TCommand">The type of command applied to the aggregate.</typeparam>
-        /// <typeparam name="TAggregate">The type representing the aggregate, which implements <see cref="IAggregate{TKey, TAggregate, TCommand}"/>.</typeparam>
-        /// <param name="topicName">The logical topicName for the aggregate; used to derive topic names.</param>
-        /// <param name="commandSuffix">The suffix that is appended to the topicName for use of the command topic.</param>
-        /// <param name="commandErrorSuffix">The suffix that is appended to the topicName for use of the command error topic.</param>
-        /// <returns>
-        /// An <see cref="IKafkaConventionBuilder"/> configured to process the aggregate command and state streams.
-        /// </returns>
-        public IKafkaConventionBuilder MapAggregate<TAggregate, TKey, TCommand>(
-            string topicName,
-            string commandSuffix = "-commands",
-            string commandErrorSuffix = "-errors"
-        )
-            where TKey : notnull
-            where TAggregate : IAggregate<TKey, TAggregate, TCommand>
-            where TCommand : ICommand<TKey>
-        {
             var commandTopic = $"{topicName}{commandSuffix}";
             var commandErrorTopic = $"{topicName}{commandErrorSuffix}";
+            var aggregateStream = builder
+                .MapStream<TKey, TCommand>(commandTopic)
+                .Join<TKey, TAggregate>(topicName)
+                .OnKey();
 
-            return builder.MapStream<TKey, TCommand>(commandTopic)
-                .Join<TKey, TAggregate>(topicName).OnKey()
-                .Into(async (context, key, joinResult) =>
+            aggregateStream.Into(async (context, key, joinResult) =>
+            {
+                var (cmd, state) = joinResult;
+                var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
+
+                if (cmd is null || context.TopicName == topicName)
                 {
-                    var (cmd, state) = joinResult;
+                    return;
+                }
 
-                    var logger = context.RequestServices.GetRequiredService<ILogger<TAggregate>>();
+                state ??= TAggregate.Create(key);
 
-                    // Ignore null commands or recursive processing of state topic
-                    if (cmd is null || context.TopicName == topicName)
+                if (cmd.Version != state.Version)
+                {
+                    logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
+
+                    await context.ProduceAsync(
+                        commandErrorTopic,
+                        key,
+                        CommandResult.Create(
+                            Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state.Version}"),
+                            cmd));
+
+                    return;
+                }
+
+                var result = TAggregate.Apply(state, cmd);
+
+                if (result.IsSuccess)
+                {
+                    if (result.State.Version == cmd.Version)
                     {
+                        logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
                         return;
                     }
 
-                    // If state is null, initialize aggregate from command
-                    state ??= TAggregate.Create(key);
+                    logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                    await context.ProduceAsync(topicName, result.State.Id, result.State);
+                    return;
+                }
 
-                    // Version check
-                    if (cmd.Version != state.Version)
-                    {
-                        logger.VersionMismatch(cmd.GetType().Name, cmd.Version, state.Version, typeof(TAggregate).Name);
+                logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
+                await context.ProduceAsync(
+                    commandErrorTopic,
+                    key,
+                    CommandResult.Create(result, cmd));
+            });
 
-                        await context.ProduceAsync(
-                            commandErrorTopic,
-                            key,
-                            CommandResult.Create(Result.Failed(state, $"Invalid command version: {cmd.Version}, expected: {state?.Version ?? 0}"), cmd));
-
-                        return;
-                    }
-
-                    // Apply command
-                    var result = TAggregate.Apply(state, cmd);
-
-                    // produce if command was succesfull
-                    if (result.IsSuccess)
-                    {
-
-                        if (result.State.Version == cmd.Version)
-                        {
-                            logger.VersionNotChanged(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                            return;
-                        }
-
-                        logger.CommandApplied(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-                        await context.ProduceAsync(topicName, result.State.Id, result.State);
-
-                    }
-                    else
-                    {
-                        logger.CommandError(cmd.GetType().Name, cmd.Version, typeof(TAggregate).Name);
-
-                        await context.ProduceAsync(
-                            commandErrorTopic,
-                            key,
-                            CommandResult.Create(result, cmd));
-                    }
-                });
+            return aggregateStream;
         }
     }
-            
 }
