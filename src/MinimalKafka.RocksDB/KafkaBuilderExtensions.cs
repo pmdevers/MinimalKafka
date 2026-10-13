@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using MinimalKafka.Stream;
 using MinimalKafka.Stream.Storage.RocksDB;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
@@ -10,18 +12,16 @@ namespace MinimalKafka;
 /// </summary>
 public static class KafkaBuilderExtensions
 {
-    extension<TBuilder>(TBuilder builder)
-        where TBuilder : IKafkaConfigBuilder
+    extension(IMinimalKafkaBuilder builder)
     {
         /// <summary>
-        /// Configures the <see cref="IKafkaConfigBuilder"/> to use RocksDB as the stream store.
+        /// Configures the <see cref="IMinimalKafkaBuilder"/> to use RocksDB as the stream store.
         /// </summary>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public TBuilder WithRocksDB(Action<RocksDBOptions>? options = null)
+        public IMinimalKafkaBuilder WithRocksDB(Action<RocksDBOptions>? options = null)
         {
+            builder.Services.AddOptions<RocksDBOptions>();
             builder.Services.Configure(options ?? (_ => { }));
-            builder.WithStoreFactory<TBuilder, RocksDBStreamStoreFactory>();
+            builder.Services.Replace(ServiceDescriptor.Singleton<IKafkaStoreFactory, RocksDBStreamStoreFactory>());
             return builder;
         }
     }
