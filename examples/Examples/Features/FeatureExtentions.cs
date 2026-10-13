@@ -1,4 +1,4 @@
-using Examples.Features.BasicSubscribe;
+using Examples.Features.Basic;
 using Examples.Features.ClaimCheck;
 using Examples.Features.Movies;
 using Examples.Features.Resilience;
@@ -9,7 +9,7 @@ using MinimalKafka;
 using MinimalKafka.Middleware.Resilience;
 using MinimalKafka.Stream;
 
-namespace FileTransfer.Features;
+namespace Examples.Features;
 
 public static class FeatureExtentions
 {

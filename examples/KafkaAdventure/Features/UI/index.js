@@ -1,4 +1,4 @@
-﻿const inputField = document.getElementById("commandInput");
+const inputField = document.getElementById("commandInput");
 const terminal = document.getElementById("terminal");
 const gamewindow = document.getElementById("gamewindow");
 

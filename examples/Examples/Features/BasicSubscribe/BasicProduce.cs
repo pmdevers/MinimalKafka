@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using MinimalKafka.Producing;
 
-namespace Examples.Features.BasicSubscribe;
+namespace Examples.Features.Basic;
 
 public static class BasicProduce
 {
-    public static string Route = "/produce";
+    public const string Route = "/produce";
 
     public static async Task<IResult> Handle([FromServices] IKafkaProducer producer)
     {

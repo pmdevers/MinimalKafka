@@ -38,7 +38,11 @@ internal sealed class KafkaConsumerBackgroundService(
         var topics = ResolveTopics();
 
         consumer.Subscribe(topics.Keys);
-        _logger.LogInformation("Subscribed Kafka consumer to {Topics}.", string.Join(", ", topics.Keys));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Subscribed Kafka consumer to topics:{Topics}",
+                Environment.NewLine + "  - " + string.Join(Environment.NewLine + "  - ", topics.Keys));
+        }
 
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
@@ -103,8 +107,10 @@ internal sealed class KafkaConsumerBackgroundService(
 
                 if (handlers.ErrorHandler == null)
                 {
-                    var message = $"[{GetLocal(error)}] {error.Code} - {error.Reason}";
-                    _logger.LogError(message);
+                    if (_logger.IsEnabled(LogLevel.Error))
+                    {
+                        _logger.LogError("[{ErrorScope}] {ErrorCode} - {ErrorReason}", GetLocal(error), error.Code, error.Reason);
+                    }
 
                     static string GetLocal(Error e)
                     {

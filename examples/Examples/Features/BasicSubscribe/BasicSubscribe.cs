@@ -1,7 +1,7 @@
 using MinimalKafka.Attributes;
 using MinimalKafka.Producing;
 
-namespace Examples.Features.BasicSubscribe;
+namespace Examples.Features.Basic;
 
 public static class BasicSubscribe
 {

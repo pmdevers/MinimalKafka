@@ -10,6 +10,7 @@ public static class LoggerConfigs
         {
             var configuration = builder.Configuration;
 
+            builder.Logging.ClearProviders();
             // Configure logging
             builder.Logging.AddSerilog(new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)

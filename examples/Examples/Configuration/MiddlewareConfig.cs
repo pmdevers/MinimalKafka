@@ -1,5 +1,5 @@
+using Examples.Features;
 using Examples.Features.UI;
-using FileTransfer.Features;
 using Scalar.AspNetCore;
 
 namespace Examples.Configuration;

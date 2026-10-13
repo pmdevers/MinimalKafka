@@ -1,74 +1,21 @@
-using Confluent.Kafka;
-using KafkaAdventure.Features;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.ResponseCompression;
-using MinimalKafka;
-using MinimalKafka.Serialization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using KafkaAdventure.Configuration;
+using KafkaAdventure.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
-builder.Services.AddMemoryCache();
-builder.Services.AddHealthChecks();
+builder.AddLoggerConfigs();
 
-builder.Services.AddMinimalKafka(x =>
-{
-    x.WithConfiguration(builder.Configuration.GetSection("Kafka"))
-     .WithTopicNaming(opt =>
-     {
-         opt.Suffix = $"-{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower()}";
-     })
-     .WithGroupId(AppDomain.CurrentDomain.FriendlyName + "-test")
-     .WithAutoOffsetReset(AutoOffsetReset.Earliest)
-     .WithJsonSerializer(configureSerializer: x =>
-     {
-         x.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-         x.Converters.Add(new JsonStringEnumConverter());
-     })
-     .WithConsumerDurationLogging()
-     .WithRocksDB();
-});
+using var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
+var startupLogger = loggerFactory.CreateLogger<Program>();
 
-builder.Services.AddResponseCompression(opts =>
-{
-    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        ["application/octet-stream"]);
-});
+builder
+    .AddServiceConfigs(startupLogger)
+    .AddOptionsConfigs(startupLogger)
+    .AddInfrastructure(startupLogger);
 
 var app = builder.Build();
 
-app.UsePathBase("/kafka-adventure");
-
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-app.UseHealthChecks("/startup");
-app.UseHealthChecks("/liveness");
-app.UseHealthChecks("/ready");
-
-
-
-app.MapLocationsApi();
-
-app.MapLocations();
-
-app.MapInput();
-app.MapCommand();
-app.MapGo();
-app.MapHelp();
-app.MapLook();
-
-app.MapOutput();
-
-
-Console.WriteLine("Starting Up");
+app.UseAppMiddleware();
 
 await app.RunAsync();
 
