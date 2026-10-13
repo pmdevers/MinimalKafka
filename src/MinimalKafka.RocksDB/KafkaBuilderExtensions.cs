@@ -10,17 +10,19 @@ namespace MinimalKafka;
 /// </summary>
 public static class KafkaBuilderExtensions
 {
-    /// <summary>
-    /// Configures the <see cref="IKafkaConfigBuilder"/> to use RocksDB as the stream store.
-    /// </summary>
-    /// <param name="builder"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
-    public static TBuilder WithRocksDB<TBuilder>(this TBuilder builder, Action<RocksDBOptions>? options = null)
+    extension<TBuilder>(TBuilder builder)
         where TBuilder : IKafkaConfigBuilder
     {
-        builder.Services.Configure(options ?? (_ => { }));
-        builder.WithStoreFactory<TBuilder, RocksDBStreamStoreFactory>();
-        return builder;
+        /// <summary>
+        /// Configures the <see cref="IKafkaConfigBuilder"/> to use RocksDB as the stream store.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public TBuilder WithRocksDB(Action<RocksDBOptions>? options = null)
+        {
+            builder.Services.Configure(options ?? (_ => { }));
+            builder.WithStoreFactory<TBuilder, RocksDBStreamStoreFactory>();
+            return builder;
+        }
     }
 }

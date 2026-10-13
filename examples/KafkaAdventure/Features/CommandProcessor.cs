@@ -10,7 +10,7 @@ public static class CommandProcessor
         where TBuilder : IApplicationBuilder
     {
         builder.MapStream<Guid, AppCommand>("game-commands")
-            .SplitInto(x =>
+            .Branch(x =>
             {
                 x.Branch((k, v) => v.Command == Commands.Help).To("game-help");
                 x.Branch((k, v) => v.Command == Commands.Go).To("game-go");

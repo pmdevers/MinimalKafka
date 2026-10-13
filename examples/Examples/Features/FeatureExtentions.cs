@@ -45,18 +45,23 @@ public static class FeatureExtentions
 
             var stream = app.MapGroup("stream");
 
-            stream.MapPost("/orders", StreamExamples.CreateOrderAsync);
-            stream.MapPost("/payments", StreamExamples.CreatePaymentAsync);
-            stream.MapGet("/results", StreamExamples.GetResults);
-            stream.MapDelete("/results", StreamExamples.ClearResults);
+            stream.MapPost("/orders", OrderPlacedApi.CreateAsync);
+            stream.MapPost("/payments", OrderPaidApi.CreateAsync);
+            stream.MapGet("/results", PaymentProcessor.GetResults);
+            stream.MapDelete("/results", PaymentProcessor.ClearResults);
+            stream.MapGet("/branch-results", RiskProcessor.GetResults);
+            stream.MapDelete("/branch-results", RiskProcessor.ClearResults);
 
-            app.MapStream<Guid, StreamExamples.OrderReceived>(StreamExamples.OrdersTopic)
-                .Join<Guid, StreamExamples.PaymentReceived>(StreamExamples.PaymentsTopic)
+            app.MapStream<Guid, OrderPlaced>(StreamTopics.Orders)
+                .Join<Guid, OrderPaid>(StreamTopics.Payments)
                 .OnKey()
-                .Into(StreamExamples.ProcessJoinAsync);
+                .Into(PaymentProcessor.ProcessJoinAsync);
 
-            app.MapStream<Guid, StreamExamples.OrderPaymentSummary>(StreamExamples.ResultsTopic)
-                .Into(StreamExamples.TrackResultAsync);
+            app.MapStream<Guid, PayedOrder>(StreamTopics.PayedOrders)
+                .Into(PaymentProcessor.TrackPayedOrderAsync);
+
+            app.MapStream<Guid, PayedOrder>(StreamTopics.PayedOrders)
+                .Branch(RiskProcessor.ConfigureBranches);
 
             return app;
         }

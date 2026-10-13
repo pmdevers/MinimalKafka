@@ -12,15 +12,15 @@ internal static class StreamSerialization
         byte[]? data,
         string topic,
         Headers headers,
-        CancellationToken cancellationToken,
-        string? format)
+        string? format,
+        CancellationToken cancellationToken)
     {
         if (data is null)
         {
             return default;
         }
 
-        var value = await DeserializeAsync(services, data, typeof(T), topic, headers, cancellationToken, format)
+        var value = await DeserializeAsync(services, data, typeof(T), topic, headers, format, cancellationToken)
             .ConfigureAwait(false);
         return value is null ? default : (T?)value;
     }
@@ -31,8 +31,8 @@ internal static class StreamSerialization
         Type type,
         string topic,
         Headers headers,
-        CancellationToken cancellationToken,
-        string? format)
+        string? format,
+        CancellationToken cancellationToken)
     {
         if (type == typeof(byte[]))
         {
@@ -53,8 +53,8 @@ internal static class StreamSerialization
         string topic,
         T value,
         Headers headers,
-        CancellationToken cancellationToken,
-        string? format)
+        string? format,
+        CancellationToken cancellationToken)
     {
         return value switch
         {

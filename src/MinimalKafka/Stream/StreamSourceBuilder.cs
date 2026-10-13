@@ -45,23 +45,23 @@ public sealed class StreamSourceBuilder<TKey, TValue>
                 context.Key,
                 _topicName,
                 context.Headers,
-                context.CancellationToken,
-                context.Format).ConfigureAwait(false);
+                context.Format,
+                context.CancellationToken).ConfigureAwait(false);
 
             var value = await StreamSerialization.DeserializeAsync<TValue>(
                 context.RequestServices,
                 context.Value,
                 _topicName,
                 context.Headers,
-                context.CancellationToken,
-                context.Format).ConfigureAwait(false);
+                context.Format,
+                context.CancellationToken).ConfigureAwait(false);
 
             await processor(new StreamContext(context), key!, value!).ConfigureAwait(false);
         });
     }
 
     /// <summary>Registers branching behavior for the stream.</summary>
-    public void SplitInto(Action<StreamBranchBuilder<TKey, TValue>> configure)
+    public void Branch(Action<StreamBranchBuilder<TKey, TValue>> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
@@ -77,16 +77,16 @@ public sealed class StreamSourceBuilder<TKey, TValue>
                 context.Key,
                 _topicName,
                 context.Headers,
-                context.CancellationToken,
-                context.Format).ConfigureAwait(false);
+                context.Format,
+                context.CancellationToken).ConfigureAwait(false);
 
             var value = await StreamSerialization.DeserializeAsync<TValue>(
                 context.RequestServices,
                 context.Value,
                 _topicName,
                 context.Headers,
-                context.CancellationToken,
-                context.Format).ConfigureAwait(false);
+                context.Format,
+                context.CancellationToken).ConfigureAwait(false);
 
             var streamContext = new StreamContext(context);
             foreach (var branch in branches.Branches)

@@ -107,8 +107,8 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
                     context.Key,
                     currentTopic,
                     context.Headers,
-                    context.CancellationToken,
-                    ResolveFormat(currentTopic)).ConfigureAwait(false);
+                    ResolveFormat(currentTopic),
+                    context.CancellationToken).ConfigureAwait(false);
             }
 
             var storeFactory = context.RequestServices.GetRequiredService<IKafkaStoreFactory>();
@@ -128,17 +128,17 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
                 context.RequestServices,
                 leftValueBytes,
                 _leftTopicName,
-                new Headers(),
-                context.CancellationToken,
-                ResolveFormat(_leftTopicName)).ConfigureAwait(false);
+                [],
+                ResolveFormat(_leftTopicName),
+                context.CancellationToken).ConfigureAwait(false);
 
             var rightValue = await StreamSerialization.DeserializeAsync<TOtherValue>(
                 context.RequestServices,
                 rightValueBytes,
                 _rightTopicName,
-                new Headers(),
-                context.CancellationToken,
-                ResolveFormat(_rightTopicName)).ConfigureAwait(false);
+                [],
+                ResolveFormat(_rightTopicName),
+                context.CancellationToken).ConfigureAwait(false);
 
             if (_innerJoin && (leftValue is null || rightValue is null))
             {
@@ -150,8 +150,8 @@ public sealed class StreamJoinBuilder<TKey, TValue, TOtherKey, TOtherValue>
                 context.Key,
                 currentTopic,
                 context.Headers,
-                context.CancellationToken,
-                ResolveFormat(currentTopic)).ConfigureAwait(false);
+                ResolveFormat(currentTopic),
+                context.CancellationToken).ConfigureAwait(false);
 
             var joinedValues = (Item1: leftValue, Item2: rightValue);
             await processor(new StreamContext(context), key!, joinedValues).ConfigureAwait(false);

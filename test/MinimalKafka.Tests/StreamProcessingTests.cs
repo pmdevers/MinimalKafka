@@ -75,14 +75,14 @@ public class StreamProcessingTests
     }
 
     [Fact]
-    public async Task MapStream_SplitInto_ShouldRouteMatchingBranchOrDefault()
+    public async Task MapStream_Branch_ShouldRouteMatchingBranchOrDefault()
     {
         var provider = BuildServiceProvider(out var producer);
         IApplicationBuilder app = new ApplicationBuilder(provider);
         var registry = provider.GetRequiredService<TopicRegistry>();
 
         app.MapStream<Guid, RoutedOrder>("orders")
-            .SplitInto(branches =>
+            .Branch(branches =>
             {
                 branches.Branch((_, value) => value.Type == "priority").To("priority-orders");
                 branches.DefaultBranch("standard-orders");

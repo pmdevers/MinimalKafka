@@ -10,65 +10,66 @@ namespace MinimalKafka.Stream;
 /// </summary>
 public static class KafkaStoreExtensions
 {
-    /// <summary>Reads and deserializes a stored value for the specified key.</summary>
-    public static async ValueTask<TValue?> FindByKeyAsync<TKey, TValue>(
-        this IKafkaStore store,
-        TKey key,
-        CancellationToken cancellationToken = default,
-        string? format = null)
+    extension(IKafkaStore store)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(key);
+        /// <summary>Reads and deserializes a stored value for the specified key.</summary>
+        public async ValueTask<TValue?> FindByKeyAsync<TKey, TValue>(
+            TKey key,
+            string? format = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(key);
 
-        var keyBytes = await StreamSerialization.SerializeAsync(
-            store.ServiceProvider,
-            store.TopicName,
-            key,
-            [],
-            cancellationToken,
-            format).ConfigureAwait(false);
-
-        var valueBytes = await store.FindByKeyAsync(keyBytes).ConfigureAwait(false);
-        return valueBytes is null
-            ? default
-            : await StreamSerialization.DeserializeAsync<TValue>(
+            var keyBytes = await StreamSerialization.SerializeAsync(
                 store.ServiceProvider,
-                valueBytes,
                 store.TopicName,
+                key,
                 [],
-                cancellationToken,
-                format).ConfigureAwait(false);
-    }
+                format,
+                cancellationToken).ConfigureAwait(false);
 
-    /// <summary>Stores a strongly typed value using the specified key.</summary>
-    public static async ValueTask<TValue> AddOrUpdateAsync<TKey, TValue>(
-        this IKafkaStore store,
-        TKey key,
-        TValue value,
-        CancellationToken cancellationToken = default,
-        string? format = null)
-    {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(value);
+            var valueBytes = await store.FindByKeyAsync(keyBytes).ConfigureAwait(false);
+            return valueBytes is null
+                ? default
+                : await StreamSerialization.DeserializeAsync<TValue>(
+                    store.ServiceProvider,
+                    valueBytes,
+                    store.TopicName,
+                    [],
+                    format,
+                    cancellationToken).ConfigureAwait(false);
+        }
 
-        var keyBytes = await StreamSerialization.SerializeAsync(
-            store.ServiceProvider,
-            store.TopicName,
-            key,
-            [],
-            cancellationToken,
-            format).ConfigureAwait(false);
+        /// <summary>Stores a strongly typed value using the specified key.</summary>
+        public async ValueTask<TValue> AddOrUpdateAsync<TKey, TValue>(
+            TKey key,
+            TValue value,
+            string? format = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
-        var valueBytes = await StreamSerialization.SerializeAsync(
-            store.ServiceProvider,
-            store.TopicName,
-            value,
-            [],
-            cancellationToken,
-            format).ConfigureAwait(false);
+            var keyBytes = await StreamSerialization.SerializeAsync(
+                store.ServiceProvider,
+                store.TopicName,
+                key,
+                [],
+                format,
+                cancellationToken).ConfigureAwait(false);
 
-        await store.AddOrUpdate(keyBytes, valueBytes).ConfigureAwait(false);
-        return value;
+            var valueBytes = await StreamSerialization.SerializeAsync(
+                store.ServiceProvider,
+                store.TopicName,
+                value,
+                [],
+                format,
+                cancellationToken).ConfigureAwait(false);
+
+            await store.AddOrUpdate(keyBytes, valueBytes).ConfigureAwait(false);
+            return value;
+        }
     }
 }
