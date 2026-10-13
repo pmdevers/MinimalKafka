@@ -4,3 +4,7 @@
   href: stream-branching.md
 - name: Claims-Check with KafkaFile
   href: claims-check-pattern.md
+- name: Resilience
+  href: resilience.md
+- name: Dead-Letter Queues
+  href: dead-letter-queues.md
