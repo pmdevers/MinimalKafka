@@ -14,12 +14,15 @@ internal sealed class KafkaConsumerBackgroundService(
     IOptions<KafkaConsumerOptions> options,
     IServiceScopeFactory scopeFactory,
     IKafkaProducer producer,
+    IConsumerRuntimeControl runtimeControl,
     ILogger<KafkaConsumerBackgroundService> logger) : BackgroundService
 {
+    private static readonly TimeSpan _consumePollingInterval = TimeSpan.FromMilliseconds(250);
     private readonly TopicRegistry _registry = registry;
     private readonly IOptions<KafkaConsumerOptions> _options = options;
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
     private readonly IKafkaProducer _producer = producer;
+    private readonly IConsumerRuntimeControl _runtimeControl = runtimeControl;
     private readonly ILogger<KafkaConsumerBackgroundService> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -34,22 +37,45 @@ internal sealed class KafkaConsumerBackgroundService(
             return;
         }
 
-        using var consumer = CreateConsumer();
         var topics = ResolveTopics();
-
-        consumer.Subscribe(topics.Keys);
-        if (_logger.IsEnabled(LogLevel.Information))
-        {
-            _logger.LogInformation("Subscribed Kafka consumer to topics:{Topics}",
-                Environment.NewLine + "  - " + string.Join(Environment.NewLine + "  - ", topics.Keys));
-        }
+        IConsumer<byte[], byte[]>? consumer = null;
 
 #pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var result = consumer.Consume(stoppingToken);
+                if (!_runtimeControl.IsRunning)
+                {
+                    if (consumer is not null)
+                    {
+                        consumer.Close();
+                        consumer.Dispose();
+                        consumer = null;
+                        _logger.LogInformation("Kafka consumer processing stopped and left consumer group.");
+                    }
+
+                    await Task.Delay(_consumePollingInterval, stoppingToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (consumer is null)
+                {
+                    consumer = CreateConsumer();
+                    consumer.Subscribe(topics.Keys);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation("Subscribed Kafka consumer to topics:{Topics}",
+                            Environment.NewLine + "  - " + string.Join(Environment.NewLine + "  - ", topics.Keys));
+                    }
+                }
+
+                var result = consumer.Consume(_consumePollingInterval);
+                if (result is null)
+                {
+                    continue;
+                }
+
                 if (!topics.TryGetValue(result.Topic, out var registration))
                 {
                     _logger.LogWarning("Received a message for unmapped Kafka topic {Topic}.", result.Topic);
@@ -89,7 +115,11 @@ internal sealed class KafkaConsumerBackgroundService(
         }
         finally
         {
-            consumer.Close();
+            if (consumer is not null)
+            {
+                consumer.Close();
+                consumer.Dispose();
+            }
         }
 #pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }

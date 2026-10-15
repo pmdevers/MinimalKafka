@@ -39,6 +39,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\src\MinimalKafka.Dashboard\MinimalKafka.Dashboard.csproj" />
 		<ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
 	</ItemGroup>
 

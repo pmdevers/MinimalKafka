@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Microsoft.AspNetCore.ResponseCompression;
 using MinimalKafka;
+using MinimalKafka.Dashboard;
 using MinimalKafka.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -24,6 +25,7 @@ public static class ServiceConfigs
                     ["application/octet-stream"]);
             });
 
+            services.AddMinimalKafkaDashboard();
             services.AddMinimalKafka(config =>
             {
                 config.WithConfiguration(builder.Configuration.GetSection("Kafka"))

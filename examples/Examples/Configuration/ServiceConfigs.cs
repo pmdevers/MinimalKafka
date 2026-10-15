@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Examples.Infrastructure.ClaimCheck;
 using MinimalKafka;
+using MinimalKafka.Dashboard;
 using MinimalKafka.Serialization;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,8 @@ public static class ServiceConfigs
             services.AddHealthChecks();
             services.AddAntiforgery();
             services.AddClaimCheckStorage(builder.Configuration);
+
+            services.AddMinimalKafkaDashboard();
 
             services.AddMinimalKafka(config =>
             {

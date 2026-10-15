@@ -1,6 +1,7 @@
 using KafkaAdventure.Features;
 using KafkaAdventure.Features.UI;
 using Microsoft.AspNetCore.HttpOverrides;
+using MinimalKafka.Dashboard;
 
 namespace KafkaAdventure.Configuration;
 
@@ -10,8 +11,6 @@ public static class MiddlewareConfig
     {
         public WebApplication UseAppMiddleware()
         {
-            app.UsePathBase("/kafka-adventure");
-
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -22,6 +21,8 @@ public static class MiddlewareConfig
             app.MapHealthChecks("/ready");
 
             var fileProvider = UiOptions.CreateFileProvider();
+
+            
 
             app.UseDefaultFiles(new DefaultFilesOptions
             {
@@ -36,6 +37,7 @@ public static class MiddlewareConfig
             });
 
             app.MapFeatures();
+            app.MapMinimalKafkaDashboard();
 
             app.MapFallback(async context =>
             {
