@@ -531,6 +531,7 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
           "Microsoft.Extensions.FileProviders.Embedded": "[10.0.13, )",
           "MinimalKafka": "[1.0.0, )",
+          "MinimalKafka.Dashboard": "[1.0.0, )",
           "Scalar.AspNetCore": "[2.17.3, )",
           "Serilog.Extensions.Logging": "[10.0.0, )",
           "Serilog.Settings.Configuration": "[10.0.1, )",
@@ -548,6 +549,14 @@
           "Microsoft.Extensions.Hosting": "[10.0.12, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.12, )",
           "System.Linq.Async": "[7.0.1, )"
+        }
+      },
+      "minimalkafka.dashboard": {
+        "type": "Project",
+        "dependencies": {
+          "Confluent.Kafka": "[2.15.0, )",
+          "Microsoft.Extensions.FileProviders.Embedded": "[10.0.13, )",
+          "MinimalKafka": "[1.0.0, )"
         }
       },
       "Azure.Storage.Blobs": {

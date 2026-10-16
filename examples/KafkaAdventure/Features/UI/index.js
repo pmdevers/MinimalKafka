@@ -3,7 +3,7 @@ const terminal = document.getElementById("terminal");
 const gamewindow = document.getElementById("gamewindow");
 
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/kafka-adventure/input")
+    .withUrl("/input")
     .withAutomaticReconnect()
     .configureLogging(signalR.LogLevel.Information)
     .build();

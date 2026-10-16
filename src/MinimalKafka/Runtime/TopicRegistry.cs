@@ -10,7 +10,19 @@ internal sealed class TopicRegistration(string topic, ConsumerDelegate handler)
     public List<Func<IServiceProvider, Middleware.IConsumerMiddleware>> Middleware { get; } = [];
 }
 
-internal sealed class TopicRegistry
+/// <summary>
+/// Represents a registry for topics.
+/// </summary>
+public interface ITopicRegistry
+{
+    /// <summary>
+    /// Gets the list of registered topics.
+    /// </summary>
+    /// <returns></returns>
+    string[] GetTopics();
+}
+
+internal sealed class TopicRegistry : ITopicRegistry
 {
     private readonly ConcurrentDictionary<string, TopicRegistration> _topics = new(StringComparer.Ordinal);
 
@@ -40,4 +52,7 @@ internal sealed class TopicRegistry
 
         return _topics[topic];
     }
+
+    public string[] GetTopics()
+        => [.. _topics.Keys];
 }

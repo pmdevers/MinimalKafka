@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MinimalKafka Dashboard</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            font-family: Inter, Segoe UI, sans-serif;
+        }
+
+        body {
+            margin: 2rem;
+        }
+
+        h1, h2 {
+            margin-bottom: .5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        th, td {
+            border: 1px solid #666;
+            padding: .5rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        code {
+            white-space: pre-wrap;
+        }
+
+        .muted {
+            opacity: .8;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: .5rem 1rem;
+            cursor: pointer;
+        }
+
+        .error {
+            color: #ff6060;
+            margin-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button.active {
+            font-weight: 600;
+            outline: 2px solid currentColor;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>MinimalKafka Dashboard</h1>
+    <p class="muted">Consumer group members and topic offsets for the configured group.</p>
+    <div>
+        <button id="refresh">Refresh</button>
+        <button id="start-consumer">Start Consumers</button>
+        <button id="stop-consumer">Stop Consumers</button>
+        <button id="reset-offsets">Reset Offsets</button>
+    </div>
+    <p id="status"></p>
+    <p id="consumer-status"></p>
+    <p id="error" class="error"></p>
+
+    <h2>Members</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>MemberId</th>
+                <th>ClientId</th>
+                <th>Group Instance</th>
+                <th>Host</th>
+                <th>Assigned Partitions</th>
+            </tr>
+        </thead>
+        <tbody id="members"></tbody>
+    </table>
+
+    <div class="tabs">
+        <button id="tab-offsets" class="tab-button active" data-tab="offsets" type="button">Topic Offsets</button>
+        <button id="tab-messages" class="tab-button" data-tab="messages" type="button">Topic Messages</button>
+    </div>
+
+    <section id="panel-offsets" class="tab-panel active">
+        <h2>Topic Offsets</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Partition</th>
+                    <th>Committed Offset</th>
+                    <th>High Offset</th>
+                    <th>Lag</th>
+                    <th>Reset To Offset</th>
+                </tr>
+            </thead>
+            <tbody id="offsets"></tbody>
+        </table>
+    </section>
+
+    <section id="panel-messages" class="tab-panel">
+        <h2>Topic Messages</h2>
+        <div>
+            <label>Topic <select id="messages-topic"></select></label>
+            <label>Count <input id="messages-count" type="number" min="1" max="500" step="1" value="50" /></label>
+            <label>Refresh (sec) <input id="messages-interval" type="number" min="1" max="60" step="1" value="5" /></label>
+            <button id="refresh-messages">Refresh Messages</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Partition</th>
+                    <th>Offset</th>
+                    <th>Timestamp</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="topic-messages"></tbody>
+        </table>
+    </section>
+
+    <script>
+        const membersBody = document.getElementById("members");
+        const offsetsBody = document.getElementById("offsets");
+        const status = document.getElementById("status");
+        const consumerStatus = document.getElementById("consumer-status");
+        const error = document.getElementById("error");
+        const messagesBody = document.getElementById("topic-messages");
+        const messagesTopic = document.getElementById("messages-topic");
+        const messagesCount = document.getElementById("messages-count");
+        const messagesInterval = document.getElementById("messages-interval");
+        const tabOffsets = document.getElementById("tab-offsets");
+        const tabMessages = document.getElementById("tab-messages");
+        const panelOffsets = document.getElementById("panel-offsets");
+        const panelMessages = document.getElementById("panel-messages");
+        let currentMembers = [];
+        let messagesAutoRefreshId = null;
+
+        function getApiUrl(path) {
+            const normalizedPrefix = window.location.pathname.endsWith("/")
+                ? window.location.pathname
+                : `${window.location.pathname}/`;
+            const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+            return new URL(`${normalizedPrefix}${normalizedPath}`, window.location.origin);
+        }
+
+        async function load() {
+            status.textContent = "Loading...";
+            error.textContent = "";
+
+            try {
+                const [membersResponse, offsetsResponse, consumerStatusResponse] = await Promise.all([
+                    fetch(getApiUrl("api/consumer-group/members")),
+                    fetch(getApiUrl("api/consumer-group/offsets")),
+                    fetch(getApiUrl("api/consumer/status"))
+                ]);
+
+                if (!membersResponse.ok || !offsetsResponse.ok || !consumerStatusResponse.ok) {
+                    throw new Error("Dashboard API request failed.");
+                }
+
+                const membersData = await membersResponse.json();
+                const offsetsData = await offsetsResponse.json();
+                const consumerStatusData = await consumerStatusResponse.json();
+
+                currentMembers = membersData.members || [];
+                const currentOffsets = offsetsData.offsets || [];
+
+                renderMembers(currentMembers);
+                renderOffsets(currentOffsets);
+                populateTopicSelector(currentOffsets);
+                await loadTopicMessages();
+
+                setConsumerState(Boolean(consumerStatusData.isRunning));
+                setOffsetResetEnabled(currentMembers.length === 0);
+                status.textContent = `Group: ${membersData.groupId || offsetsData.groupId || "n/a"}`;
+            } catch (e) {
+                status.textContent = "";
+                consumerStatus.textContent = "";
+                messagesBody.innerHTML = "";
+                setOffsetResetEnabled(false);
+                error.textContent = e.message || "Unexpected error";
+            }
+        }
+
+        function renderMembers(items) {
+            membersBody.innerHTML = "";
+
+            for (const item of items) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><code>${escapeHtml(item.memberId || "")}</code></td>
+                    <td>${escapeHtml(item.clientId || "")}</td>
+                    <td>${escapeHtml(item.groupInstanceId || "")}</td>
+                    <td>${escapeHtml(item.clientHost || "")}</td>
+                    <td>${escapeHtml((item.assignedPartitions || []).join(", "))}</td>`;
+                membersBody.appendChild(row);
+            }
+        }
+
+        function renderOffsets(items) {
+            offsetsBody.innerHTML = "";
+
+            for (const item of items) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${escapeHtml(item.topic || "")}</td>
+                    <td>${escapeHtml(String(item.partition ?? ""))}</td>
+                    <td>${escapeHtml(String(item.committedOffset ?? ""))}</td>
+                    <td>${escapeHtml(String(item.highOffset ?? ""))}</td>
+                    <td>${escapeHtml(String(item.lag ?? ""))}</td>
+                    <td><input type="number" min="0" step="1" data-topic="${escapeHtml(item.topic || "")}" data-partition="${escapeHtml(String(item.partition ?? ""))}" value="${escapeHtml(String(item.committedOffset ?? 0))}" /></td>`;
+                offsetsBody.appendChild(row);
+            }
+        }
+
+        function populateTopicSelector(offsetItems) {
+            const selectedTopic = messagesTopic.value;
+            const topics = Array.from(new Set(offsetItems.map(item => item.topic).filter(topic => !!topic))).sort();
+
+            messagesTopic.innerHTML = "";
+            for (const topic of topics) {
+                const option = document.createElement("option");
+                option.value = topic;
+                option.textContent = topic;
+                messagesTopic.appendChild(option);
+            }
+
+            if (topics.length === 0) {
+                return;
+            }
+
+            const nextTopic = topics.includes(selectedTopic) ? selectedTopic : topics[0];
+            messagesTopic.value = nextTopic;
+        }
+
+        async function loadTopicMessages() {
+            const topic = messagesTopic.value;
+            if (!topic) {
+                messagesBody.innerHTML = "";
+                return;
+            }
+
+            const count = Number.parseInt(messagesCount.value, 10);
+            const normalizedCount = Number.isInteger(count) && count > 0 ? Math.min(count, 500) : 50;
+            messagesCount.value = String(normalizedCount);
+
+            const response = await fetch(getApiUrl(`api/topics/messages?topic=${encodeURIComponent(topic)}&count=${normalizedCount}`));
+            if (!response.ok) {
+                throw new Error("Topic messages request failed.");
+            }
+
+            const data = await response.json();
+            renderTopicMessages(data.messages || []);
+        }
+
+        function renderTopicMessages(items) {
+            messagesBody.innerHTML = "";
+
+            for (const item of items) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${escapeHtml(item.topic || "")}</td>
+                    <td>${escapeHtml(String(item.partition ?? ""))}</td>
+                    <td>${escapeHtml(String(item.offset ?? ""))}</td>
+                    <td>${escapeHtml(item.timestamp || "")}</td>
+                    <td><code>${escapeHtml(item.value || "")}</code></td>`;
+                messagesBody.appendChild(row);
+            }
+        }
+
+        function setConsumerState(isRunning) {
+            consumerStatus.textContent = `Consumers: ${isRunning ? "Running" : "Stopped"}`;
+        }
+
+        function setOffsetResetEnabled(enabled) {
+            document.getElementById("reset-offsets").disabled = !enabled;
+        }
+
+        function setActiveTab(tab) {
+            const showOffsets = tab === "offsets";
+            tabOffsets.classList.toggle("active", showOffsets);
+            tabMessages.classList.toggle("active", !showOffsets);
+            panelOffsets.classList.toggle("active", showOffsets);
+            panelMessages.classList.toggle("active", !showOffsets);
+        }
+
+        async function setConsumersRunning(isRunning) {
+            error.textContent = "";
+            const endpoint = isRunning ? "api/consumer/start" : "api/consumer/stop";
+            const response = await fetch(getApiUrl(endpoint), { method: "POST" });
+            if (!response.ok) {
+                throw new Error("Consumer control request failed.");
+            }
+
+            const data = await response.json();
+            setConsumerState(Boolean(data.isRunning));
+        }
+
+        async function resetOffsets() {
+            const inputs = Array.from(offsetsBody.querySelectorAll("input[data-topic][data-partition]"));
+            if (inputs.length === 0) {
+                throw new Error("No topic partitions are available to reset.");
+            }
+
+            const offsets = inputs.map(input => {
+                const topic = input.getAttribute("data-topic") || "";
+                const partition = Number.parseInt(input.getAttribute("data-partition") || "", 10);
+                const value = Number.parseInt(input.value, 10);
+
+                if (!topic || !Number.isInteger(partition) || partition < 0 || !Number.isInteger(value) || value < 0) {
+                    throw new Error("Offset reset values must be non-negative integers.");
+                }
+
+                return { topic, partition, offset: value };
+            });
+
+            const response = await fetch(getApiUrl("api/consumer-group/offsets/reset"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ offsets })
+            });
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || "Offset reset request failed.");
+            }
+        }
+
+        function startMessagesAutoRefresh() {
+            if (messagesAutoRefreshId !== null) {
+                clearInterval(messagesAutoRefreshId);
+                messagesAutoRefreshId = null;
+            }
+
+            const seconds = Number.parseInt(messagesInterval.value, 10);
+            const normalizedSeconds = Number.isInteger(seconds) && seconds > 0 ? Math.min(seconds, 60) : 5;
+            messagesInterval.value = String(normalizedSeconds);
+
+            messagesAutoRefreshId = setInterval(async () => {
+                try {
+                    await loadTopicMessages();
+                } catch (e) {
+                    error.textContent = e.message || "Unexpected error";
+                }
+            }, normalizedSeconds * 1000);
+        }
+
+        function escapeHtml(value) {
+            return value
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        document.getElementById("refresh").addEventListener("click", load);
+        tabOffsets.addEventListener("click", () => setActiveTab("offsets"));
+        tabMessages.addEventListener("click", () => setActiveTab("messages"));
+        document.getElementById("refresh-messages").addEventListener("click", async () => {
+            try {
+                error.textContent = "";
+                await loadTopicMessages();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        messagesTopic.addEventListener("change", async () => {
+            try {
+                error.textContent = "";
+                await loadTopicMessages();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        messagesInterval.addEventListener("change", startMessagesAutoRefresh);
+        document.getElementById("start-consumer").addEventListener("click", async () => {
+            try {
+                await setConsumersRunning(true);
+                await load();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        document.getElementById("stop-consumer").addEventListener("click", async () => {
+            try {
+                await setConsumersRunning(false);
+                await load();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        document.getElementById("reset-offsets").addEventListener("click", async () => {
+            try {
+                error.textContent = "";
+                await resetOffsets();
+                await load();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        setOffsetResetEnabled(false);
+        setActiveTab("offsets");
+        startMessagesAutoRefresh();
+        load();
+    </script>
+</body>
+</html>

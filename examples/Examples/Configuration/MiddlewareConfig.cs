@@ -1,5 +1,6 @@
 using Examples.Features;
 using Examples.Features.UI;
+using MinimalKafka.Dashboard;
 using Scalar.AspNetCore;
 
 namespace Examples.Configuration;
@@ -24,6 +25,8 @@ public static class MiddlewareConfig
             app.UseAntiforgery();
 
             var fileProvider = UiOptions.CreateFileProvider();
+
+            app.MapMinimalKafkaDashboard();
 
             app.UseStaticFiles(new StaticFileOptions
             {

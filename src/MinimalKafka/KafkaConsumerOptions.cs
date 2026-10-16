@@ -8,6 +8,11 @@ namespace MinimalKafka;
 /// </summary>
 public sealed class KafkaConsumerOptions
 {
+    /// <summary>
+    /// Indicates whether the Kafka consumer should start automatically when the application starts.
+    /// </summary>
+    public bool StartAtStartup { get; set; } = true;
+
     /// <summary>Settings applied to both the consumer and the producer, such as bootstrap.servers and security.*.</summary>
     public Dictionary<string, string> Common { get; set; } = new ClientConfig().ToDictionary();
 
@@ -24,7 +29,10 @@ public sealed class KafkaConsumerOptions
 
     internal KafkaConsumerHandlers Handlers { get; } = new();
 
-    internal ConsumerConfig CreateConsumerConfig()
+    /// <summary>
+    /// Creates a <see cref="ConsumerConfig"/> instance by merging the <see cref="Common"/> and <see cref="Consumer"/> settings.
+    /// </summary>
+    public ConsumerConfig CreateConsumerConfig()
     {
         var config = new ConsumerConfig(Merge(Consumer.ToDictionary()))
         {
@@ -35,7 +43,15 @@ public sealed class KafkaConsumerOptions
         return config;
     }
 
-    internal ProducerConfig CreateProducerConfig() => new(Merge(Producer.ToDictionary()));
+    /// <summary>
+    /// Creates a <see cref="ProducerConfig"/> instance by merging the <see cref="Common"/> and <see cref="Producer"/> settings.
+    /// </summary>
+    public ProducerConfig CreateProducerConfig() => new(Merge(Producer.ToDictionary()));
+
+    /// <summary>
+    /// Creates an <see cref="AdminClientConfig"/> instance by merging the <see cref="Common"/> and <see cref="Consumer"/> settings.
+    /// </summary>
+    public AdminClientConfig CreateAdminConfig() => new(Merge(Producer.ToDictionary()));
 
     private Dictionary<string, string> Merge(Dictionary<string, string> specific)
     {

@@ -31,9 +31,13 @@ public static class MinimalKafkaExtensions
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IKafkaSerializer, JsonMessageSerializer>());
             services.TryAddSingleton<ITopicNamingConvention, TopicNamingConvention>();
             services.TryAddSingleton<TopicRegistry>();
+            services.TryAddSingleton<ConsumerRuntimeControl>();
+            services.TryAddSingleton<IConsumerRuntimeControl>(x => x.GetRequiredService<ConsumerRuntimeControl>());
             services.TryAddSingleton<IKafkaStoreFactory, InMemoryKafkaStoreFactory>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
+
+            services.AddTransient<ITopicRegistry>(x => x.GetRequiredService<TopicRegistry>());
 
             configure?.Invoke(new MinimalKafkaBuilder(services));
             return services;
