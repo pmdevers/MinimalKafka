@@ -13,6 +13,18 @@ MinimalKafka is a Kafka consumer library designed to consume messages similarly 
 
 ![Alt text](https://github.com/pmdevers/MinimalKafka/raw/main/assets/logo_256_background.png "Minimal Kafka logo")
 
+## Why MinimalKafka
+
+MinimalKafka helps .NET teams build Kafka-powered services with less boilerplate and more consistency.
+
+- Familiar .NET patterns with DI-first setup and middleware-driven pipelines
+- Built-in resilience with retry and dead-letter support
+- End-to-end observability with CorrelationId propagation across consume/produce/retry/DLQ flows
+- Flexible serialization support (JSON, Avro, Protobuf, Schema Registry)
+- Stream processing helpers for joins, branching, and projections
+
+If you want Kafka capabilities in .NET without heavy framework overhead, MinimalKafka provides a practical and production-ready path.
+
 ## Features
 
 - Simple and minimalistic Kafka consumer setup
