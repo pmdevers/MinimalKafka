@@ -4,7 +4,7 @@ A dead-letter queue (DLQ) is a Kafka topic used to isolate messages whose proces
 
 This is an opt-in, per-topic policy. For retry settings, filtering, and cancellation, see [Resilience](resilience.md).
 
-> **Current implementation limitation:** Dead-letter publishing currently passes the consumed value as the producer key and the consumed key as the producer value. Do not assume a DLQ record has the original key/value layout, or replay it unchanged. See [Current implementation limitations](#current-implementation-limitations).
+> **Current behavior note:** Dead-letter publishing forwards `KafkaContext.Key` and `KafkaContext.Value` in normal producer order `(topic, key, value, ...)`. Middleware can still modify context bytes before dead-letter routing, and producer middleware can transform the outbound record. See [Current implementation limitations](#current-implementation-limitations).
 
 ## Register the policy
 
@@ -100,24 +100,15 @@ Exception messages and copied application headers may contain sensitive informat
 
 ## Current implementation limitations
 
-The current [DeadLetterMiddleware](../src/MinimalKafka/Middleware/Resilience/DeadLetterMiddleware.cs) calls a producer whose argument order is `(topic, key, value, ...)`, but supplies `(deadLetterTopic, context.Value ?? [], context.Key, ...)`.
+The current [DeadLetterMiddleware](../src/MinimalKafka/Middleware/Resilience/DeadLetterMiddleware.cs) calls the producer with `(deadLetterTopic, context.Key ?? [], context.Value ?? [], ...)`, which preserves normal key/value ordering.
 
-Before any global producer middleware changes the record, this means:
+Current limits to keep in mind:
 
-| DLQ field | Current source |
-| --- | --- |
-| Key | Current `KafkaContext.Value`, or an empty byte array if it is null. |
-| Value | Original `KafkaContext.Key`. |
-| Headers | Copied current headers plus diagnostic headers. |
+- **The current context is used.** Earlier middleware may have modified `KafkaContext.Key` and/or `KafkaContext.Value`, so forwarded bytes are not guaranteed to be the original Kafka wire bytes.
+- **Nulls are normalized to empty byte arrays.** A null key or null value is forwarded as `[]`, so null-vs-empty semantics are not preserved on the DLQ record.
+- **Producer middleware still runs.** Global producer middleware can further transform the DLQ record; do not infer final wire layout solely from the dead-letter call.
 
-Consequences:
-
-- **Key and value are swapped.** A normal typed value consumer on the DLQ will not receive the original serialized value in the expected field.
-- **Keyless source records fail DLQ publication.** A null original key is passed as the producer value; the current producer rejects null values. The failure escapes and the source message does not reach the explicit commit call.
-- **The current context is used.** Earlier middleware may have modified `KafkaContext.Value`, so the forwarded bytes are not necessarily the original Kafka wire value. For example, claim-check middleware may already have restored a large payload.
-- **Producer middleware still runs.** It can further transform the DLQ record; do not infer the final wire layout solely from the call above.
-
-These are current behavior limitations, not a recommended message format. Verify or correct this path before relying on DLQ records for production recovery. This guide does not provide a replay snippet that assumes original key/value preservation.
+These are current behavior limitations, not a recommended message format. Verify this path before relying on DLQ records for production recovery.
 
 ## Offsets and delivery guarantees
 
@@ -146,10 +137,10 @@ Failures during parameter binding or deserialization inside the downstream handl
 
 - A missing claim or storage retrieval failure is outside topic-level dead-letter and retry protection.
 - Dead-letter routing sees the restored payload and copies the existing claim header.
-- With the current key/value swap, restored payload bytes become the DLQ key. Claim-check producer middleware measures only the value, so it does not offload a large DLQ key; the record can exceed broker limits.
+- Dead-letter routing forwards the current key/value bytes. If earlier middleware restored or enlarged payload data, producer middleware behavior (including claim-check size checks) still depends on the final key/value placement after all transforms.
 - If `DeleteAfterConsume` is enabled, a successfully handled DLQ failure can cause the outer claim-check middleware to delete the stored payload. A copied claim header may then reference missing data.
 
-Do not assume that enabling both policies makes DLQ storage or replay safe automatically. Verify the actual record layout, preserve external payloads for the recovery window, and define how recovery handles claim headers. Keeping `DeleteAfterConsume = false` avoids immediate deletion, but it does not fix the swapped fields or replace a retention policy.
+Do not assume that enabling both policies makes DLQ storage or replay safe automatically. Verify the actual record layout, preserve external payloads for the recovery window, and define how recovery handles claim headers. Keeping `DeleteAfterConsume = false` avoids immediate deletion, but it does not replace a retention policy.
 
 ## Operating a DLQ
 
