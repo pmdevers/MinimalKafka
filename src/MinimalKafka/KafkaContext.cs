@@ -34,6 +34,9 @@ public sealed class KafkaContext(
     /// <summary>The Kafka headers for the message.</summary>
     public Headers Headers => ConsumeResult.Message.Headers;
 
+    /// <summary>The CorrelationId header value from the consumed message, when present.</summary>
+    public string? CorrelationId => CorrelationHeaders.ReadCorrelationId(Headers);
+
     /// <summary>The message format configured for this topic, or null to use the default format.</summary>
     public string? Format { get; internal set; }
 

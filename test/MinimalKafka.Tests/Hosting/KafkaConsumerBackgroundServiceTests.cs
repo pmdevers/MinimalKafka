@@ -74,6 +74,7 @@ public class CatchAll : IConsumerMiddleware
                 new StubKafkaConsumerFactory(consumer),
                 provider.GetRequiredService<IServiceScopeFactory>(),
                 Substitute.For<IKafkaProducer>(),
+                new KafkaCorrelationContextAccessor(),
                 runtimeControl,
                 NullLogger<KafkaConsumerBackgroundService>.Instance);
 

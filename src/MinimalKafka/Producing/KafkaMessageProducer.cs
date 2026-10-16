@@ -12,7 +12,8 @@ internal sealed class KafkaMessageProducer(
     IServiceScopeFactory scopeFactory,
     ILogger<KafkaMessageProducer> logger,
     IKafkaSerializerRegistry serializers,
-    ITopicNamingConvention topicNameConvention
+    ITopicNamingConvention topicNameConvention,
+    IKafkaCorrelationContextAccessor correlationContextAccessor
     ) : IKafkaProducer, IDisposable
 {
     private readonly IProducer<byte[], byte[]> _producer = new ProducerBuilder<byte[], byte[]>(options.Value.CreateProducerConfig())
@@ -35,6 +36,16 @@ internal sealed class KafkaMessageProducer(
 
         var topicName = topicNameConvention.Apply(topic);
         var messageHeaders = headers ?? [];
+
+        if (!CorrelationHeaders.ContainsCorrelationId(messageHeaders))
+        {
+            var inheritedCorrelationId = correlationContextAccessor.CurrentCorrelationId;
+            var correlationId = string.IsNullOrWhiteSpace(inheritedCorrelationId)
+                ? Guid.NewGuid().ToString("D")
+                : inheritedCorrelationId;
+
+            CorrelationHeaders.SetCorrelationId(messageHeaders, correlationId);
+        }
 
         // Raw bytes are sent as-is. Other values use the topic format; the schema subject is derived from the physical topic name.
         var keyPayload = key switch

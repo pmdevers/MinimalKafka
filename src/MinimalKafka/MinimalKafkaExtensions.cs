@@ -34,13 +34,15 @@ public static class MinimalKafkaExtensions
             services.TryAddSingleton<ConsumerRuntimeControl>();
             services.TryAddSingleton<IConsumerRuntimeControl>(x => x.GetRequiredService<ConsumerRuntimeControl>());
             services.TryAddSingleton<IKafkaStoreFactory, InMemoryKafkaStoreFactory>();
+            services.TryAddSingleton<IKafkaCorrelationContextAccessor, KafkaCorrelationContextAccessor>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
             services.TryAddSingleton<IKafkaConsumerFactory, DefaultKafkaConsumerFactory>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
 
             services.AddTransient<ITopicRegistry>(x => x.GetRequiredService<TopicRegistry>());
 
-            configure?.Invoke(new MinimalKafkaBuilder(services));
+            configure?.Invoke(new MinimalKafkaBuilder(services)
+                .UseConsumerMiddleware<ExceptionLoggerMiddleware>());
             return services;
         }
     }

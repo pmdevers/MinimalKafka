@@ -12,6 +12,7 @@ internal sealed class KafkaConsumerBackgroundService(
     IKafkaConsumerFactory consumerFactory,
     IServiceScopeFactory scopeFactory,
     IKafkaProducer producer,
+    IKafkaCorrelationContextAccessor correlationContextAccessor,
     IConsumerRuntimeControl runtimeControl,
     ILogger<KafkaConsumerBackgroundService> logger) : BackgroundService
 {
@@ -20,6 +21,7 @@ internal sealed class KafkaConsumerBackgroundService(
     private readonly IKafkaConsumerFactory _consumerFactory = consumerFactory;
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
     private readonly IKafkaProducer _producer = producer;
+    private readonly IKafkaCorrelationContextAccessor _correlationContextAccessor = correlationContextAccessor;
     private readonly IConsumerRuntimeControl _runtimeControl = runtimeControl;
     private readonly ILogger<KafkaConsumerBackgroundService> _logger = logger;
 
@@ -98,8 +100,8 @@ internal sealed class KafkaConsumerBackgroundService(
                     pipeline = kafkaContext => current.InvokeAsync(kafkaContext, next);
                 }
 
+                using var correlationScope = _correlationContextAccessor.BeginScope(context.CorrelationId);
                 await pipeline(context).ConfigureAwait(false);
-
 
                 consumer.Commit(result);
             }
