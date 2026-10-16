@@ -26,13 +26,13 @@ public static class ServiceConfigs
             services.AddMinimalKafka(config =>
             {
                 config
-                    .WithConfiguration(builder.Configuration.GetSection("Kafka"))
-                    .WithAutoOffsetReset(AutoOffsetReset.Earliest)
-                    .WithJsonSerializer(configureSerializer: x =>
-                    {
-                        x.Converters.Add(new JsonStringEnumConverter());
-                    })
-                    .WithClaimCheck();
+                .WithConfiguration(builder.Configuration.GetSection("Kafka"))
+                .WithAutoOffsetReset(AutoOffsetReset.Earliest)
+                .WithJsonSerializer(configureSerializer: x =>
+                {
+                    x.Converters.Add(new JsonStringEnumConverter());
+                })
+                .WithClaimCheck();
             });
 
             logger.ServicesRegistered("Configuration");

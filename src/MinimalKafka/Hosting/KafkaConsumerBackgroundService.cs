@@ -1,8 +1,6 @@
-using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MinimalKafka.Middleware;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
@@ -11,7 +9,7 @@ namespace MinimalKafka.Hosting;
 
 internal sealed class KafkaConsumerBackgroundService(
     TopicRegistry registry,
-    IOptions<KafkaConsumerOptions> options,
+    IKafkaConsumerFactory consumerFactory,
     IServiceScopeFactory scopeFactory,
     IKafkaProducer producer,
     IConsumerRuntimeControl runtimeControl,
@@ -19,7 +17,7 @@ internal sealed class KafkaConsumerBackgroundService(
 {
     private static readonly TimeSpan _consumePollingInterval = TimeSpan.FromMilliseconds(250);
     private readonly TopicRegistry _registry = registry;
-    private readonly IOptions<KafkaConsumerOptions> _options = options;
+    private readonly IKafkaConsumerFactory _consumerFactory = consumerFactory;
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
     private readonly IKafkaProducer _producer = producer;
     private readonly IConsumerRuntimeControl _runtimeControl = runtimeControl;
@@ -38,9 +36,8 @@ internal sealed class KafkaConsumerBackgroundService(
         }
 
         var topics = ResolveTopics();
-        IConsumer<byte[], byte[]>? consumer = null;
+        IKafkaConsumer? consumer = null;
 
-#pragma warning disable S2139 // Exceptions should be either logged or rethrown but not both
         try
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -61,7 +58,7 @@ internal sealed class KafkaConsumerBackgroundService(
 
                 if (consumer is null)
                 {
-                    consumer = CreateConsumer();
+                    consumer = _consumerFactory.Create();
                     consumer.Subscribe(topics.Keys);
                     if (_logger.IsEnabled(LogLevel.Information))
                     {
@@ -83,6 +80,7 @@ internal sealed class KafkaConsumerBackgroundService(
                 }
 
                 await using var scope = _scopeFactory.CreateAsyncScope();
+
                 var context = new KafkaContext(result, _producer, scope.ServiceProvider, stoppingToken)
                 {
                     Format = registration.Format
@@ -101,16 +99,21 @@ internal sealed class KafkaConsumerBackgroundService(
                 }
 
                 await pipeline(context).ConfigureAwait(false);
+
+
                 consumer.Commit(result);
             }
         }
         catch (OperationCanceledException ex) when (stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation(ex, "Kafka consumer stopped OperationCancleled.");
+            _logger.LogInformation(ex, "Kafka consumer stopped OperationCanceled.");
         }
         catch (Exception exception)
         {
-            _logger.LogCritical(exception, "Kafka consumer stopped after message processing failed.");
+            if (_logger.IsEnabled(LogLevel.Critical))
+            {
+                _logger.LogCritical(exception, "Kafka consumer stopped after message processing failed.");
+            }
             throw;
         }
         finally
@@ -121,53 +124,8 @@ internal sealed class KafkaConsumerBackgroundService(
                 consumer.Dispose();
             }
         }
-#pragma warning restore S2139 // Exceptions should be either logged or rethrown but not both
     }
 
-    private IConsumer<byte[], byte[]> CreateConsumer()
-    {
-        var handlers = _options.Value.Handlers;
-
-        return new ConsumerBuilder<byte[], byte[]>(_options.Value.CreateConsumerConfig())
-            .SetKeyDeserializer(Deserializers.ByteArray)
-            .SetValueDeserializer(Deserializers.ByteArray)
-            .SetStatisticsHandler((consumer, statistics) => handlers.StatisticsHandler?.Invoke(consumer, statistics))
-            .SetErrorHandler((consumer, error) =>
-            {
-
-                if (handlers.ErrorHandler == null)
-                {
-                    if (_logger.IsEnabled(LogLevel.Error))
-                    {
-                        _logger.LogError("[{ErrorScope}] {ErrorCode} - {ErrorReason}", GetLocal(error), error.Code, error.Reason);
-                    }
-
-                    static string GetLocal(Error e)
-                    {
-                        string logVar = string.Empty;
-                        if (e.IsLocalError)
-                        {
-                            logVar = $"{logVar}LOCAL";
-                        }
-                        if (e.IsBrokerError)
-                        {
-                            logVar = $"{logVar}BROKER";
-                        }
-
-                        return logVar;
-                    }
-                }
-
-                handlers.ErrorHandler?.Invoke(consumer, error);
-            })
-
-            .SetLogHandler((consumer, logMessage) => handlers.LogHandler?.Invoke(consumer, logMessage))
-            .SetPartitionsAssignedHandler((consumer, partitions) => handlers.PartitionsAssignedHandler?.Invoke(consumer, partitions))
-            .SetPartitionsLostHandler((consumer, partitions) => handlers.PartitionsLostHandler?.Invoke(consumer, partitions))
-            .SetPartitionsRevokedHandler((consumer, partitions) => handlers.PartitionsRevokedHandler?.Invoke(consumer, partitions))
-            .SetOAuthBearerTokenRefreshHandler((consumer, config) => handlers.OAuthBearerTokenRefreshHandler?.Invoke(consumer, config))
-            .Build();
-    }
 
     private Dictionary<string, TopicRegistration> ResolveTopics()
     {
