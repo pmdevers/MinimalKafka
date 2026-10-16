@@ -14,8 +14,7 @@
 		<GenerateSBOM>true</GenerateSBOM>
 
 		<Description>
-			MinimalKafka is a simple and efficient Kafka consumer library designed to work seamlessly with .NET 8.0.
-			It allows for minimalistic and straightforward message consumption similar to minimal APIs.
+			MinimalKafka is a lightweight .NET library for Kafka consumers and producers with minimal API-style ergonomics, middleware pipelines, built-in resilience (retry/dead-letter), correlation ID propagation, and flexible serialization support.
 		</Description>
 		<Authors>Patrick Evers</Authors>
 		<Owners>$(CompanyName)</Owners>
