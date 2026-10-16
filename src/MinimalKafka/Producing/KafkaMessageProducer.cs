@@ -84,11 +84,14 @@ internal sealed class KafkaMessageProducer(
             },
             context.CancellationToken).ConfigureAwait(false);
 
-        logger.LogDebug(
-            "Produced Kafka message to {Topic} partition {Partition} at offset {Offset}.",
-            context.DeliveryResult.Topic,
-            context.DeliveryResult.Partition,
-            context.DeliveryResult.Offset);
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            logger.LogDebug(
+                "Produced Kafka message to {Topic} partition {Partition} at offset {Offset}.",
+                context.DeliveryResult.Topic,
+                context.DeliveryResult.Partition,
+                context.DeliveryResult.Offset);
+        }
     }
 
     public void Dispose()

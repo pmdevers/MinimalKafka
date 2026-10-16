@@ -3,7 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Attributes;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
+using MinimalKafka.Serialization;
 using System.Text;
+using System.Text.Json;
 
 namespace MinimalKafka.Tests;
 
@@ -60,6 +62,31 @@ public class HandlerAdapterTests
     }
 
     [Fact]
+    public async Task Create_ShouldThrow_When_ValueJson_IsInvalid()
+    {
+        var services = new ServiceCollection();
+        var state = new JsonHandlerState();
+        services.AddOptions<SerializationOptions>();
+        services.AddSingleton<IKafkaSerializer, JsonMessageSerializer>();
+        services.AddSingleton<IKafkaSerializerRegistry, MessageSerializerRegistry>();
+        services.AddSingleton(state);
+        var provider = services.BuildServiceProvider();
+
+        var context = CreateContext(
+            topic: "orders",
+            key: Encoding.UTF8.GetBytes("customer-1"),
+            value: Encoding.UTF8.GetBytes("{ invalid json"),
+            headers: [],
+            provider,
+            CancellationToken.None);
+
+        var sut = HandlerAdapter.Create(HandleJsonValue);
+
+        await Assert.ThrowsAsync<JsonException>(() => sut(context));
+        Assert.False(state.Invoked);
+    }
+
+    [Fact]
     public void Create_ShouldThrow_When_Handler_Returns_Unsupported_Type()
     {
         var exception = Assert.Throws<ArgumentException>(() => HandlerAdapter.Create((Func<Task<int>>)BadHandler));
@@ -95,6 +122,12 @@ public class HandlerAdapterTests
     {
         state.Key = key;
         state.Value = value;
+        return Task.CompletedTask;
+    }
+
+    private static Task HandleJsonValue([FromValue] JsonPayload value, [FromServices] JsonHandlerState state)
+    {
+        state.Invoked = true;
         return Task.CompletedTask;
     }
 
@@ -137,6 +170,16 @@ public class HandlerAdapterTests
         public KafkaContext? Context { get; set; }
 
         public CancellationToken CancellationToken { get; set; }
+    }
+
+    private sealed class JsonHandlerState
+    {
+        public bool Invoked { get; set; }
+    }
+
+    private sealed class JsonPayload
+    {
+        public string? Id { get; set; }
     }
 
     private sealed class TestKafkaProducer : IKafkaProducer

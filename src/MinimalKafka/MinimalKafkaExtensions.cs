@@ -35,6 +35,7 @@ public static class MinimalKafkaExtensions
             services.TryAddSingleton<IConsumerRuntimeControl>(x => x.GetRequiredService<ConsumerRuntimeControl>());
             services.TryAddSingleton<IKafkaStoreFactory, InMemoryKafkaStoreFactory>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
+            services.TryAddSingleton<IKafkaConsumerFactory, DefaultKafkaConsumerFactory>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
 
             services.AddTransient<ITopicRegistry>(x => x.GetRequiredService<TopicRegistry>());
