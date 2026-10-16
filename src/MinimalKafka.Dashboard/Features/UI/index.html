@@ -130,7 +130,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>Topic</th>
                     <th>Partition</th>
                     <th>Offset</th>
                     <th>Timestamp</th>
@@ -282,7 +281,6 @@
             for (const item of items) {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${escapeHtml(item.topic || "")}</td>
                     <td>${escapeHtml(String(item.partition ?? ""))}</td>
                     <td>${escapeHtml(String(item.offset ?? ""))}</td>
                     <td>${escapeHtml(item.timestamp || "")}</td>
