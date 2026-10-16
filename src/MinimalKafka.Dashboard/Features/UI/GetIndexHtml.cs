@@ -1,21 +1,27 @@
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using System.Text;
 
-namespace MinimalKafka.Dashboard;
+namespace MinimalKafka.Dashboard.Features.UI;
 
-internal static class DashboardUiContent
+internal static class GetIndexHtml
 {
     private static readonly Lazy<string> _indexHtml = new(LoadIndexHtml, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    public static string GetIndexHtml() => _indexHtml.Value;
+    internal const string Route = "/";
+
+    internal static IResult Handle()
+    {
+        return Results.Content(_indexHtml.Value, "text/html");
+    }
 
     private static string LoadIndexHtml()
     {
-        var provider = new ManifestEmbeddedFileProvider(typeof(DashboardUiContent).Assembly, "UI");
+        var provider = new ManifestEmbeddedFileProvider(typeof(GetIndexHtml).Assembly, "Features/UI");
         var file = provider.GetFileInfo("index.html");
         if (!file.Exists)
         {
-            throw new InvalidOperationException("Embedded dashboard UI resource 'UI/index.html' was not found.");
+            throw new InvalidOperationException("Embedded dashboard UI resource 'FeaturesUI/index.html' was not found.");
         }
 
         using var stream = file.CreateReadStream();

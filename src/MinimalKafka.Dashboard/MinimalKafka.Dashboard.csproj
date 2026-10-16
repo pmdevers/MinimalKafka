@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<EmbeddedResource Include="UI\**\*.*" />
+    <EmbeddedResource Include="Features\UI\index.html" />
   </ItemGroup>
 
   <ItemGroup>

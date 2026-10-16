@@ -8,6 +8,11 @@ namespace MinimalKafka;
 /// </summary>
 public sealed class KafkaConsumerOptions
 {
+    /// <summary>
+    /// Indicates whether the Kafka consumer should start automatically when the application starts.
+    /// </summary>
+    public bool StartAtStartup { get; set; } = true;
+
     /// <summary>Settings applied to both the consumer and the producer, such as bootstrap.servers and security.*.</summary>
     public Dictionary<string, string> Common { get; set; } = new ClientConfig().ToDictionary();
 
@@ -46,7 +51,7 @@ public sealed class KafkaConsumerOptions
     /// <summary>
     /// Creates an <see cref="AdminClientConfig"/> instance by merging the <see cref="Common"/> and <see cref="Consumer"/> settings.
     /// </summary>
-    public AdminClientConfig CreateAdminConfig() => new(Merge(Consumer.ToDictionary()));
+    public AdminClientConfig CreateAdminConfig() => new(Merge(Producer.ToDictionary()));
 
     private Dictionary<string, string> Merge(Dictionary<string, string> specific)
     {

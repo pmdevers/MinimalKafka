@@ -1,0 +1,38 @@
+﻿@MinimalKafka.Dashboard_HostAddress = http://localhost:5242
+@MinimalKafka.Dashboard_RoutePrefix = /kafka-dashboard
+
+### Dashboard UI
+GET {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/
+
+### Consumer status
+GET {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer/status
+
+### Start consumers
+POST {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer/start
+
+### Stop consumers
+POST {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer/stop
+
+### Consumer group members
+GET {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer-group/members
+
+### Consumer group offsets
+GET {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer-group/offsets
+
+### Reset consumer group offsets
+POST {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/consumer-group/offsets/reset
+Content-Type: application/json
+
+{
+  "offsets": [
+    {
+      "topic": "example-topic",
+      "partition": 0,
+      "offset": 0
+    }
+  ]
+}
+
+### Topic messages
+GET {{MinimalKafka.Dashboard_HostAddress}}{{MinimalKafka.Dashboard_RoutePrefix}}/api/topics/messages?topic=example-topic&count=10
+

@@ -2,10 +2,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using MinimalKafka.Dashboard.Contracts;
-using MinimalKafka.Dashboard.Services;
+using MinimalKafka.Dashboard.Features;
+using MinimalKafka.Dashboard.Features.UI;
 
 namespace MinimalKafka.Dashboard;
 
@@ -19,13 +18,22 @@ public static class MinimalKafkaDashboardExtensions
         /// <returns>The same service collection for chaining.</returns>
         public IServiceCollection AddMinimalKafkaDashboard(Action<MinimalKafkaDashboardOptions>? configure = null)
         {
-            services.AddOptions<MinimalKafkaDashboardOptions>();
+            services.AddOptions<MinimalKafkaDashboardOptions>()
+                .Validate(options => !string.IsNullOrWhiteSpace(options.RoutePrefix), "RoutePrefix cannot be empty.")
+                .Validate(options => options.RequestTimeout > TimeSpan.Zero, "RequestTimeout must be greater than zero.");
+
             if (configure is not null)
             {
                 services.Configure(configure);
             }
 
-            services.TryAddSingleton<IKafkaDashboardQueryService, KafkaDashboardQueryService>();
+            services.PostConfigure<MinimalKafkaDashboardOptions>(options =>
+            {
+                options.RoutePrefix = MinimalKafkaDashboardOptions.NormalizeRoutePrefix(options.RoutePrefix);
+            });
+
+            services.AddOptions<MinimalKafkaDashboardOptions>()
+                .Validate(options => options.RoutePrefix.StartsWith('/'), "RoutePrefix must start with '/'.");
 
             return services;
         }
@@ -38,63 +46,23 @@ public static class MinimalKafkaDashboardExtensions
         public IEndpointRouteBuilder MapMinimalKafkaDashboard()
         {
             var options = endpoints.ServiceProvider.GetRequiredService<IOptions<MinimalKafkaDashboardOptions>>().Value;
-            var routePrefix = NormalizeRoutePrefix(options.RoutePrefix);
 
-            var dashboard = endpoints.MapGroup(routePrefix);
+            var dashboard = endpoints.MapGroup(options.RoutePrefix);
             dashboard.WithTags("MinimalKafka Dashboard");
 
-            dashboard.MapGet("/", () => Results.Content(DashboardUiContent.GetIndexHtml(), "text/html"));
+            dashboard.MapGet(GetIndexHtml.Route, GetIndexHtml.Handle);
 
-            dashboard.MapGet("/api/consumer-group/members", async (IKafkaDashboardQueryService service, CancellationToken cancellationToken) =>
-            {
-                var response = await service.GetMembersAsync(cancellationToken).ConfigureAwait(false);
-                return Results.Ok(response);
-            });
+            dashboard.MapGet(GetMembers.Route, GetMembers.HandleAsync);
+            dashboard.MapGet(GetOffsets.Route, GetOffsets.HandleAsync);
+            dashboard.MapPost(ResetOffsets.Route, ResetOffsets.HandleAsync);
 
-            dashboard.MapGet("/api/consumer-group/offsets", async (IKafkaDashboardQueryService service, CancellationToken cancellationToken) =>
-            {
-                var response = await service.GetOffsetsAsync(cancellationToken).ConfigureAwait(false);
-                return Results.Ok(response);
-            });
+            dashboard.MapGet(GetTopicMessages.Route, GetTopicMessages.HandleAsync);
 
-            dashboard.MapPost("/api/consumer-group/offsets/reset", async (ConsumerGroupOffsetResetRequest request, IKafkaDashboardQueryService service, CancellationToken cancellationToken) =>
-            {
-                var response = await service.ResetOffsetsAsync(request, cancellationToken).ConfigureAwait(false);
-                return Results.Ok(response);
-            });
-
-            dashboard.MapGet("/api/topics/messages", async (string topic, int? count, IKafkaDashboardQueryService service, CancellationToken cancellationToken) =>
-            {
-                var response = await service.GetTopicMessagesAsync(topic, count ?? 50, cancellationToken).ConfigureAwait(false);
-                return Results.Ok(response);
-            });
-
-            dashboard.MapGet("/api/consumer/status", (IKafkaDashboardQueryService service) =>
-                Results.Ok(service.GetConsumerStatus()));
-
-            dashboard.MapPost("/api/consumer/start", (IKafkaDashboardQueryService service) =>
-                Results.Ok(service.StartConsumers()));
-
-            dashboard.MapPost("/api/consumer/stop", (IKafkaDashboardQueryService service) =>
-                Results.Ok(service.StopConsumers()));
+            dashboard.MapGet(GetConsumerStatus.Route, GetConsumerStatus.HandleAsync);
+            dashboard.MapPost(StartConsumers.Route, StartConsumers.HandleAsync);
+            dashboard.MapPost(StopConsumers.Route, StopConsumers.HandleAsync);
 
             return endpoints;
         }
-    }
-
-    private static string NormalizeRoutePrefix(string routePrefix)
-    {
-        if (string.IsNullOrWhiteSpace(routePrefix))
-        {
-            return "/minimal-kafka/dashboard";
-        }
-
-        var normalized = routePrefix.Trim();
-        if (!normalized.StartsWith('/'))
-        {
-            normalized = $"/{normalized}";
-        }
-
-        return normalized.TrimEnd('/');
     }
 }

@@ -1,4 +1,4 @@
-using System.Threading;
+using Microsoft.Extensions.Options;
 
 namespace MinimalKafka.Runtime;
 
@@ -15,9 +15,9 @@ public interface IConsumerRuntimeControl
     void Stop();
 }
 
-internal sealed class ConsumerRuntimeControl : IConsumerRuntimeControl
+internal sealed class ConsumerRuntimeControl(IOptions<KafkaConsumerOptions> options) : IConsumerRuntimeControl
 {
-    private int _isRunning = 1;
+    private int _isRunning = options.Value.StartAtStartup ? 1 : 0;
 
     public bool IsRunning => Volatile.Read(ref _isRunning) == 1;
 
