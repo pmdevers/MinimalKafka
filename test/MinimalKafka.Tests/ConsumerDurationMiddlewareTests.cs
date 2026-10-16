@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MinimalKafka.Middleware;
+using MinimalKafka.Middleware.Diagnostics;
 using MinimalKafka.Producing;
 using System.Collections.Concurrent;
 
@@ -19,7 +20,9 @@ public class ConsumerDurationMiddlewareTests
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
-        var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>().Single();
+        var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>()
+            .OfType<ConsumerDurationMiddleware>()
+            .Single();
 
         Assert.Equal("MinimalKafka.Middleware.Diagnostics.ConsumerDurationMiddleware", middleware.GetType().FullName);
     }
@@ -35,7 +38,9 @@ public class ConsumerDurationMiddlewareTests
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
-        var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>().Single();
+        var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>()
+            .OfType<ConsumerDurationMiddleware>()
+            .Single();
 
         await middleware.InvokeAsync(CreateContext("orders"), async _ => await Task.Delay(20));
 
