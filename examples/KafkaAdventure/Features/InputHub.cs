@@ -1,6 +1,6 @@
 ﻿using KafkaAdventure.Domain;
 using Microsoft.AspNetCore.SignalR;
-using MinimalKafka;
+using MinimalKafka.Producing;
 
 namespace KafkaAdventure.Features;
 
@@ -24,19 +24,20 @@ public class InputHub(
             return;
         }
 
+        var gameKey = Guid.Parse(gameId);
         var cmd = message.Split(' ');
 
         try
         {
             var command = Enum.Parse<Commands>(cmd.First(), true);
-            await producer.ProduceAsync("game-commands", gameId,
+            await producer.ProduceAsync("game-commands", gameKey,
                 new AppCommand(command, [.. cmd.Skip(1)]));
         }
         catch (Exception ex)
         {
             await Clients.Group(gameId).SendAsync("ReceiveMessage", $"Unknown Command '{message}'");
 
-            await producer.ProduceAsync("game-commands", gameId,
+            await producer.ProduceAsync("game-commands", gameKey,
                 new AppCommand(Commands.Help, [.. cmd.Skip(1)]));
 
             Console.WriteLine(ex.Message);

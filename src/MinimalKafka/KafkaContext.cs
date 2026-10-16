@@ -1,171 +1,60 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using MinimalKafka.Builders;
+using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Producing;
 
 namespace MinimalKafka;
 
-/// <summary>
-/// Encapsulates all Information during consume of a message.
-/// </summary>
-public abstract class KafkaContext(IServiceProvider serviceProvider) : IDisposable
+/// <summary>Represents the next delegate in the consumer middleware pipeline.</summary>
+/// <param name="context">The current consumer context.</param>
+public delegate Task ConsumerDelegate(KafkaContext context);
+
+/// <summary>Represents a Kafka message being consumed.</summary>
+/// <param name="consumeResult">The consumed Kafka result.</param>
+/// <param name="producer">The producer available for publishing additional messages.</param>
+/// <param name="requestServices">The service provider scoped to the handler invocation.</param>
+/// <param name="cancellationToken">The token used to cancel processing.</param>
+public sealed class KafkaContext(
+    ConsumeResult<byte[], byte[]> consumeResult,
+    IKafkaProducer producer,
+    IServiceProvider requestServices,
+    CancellationToken cancellationToken)
 {
-    /// <summary>
-    /// Creates a new instance of <see cref="KafkaContext"/> with the specified parameters.
-    /// </summary>
-    /// <returns>A new instance of <see cref="KafkaContext"/>.</returns>
-    public static KafkaContext Empty() => new EmptyKafkaContext();
+    /// <summary>The consumed Kafka result.</summary>
+    public ConsumeResult<byte[], byte[]> ConsumeResult { get; } = consumeResult;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="consumerKey"></param>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
-    public static KafkaContext Create(KafkaConsumerKey consumerKey, IServiceProvider serviceProvider)
-        => Create(consumerKey, [], KafkaMessage.Empty, serviceProvider);
+    /// <summary>The topic the message was consumed from.</summary>
+    public string Topic { get; } = consumeResult.Topic;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="consumerKey"></param>
-    /// <param name="metadata"></param>
-    /// <param name="message"></param>
-    /// <param name="serviceProvider"></param>
-    /// <returns></returns>
-    public static KafkaContext Create(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, KafkaMessage message, IServiceProvider serviceProvider)
-        => new DefaultKafkaContext(consumerKey, metadata, message, serviceProvider);
+    /// <summary>The optional message key.</summary>
+    public byte[]? Key { get; } = consumeResult.Message.Key;
 
+    /// <summary>The message value.</summary>
+    public byte[]? Value { get; set; } = consumeResult.Message.Value;
 
-    private readonly AsyncServiceScope _serviceScope = serviceProvider.CreateAsyncScope();
+    /// <summary>The Kafka headers for the message.</summary>
+    public Headers Headers => ConsumeResult.Message.Headers;
 
-    private bool _disposed;
+    /// <summary>The message format configured for this topic, or null to use the default format.</summary>
+    public string? Format { get; internal set; }
 
-    /// <summary>
-    /// The service provider.
-    /// </summary>
-    public IServiceProvider RequestServices => _serviceScope.ServiceProvider;
+    /// <summary>The producer available for publishing additional messages.</summary>
+    public IKafkaProducer Producer { get; } = producer;
 
-    /// <summary>
-    /// The name of the topic.
-    /// </summary>
-    public abstract string TopicName { get; }
+    /// <summary>The service provider scoped to the handler invocation.</summary>
+    public IServiceProvider RequestServices { get; } = requestServices;
 
-    /// <summary>
-    /// The client identifier.
-    /// </summary>
-    public abstract string ClientId { get; }
-
-    /// <summary>
-    /// The Consumer group identifier.
-    /// </summary>
-    public abstract string GroupId { get; }
-
-    /// <summary>
-    /// The partition number of the message.
-    /// </summary>
-    public abstract int Partition { get; }
-
-    /// <summary>
-    /// The offset of the message in the partition.
-    /// </summary>
-    public abstract long Offset { get; }
-
-    /// <summary>
-    /// The <see cref="ReadOnlySpan{T}"/> of the message key.
-    /// </summary>
-    public abstract ReadOnlySpan<byte> Key { get; }
-
-    /// <summary>
-    /// The <see cref="ReadOnlySpan{T}"/> of the message value.
-    /// </summary>
-    public abstract ReadOnlySpan<byte> Value { get; }
-
-    /// <summary>
-    /// The kafka message headers.
-    /// </summary>
-    public abstract IReadOnlyDictionary<string, string> Headers { get; }
-
-    /// <summary>
-    /// The metadata for this consumer.
-    /// </summary>
-    public abstract IReadOnlyList<object> Metadata { get; }
-
-    internal void Produce(KafkaMessage message)
-    {
-        _messages.Add(message);
-    }
-
-    private readonly List<KafkaMessage> _messages = [];
-
-    internal IReadOnlyList<KafkaMessage> Messages => _messages.AsReadOnly();
-
-    /// <summary>
-    /// Releases the resources used by the current instance of the class.
-    /// </summary>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases the resources used by the current instance of the class.
-    /// </summary>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (disposing)
-        {
-            _serviceScope.Dispose();
-        }
-
-        _disposed = true;
-    }
+    /// <summary>The token used to cancel processing.</summary>
+    public CancellationToken CancellationToken { get; } = cancellationToken;
 }
 
-internal sealed class DefaultKafkaContext(KafkaConsumerKey consumerKey, IReadOnlyList<object> metadata, KafkaMessage message, IServiceProvider requestServices) : KafkaContext(requestServices)
+/// <summary>Configures Kafka consumption and production. Features are added as extension methods on this builder.</summary>
+public interface IMinimalKafkaBuilder
 {
-    private readonly KafkaMessage _message = message;
-
-    public override string TopicName { get; } = consumerKey.TopicName;
-
-    public override string ClientId { get; } = consumerKey.ClientId;
-
-    public override string GroupId { get; } = consumerKey.GroupId;
-
-    public override int Partition => _message.Partition;
-
-    public override long Offset => _message.Offset;
-
-    public override IReadOnlyList<object> Metadata { get; } = metadata;
-
-    public override ReadOnlySpan<byte> Key => _message.Key;
-
-    public override ReadOnlySpan<byte> Value => _message.Value;
-
-    public override IReadOnlyDictionary<string, string> Headers => _message.Headers.AsReadOnly();
+    /// <summary>The service collection used to register MinimalKafka services.</summary>
+    IServiceCollection Services { get; }
 }
 
-internal sealed class EmptyKafkaContext() : KafkaContext(EmptyServiceProvider.Instance)
+internal sealed class MinimalKafkaBuilder(IServiceCollection services) : IMinimalKafkaBuilder
 {
-    public override string TopicName => string.Empty;
-
-    public override string ClientId => string.Empty;
-
-    public override string GroupId => string.Empty;
-
-    public override ReadOnlySpan<byte> Key => [];
-
-    public override ReadOnlySpan<byte> Value => [];
-
-    public override IReadOnlyDictionary<string, string> Headers => new Dictionary<string, string>();
-
-    public override IReadOnlyList<object> Metadata => [];
-
-    public override int Partition => 0;
-
-    public override long Offset => 0;
+    public IServiceCollection Services { get; } = services;
 }

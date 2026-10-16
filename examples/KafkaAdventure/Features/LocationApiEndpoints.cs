@@ -1,6 +1,6 @@
 ﻿using KafkaAdventure.Domain;
 using Microsoft.AspNetCore.Mvc;
-using MinimalKafka;
+using MinimalKafka.Producing;
 
 namespace KafkaAdventure.Features;
 

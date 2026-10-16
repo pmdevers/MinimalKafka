@@ -10,7 +10,7 @@ namespace MinimalKafka.Stream.Storage.RocksDB;
 public sealed class RocksDBStreamStoreFactory : IKafkaStoreFactory
 {
     private readonly RocksDb _db;
-    private readonly ConcurrentDictionary<string, ColumnFamilyHandle> _columnFamilies = new();
+    private readonly ConcurrentDictionary<string, ColumnFamilyHandle> _columnFamilies = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RocksDBStreamStoreFactory"/> class.
@@ -85,16 +85,16 @@ public sealed class RocksDBStreamStoreFactory : IKafkaStoreFactory
     /// <inheritdoc />
     public IKafkaStore GetStore(string topicName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(topicName);
 
         lock (_lock)
         {
             var cfHandle = _columnFamilies.GetOrAdd(topicName, key =>
             {
-                // Only create if truly absent
                 return _db.CreateColumnFamily(new ColumnFamilyOptions(), key);
             });
 
-            return new RocksDBStreamStore(ServiceProvider, _db, cfHandle);
+            return new RocksDBStreamStore(ServiceProvider, topicName, _db, cfHandle);
         }
     }
 }

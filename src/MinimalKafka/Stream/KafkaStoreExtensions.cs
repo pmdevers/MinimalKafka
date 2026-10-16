@@ -1,59 +1,75 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using MinimalKafka.Serializers;
+using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
+using MinimalKafka.Serialization;
+using System.Text;
 
 namespace MinimalKafka.Stream;
 
-
 /// <summary>
-/// Extension methods for querying data from an <see cref="IKafkaStore"/> using serializers.
+/// Helpers for working with strongly typed stream stores.
 /// </summary>
 public static class KafkaStoreExtensions
 {
-
-    /// <summary>
-    /// Finds and deserializes a value from the store using the provided key.
-    /// </summary>
-    /// <typeparam name="TKey">The type of the key to search for.</typeparam>
-    /// <typeparam name="TValue">The type of the value to deserialize.</typeparam>
-    /// <param name="store">The Kafka store instance.</param>
-    /// <param name="key">The key to look up in the store.</param>
-    /// <returns>
-    /// A <typeparamref name="TValue"/> instance if found; otherwise <c>null</c>.
-    /// </returns>
-    public async static ValueTask<TValue?> FindByKeyAsync<TKey, TValue>(this IKafkaStore store, TKey key)
+    extension(IKafkaStore store)
     {
-        var keySerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TKey>>();
-        var valueSerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TValue>>();
-
-        var keyVal = keySerializer.Serialize(key);
-
-        var value = await store.FindByKeyAsync(keyVal);
-        return value == null ? default : valueSerializer.Deserialize(value);
-    }
-
-    /// <summary>
-    /// Asynchronously enumerates all deserialized values from the store that match the given predicate.
-    /// </summary>
-    /// <typeparam name="TValue">The type of the values to retrieve and filter.</typeparam>
-    /// <param name="store">The Kafka store instance.</param>
-    /// <param name="predicate">
-    /// A function to test each value for a condition.
-    /// </param>
-    /// <returns>
-    /// An asynchronous stream of <typeparamref name="TValue"/> instances matching the predicate.
-    /// </returns>
-    public static async IAsyncEnumerable<TValue> FindAsync<TValue>(this IKafkaStore store, Func<TValue, bool> predicate)
-    {
-        var valueSerializer = store.ServiceProvider.GetRequiredService<IKafkaSerializer<TValue>>();
-
-        await foreach (var item in store.GetItems())
+        /// <summary>Reads and deserializes a stored value for the specified key.</summary>
+        public async ValueTask<TValue?> FindByKeyAsync<TKey, TValue>(
+            TKey key,
+            string? format = null,
+            CancellationToken cancellationToken = default)
         {
-            var val = valueSerializer.Deserialize(item);
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(key);
 
-            if (val is not null && predicate(val))
-            {
-                yield return val;
-            }
+            var keyBytes = await StreamSerialization.SerializeAsync(
+                store.ServiceProvider,
+                store.TopicName,
+                key,
+                [],
+                format,
+                cancellationToken).ConfigureAwait(false);
+
+            var valueBytes = await store.FindByKeyAsync(keyBytes).ConfigureAwait(false);
+            return valueBytes is null
+                ? default
+                : await StreamSerialization.DeserializeAsync<TValue>(
+                    store.ServiceProvider,
+                    valueBytes,
+                    store.TopicName,
+                    [],
+                    format,
+                    cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>Stores a strongly typed value using the specified key.</summary>
+        public async ValueTask<TValue> AddOrUpdateAsync<TKey, TValue>(
+            TKey key,
+            TValue value,
+            string? format = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(store);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
+
+            var keyBytes = await StreamSerialization.SerializeAsync(
+                store.ServiceProvider,
+                store.TopicName,
+                key,
+                [],
+                format,
+                cancellationToken).ConfigureAwait(false);
+
+            var valueBytes = await StreamSerialization.SerializeAsync(
+                store.ServiceProvider,
+                store.TopicName,
+                value,
+                [],
+                format,
+                cancellationToken).ConfigureAwait(false);
+
+            await store.AddOrUpdate(keyBytes, valueBytes).ConfigureAwait(false);
+            return value;
         }
     }
 }

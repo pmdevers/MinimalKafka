@@ -1,5 +1,4 @@
 ﻿using KafkaAdventure.Domain;
-using MinimalKafka;
 using MinimalKafka.Stream;
 
 namespace KafkaAdventure.Features;
@@ -15,7 +14,7 @@ public static class GoProcessor
             {
                 var (command, location) = v;
 
-                if (command is null || c.TopicName == "game-player-location")
+                if (command is null || c.TopicName.StartsWith("game-player-location"))
                 {
                     return;
                 }
@@ -38,12 +37,15 @@ public static class GoProcessor
                 }
             });
 
+
         builder.MapStream<int, Location>("game-locations")
             .Join<Guid, PlayerPosition>("game-player-position")
             .On((location, position) => location.Id == position.LocationId)
             .Into(async (c, r) =>
             {
                 var (location, position) = r;
+
+                if (position is null) return;
 
                 await c.ProduceAsync("game-player-location", position.PlayerId, location);
             });

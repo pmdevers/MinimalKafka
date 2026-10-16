@@ -2,15 +2,21 @@
 
 namespace MinimalKafka.Stream.Storage.RocksDB;
 
-
-internal class RocksDBStreamStore(IServiceProvider serviceProvider, RocksDb db, ColumnFamilyHandle cfHandle) : IKafkaStore
+internal sealed class RocksDBStreamStore(
+    IServiceProvider serviceProvider,
+    string topicName,
+    RocksDb db,
+    ColumnFamilyHandle cfHandle) : IKafkaStore
 {
-    public IServiceProvider ServiceProvider => serviceProvider;
+    public IServiceProvider ServiceProvider { get; } = serviceProvider;
+
+    public string TopicName { get; } = topicName;
 
     public ValueTask<byte[]> AddOrUpdate(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
-        db.Put(key.ToArray(), value.ToArray(), cfHandle);
-        return ValueTask.FromResult(value.ToArray());
+        var serializedValue = value.ToArray();
+        db.Put(key.ToArray(), serializedValue, cfHandle);
+        return ValueTask.FromResult(serializedValue);
     }
 
     public ValueTask<byte[]?> FindByKeyAsync(ReadOnlySpan<byte> key)

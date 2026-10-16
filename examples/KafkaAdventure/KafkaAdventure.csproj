@@ -7,15 +7,30 @@
     <UserSecretsId>d9496ae5-bc08-4c31-985d-3b37998f479f</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Locations.json" />
+    <EmbeddedResource Include="Features\UI\**\*.*" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MinimalKafka.Dashboard\MinimalKafka.Dashboard.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka.RocksDB\MinimalKafka.RocksDB.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Features\UI\index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	<PackageReference Include="Confluent.Kafka" />
+	<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\MinimalKafka\MinimalKafka.csproj" />
+  </ItemGroup>
+
+</Project>

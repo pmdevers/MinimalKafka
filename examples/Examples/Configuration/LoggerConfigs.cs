@@ -1,0 +1,25 @@
+using Serilog;
+
+namespace Examples.Configuration;
+
+public static class LoggerConfigs
+{
+    extension(WebApplicationBuilder builder)
+    {
+        public WebApplicationBuilder AddLoggerConfigs()
+        {
+            var configuration = builder.Configuration;
+
+            builder.Logging.ClearProviders();
+            // Configure logging
+            builder.Logging.AddSerilog(new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
+                .WriteTo.Console()
+                .CreateLogger());
+
+            return builder;
+        }
+    }
+}

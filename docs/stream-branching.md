@@ -15,7 +15,7 @@ builder.MapPost("/movies", async (
 });
 
 builder.MapStream<Guid, Movie>("movies")
-    .SplitInto(x => {
+    .Branch(x => {
         x.Branch((k, v) => v.Genre == Genre.Drama).To("drama-movies");
         x.Branch((k, v) => v.Genre == Genre.Horror).To("horror-movies");
         x.Branch((k, v) => v.Genre == Genre.Fantasy).To("fantasy-movies");
@@ -42,7 +42,7 @@ flowchart TD
 ## How It Works
 - MapPost: Accepts movie data and produces it to the "movies" topic.
 - MapStream: Consumes the "movies" topic as a stream of Movie records.
-- SplitInto: Defines branching logic:
+- Branch: Defines branching logic:
     - Each Branch specifies a predicate to match a genre and routes matching messages to a specific topic.
     - DefaultBranch handles any messages that do not match previous branches.
 

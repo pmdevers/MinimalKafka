@@ -157,7 +157,7 @@ flowchart LR
 ```csharp
 
 app.MapStream<Guid, DatamodelA>("topic-a")
-   .SplitInto(x =>
+   .Branch(x =>
    {
        x.Branch((_, v) => v.DataA == "v1", (c, k, v) => c.ProduceAsync("topic-1", k, v));
        x.Branch((_, v) => v.DataA == "v2", (c, k, v) => c.ProduceAsync("topic-2", k, v));
@@ -184,7 +184,7 @@ F -->|Produce| G[Topic-B]
 ```csharp
 app.MapStream<Guid, DatamodelA>("topic-a")
    .Join<Guid, DatamodelB>("topic-b").OnKey()
-   .SplitInto(x =>
+   .Branch(x =>
    {
        // Initial Create Command
        x.Branch((_, v) => v.Item1?.DataA == "Create", async (c, k, v) => {

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\..\examples\Examples\Examples.csproj" />
     <ProjectReference Include="..\..\src\MinimalKafka\MinimalKafka.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -11,5 +12,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Serializers\" />
+    <Folder Include="Stream\" />
   </ItemGroup>
 </Project>
