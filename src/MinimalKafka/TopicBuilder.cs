@@ -13,6 +13,8 @@ public sealed class TopicBuilder
 
     internal TopicBuilder(TopicRegistration registration) => _registration = registration;
 
+    internal TopicRegistration Registration => _registration;
+
     /// <summary>Gets the Kafka topic name for this builder.</summary>
     public string Topic => _registration.Topic;
 

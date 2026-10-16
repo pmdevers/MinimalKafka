@@ -186,11 +186,12 @@ public class HandlerAdapterTests
     {
         public Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
             string topic,
-            TKey key,
-            TValue value,
+            TKey? key,
+            TValue? value,
             Headers? headers = null,
-            CancellationToken cancellationToken = default,
-            string? format = null)
+            string? format = null,
+            CancellationToken cancellationToken = default
+            )
         {
             throw new NotSupportedException();
         }

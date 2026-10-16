@@ -57,6 +57,7 @@ public static class MinimalKafkaDashboardExtensions
             dashboard.MapPost(ResetOffsets.Route, ResetOffsets.HandleAsync);
 
             dashboard.MapGet(GetTopicMessages.Route, GetTopicMessages.HandleAsync);
+            dashboard.MapGet(GetDeadLetterTopics.Route, GetDeadLetterTopics.HandleAsync);
 
             dashboard.MapGet(GetConsumerStatus.Route, GetConsumerStatus.HandleAsync);
             dashboard.MapPost(StartConsumers.Route, StartConsumers.HandleAsync);

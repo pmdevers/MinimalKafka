@@ -22,15 +22,14 @@ internal sealed class KafkaMessageProducer(
 
     public async Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
         string topic,
-        TKey key,
-        TValue value,
+        TKey? key,
+        TValue? value,
         Headers? headers = null,
-        CancellationToken cancellationToken = default,
-        string? format = null)
+        string? format = null,
+        CancellationToken cancellationToken = default
+        )
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(value);
         cancellationToken.ThrowIfCancellationRequested();
 
         var topicName = topicNameConvention.Apply(topic);
@@ -39,6 +38,7 @@ internal sealed class KafkaMessageProducer(
         // Raw bytes are sent as-is. Other values use the topic format; the schema subject is derived from the physical topic name.
         var keyPayload = key switch
         {
+            null => null,
             byte[] bytes => bytes,
             string text => Encoding.UTF8.GetBytes(text),
             _ => await serializers.Get(format)
@@ -48,6 +48,7 @@ internal sealed class KafkaMessageProducer(
 
         var payload = value switch
         {
+            null => null,
             byte[] bytes => bytes,
             string text => Encoding.UTF8.GetBytes(text),
             _ => await serializers.Get(format)
@@ -74,6 +75,7 @@ internal sealed class KafkaMessageProducer(
 
     private async Task PublishAsync(ProducerContext context)
     {
+#pragma warning disable CS8601 // Kafka messages allow null key/value at runtime
         context.DeliveryResult = await _producer.ProduceAsync(
             context.Topic,
             new Message<byte[], byte[]>
@@ -83,6 +85,7 @@ internal sealed class KafkaMessageProducer(
                 Headers = context.Headers
             },
             context.CancellationToken).ConfigureAwait(false);
+#pragma warning restore CS8601
 
         if (logger.IsEnabled(LogLevel.Debug))
         {

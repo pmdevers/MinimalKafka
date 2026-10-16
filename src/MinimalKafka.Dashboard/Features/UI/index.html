@@ -100,6 +100,7 @@
     <div class="tabs">
         <button id="tab-offsets" class="tab-button active" data-tab="offsets" type="button">Topic Offsets</button>
         <button id="tab-messages" class="tab-button" data-tab="messages" type="button">Topic Messages</button>
+        <button id="tab-dlq" class="tab-button" data-tab="dlq" type="button">Dead Letter Queues</button>
     </div>
 
     <section id="panel-offsets" class="tab-panel active">
@@ -141,6 +142,28 @@
         </table>
     </section>
 
+    <section id="panel-dlq" class="tab-panel">
+        <h2>Dead Letter Queue Messages</h2>
+        <div>
+            <label>Source Topic <select id="dlq-source-topic"></select></label>
+            <label>DLQ Topic <input id="dlq-topic" type="text" readonly /></label>
+            <label>Count <input id="dlq-count" type="number" min="1" max="500" step="1" value="50" /></label>
+            <button id="refresh-dlq">Refresh DLQ Messages</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Partition</th>
+                    <th>Offset</th>
+                    <th>Timestamp</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="dlq-messages"></tbody>
+        </table>
+    </section>
+
     <script>
         const membersBody = document.getElementById("members");
         const offsetsBody = document.getElementById("offsets");
@@ -153,10 +176,17 @@
         const messagesInterval = document.getElementById("messages-interval");
         const tabOffsets = document.getElementById("tab-offsets");
         const tabMessages = document.getElementById("tab-messages");
+        const tabDlq = document.getElementById("tab-dlq");
         const panelOffsets = document.getElementById("panel-offsets");
         const panelMessages = document.getElementById("panel-messages");
+        const panelDlq = document.getElementById("panel-dlq");
+        const dlqMessagesBody = document.getElementById("dlq-messages");
+        const dlqSourceTopic = document.getElementById("dlq-source-topic");
+        const dlqTopic = document.getElementById("dlq-topic");
+        const dlqCount = document.getElementById("dlq-count");
         let currentMembers = [];
         let messagesAutoRefreshId = null;
+        let deadLetterMappings = [];
 
         function getApiUrl(path) {
             const normalizedPrefix = window.location.pathname.endsWith("/")
@@ -171,27 +201,32 @@
             error.textContent = "";
 
             try {
-                const [membersResponse, offsetsResponse, consumerStatusResponse] = await Promise.all([
+                const [membersResponse, offsetsResponse, consumerStatusResponse, dlqTopicsResponse] = await Promise.all([
                     fetch(getApiUrl("api/consumer-group/members")),
                     fetch(getApiUrl("api/consumer-group/offsets")),
-                    fetch(getApiUrl("api/consumer/status"))
+                    fetch(getApiUrl("api/consumer/status")),
+                    fetch(getApiUrl("api/dead-letter/topics"))
                 ]);
 
-                if (!membersResponse.ok || !offsetsResponse.ok || !consumerStatusResponse.ok) {
+                if (!membersResponse.ok || !offsetsResponse.ok || !consumerStatusResponse.ok || !dlqTopicsResponse.ok) {
                     throw new Error("Dashboard API request failed.");
                 }
 
                 const membersData = await membersResponse.json();
                 const offsetsData = await offsetsResponse.json();
                 const consumerStatusData = await consumerStatusResponse.json();
+                const dlqTopicsData = await dlqTopicsResponse.json();
 
                 currentMembers = membersData.members || [];
                 const currentOffsets = offsetsData.offsets || [];
+                deadLetterMappings = dlqTopicsData.topics || [];
 
                 renderMembers(currentMembers);
                 renderOffsets(currentOffsets);
                 populateTopicSelector(currentOffsets);
+                populateDeadLetterSelector(deadLetterMappings);
                 await loadTopicMessages();
+                await loadDeadLetterMessages();
 
                 setConsumerState(Boolean(consumerStatusData.isRunning));
                 setOffsetResetEnabled(currentMembers.length === 0);
@@ -200,6 +235,8 @@
                 status.textContent = "";
                 consumerStatus.textContent = "";
                 messagesBody.innerHTML = "";
+                dlqMessagesBody.innerHTML = "";
+                dlqTopic.value = "";
                 setOffsetResetEnabled(false);
                 error.textContent = e.message || "Unexpected error";
             }
@@ -256,6 +293,34 @@
             messagesTopic.value = nextTopic;
         }
 
+        function populateDeadLetterSelector(mappings) {
+            const selectedSourceTopic = dlqSourceTopic.value;
+            const topics = mappings
+                .filter(item => item && item.sourceTopic && item.deadLetterTopic)
+                .sort((left, right) => left.sourceTopic.localeCompare(right.sourceTopic));
+
+            dlqSourceTopic.innerHTML = "";
+            for (const mapping of topics) {
+                const option = document.createElement("option");
+                option.value = mapping.sourceTopic;
+                option.textContent = mapping.sourceTopic;
+                dlqSourceTopic.appendChild(option);
+            }
+
+            if (topics.length === 0) {
+                dlqTopic.value = "";
+                return;
+            }
+
+            const nextSourceTopic = topics.some(item => item.sourceTopic === selectedSourceTopic)
+                ? selectedSourceTopic
+                : topics[0].sourceTopic;
+
+            dlqSourceTopic.value = nextSourceTopic;
+            const selectedMapping = topics.find(item => item.sourceTopic === nextSourceTopic);
+            dlqTopic.value = selectedMapping ? selectedMapping.deadLetterTopic : "";
+        }
+
         async function loadTopicMessages() {
             const topic = messagesTopic.value;
             if (!topic) {
@@ -273,11 +338,41 @@
             }
 
             const data = await response.json();
-            renderTopicMessages(data.messages || []);
+            renderMessages(messagesBody, data.messages || []);
         }
 
-        function renderTopicMessages(items) {
-            messagesBody.innerHTML = "";
+        async function loadDeadLetterMessages() {
+            const sourceTopic = dlqSourceTopic.value;
+            if (!sourceTopic) {
+                dlqMessagesBody.innerHTML = "";
+                dlqTopic.value = "";
+                return;
+            }
+
+            const selectedMapping = deadLetterMappings.find(item => item.sourceTopic === sourceTopic);
+            const topic = selectedMapping ? selectedMapping.deadLetterTopic : "";
+            dlqTopic.value = topic;
+
+            if (!topic) {
+                dlqMessagesBody.innerHTML = "";
+                return;
+            }
+
+            const count = Number.parseInt(dlqCount.value, 10);
+            const normalizedCount = Number.isInteger(count) && count > 0 ? Math.min(count, 500) : 50;
+            dlqCount.value = String(normalizedCount);
+
+            const response = await fetch(getApiUrl(`api/topics/messages?topic=${encodeURIComponent(topic)}&count=${normalizedCount}`));
+            if (!response.ok) {
+                throw new Error("Dead-letter messages request failed.");
+            }
+
+            const data = await response.json();
+            renderMessages(dlqMessagesBody, data.messages || []);
+        }
+
+        function renderMessages(targetBody, items) {
+            targetBody.innerHTML = "";
 
             for (const item of items) {
                 const row = document.createElement("tr");
@@ -287,7 +382,7 @@
                     <td>${escapeHtml(String(item.offset ?? ""))}</td>
                     <td>${escapeHtml(item.timestamp || "")}</td>
                     <td><code>${escapeHtml(item.value || "")}</code></td>`;
-                messagesBody.appendChild(row);
+                targetBody.appendChild(row);
             }
         }
 
@@ -301,10 +396,16 @@
 
         function setActiveTab(tab) {
             const showOffsets = tab === "offsets";
+            const showMessages = tab === "messages";
+            const showDlq = tab === "dlq";
+
             tabOffsets.classList.toggle("active", showOffsets);
-            tabMessages.classList.toggle("active", !showOffsets);
+            tabMessages.classList.toggle("active", showMessages);
+            tabDlq.classList.toggle("active", showDlq);
+
             panelOffsets.classList.toggle("active", showOffsets);
-            panelMessages.classList.toggle("active", !showOffsets);
+            panelMessages.classList.toggle("active", showMessages);
+            panelDlq.classList.toggle("active", showDlq);
         }
 
         async function setConsumersRunning(isRunning) {
@@ -380,10 +481,19 @@
         document.getElementById("refresh").addEventListener("click", load);
         tabOffsets.addEventListener("click", () => setActiveTab("offsets"));
         tabMessages.addEventListener("click", () => setActiveTab("messages"));
+        tabDlq.addEventListener("click", () => setActiveTab("dlq"));
         document.getElementById("refresh-messages").addEventListener("click", async () => {
             try {
                 error.textContent = "";
                 await loadTopicMessages();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
+        document.getElementById("refresh-dlq").addEventListener("click", async () => {
+            try {
+                error.textContent = "";
+                await loadDeadLetterMessages();
             } catch (e) {
                 error.textContent = e.message || "Unexpected error";
             }
@@ -396,7 +506,23 @@
                 error.textContent = e.message || "Unexpected error";
             }
         });
+        dlqSourceTopic.addEventListener("change", async () => {
+            try {
+                error.textContent = "";
+                await loadDeadLetterMessages();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
         messagesInterval.addEventListener("change", startMessagesAutoRefresh);
+        dlqCount.addEventListener("change", async () => {
+            try {
+                error.textContent = "";
+                await loadDeadLetterMessages();
+            } catch (e) {
+                error.textContent = e.message || "Unexpected error";
+            }
+        });
         document.getElementById("start-consumer").addEventListener("click", async () => {
             try {
                 await setConsumersRunning(true);

@@ -289,11 +289,12 @@ public class StreamProcessingTests
 
         public Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
             string topic,
-            TKey key,
-            TValue value,
+            TKey? key,
+            TValue? value,
             Headers? headers = null,
-            CancellationToken cancellationToken = default,
-            string? format = null)
+            string? format = null,
+            CancellationToken cancellationToken = default
+            )
         {
             Messages.Add(new ProducedMessage(topic, key, value, format));
             return Task.FromResult(new DeliveryResult<byte[], byte[]>

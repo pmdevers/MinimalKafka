@@ -24,7 +24,7 @@ public sealed class ClaimCheckProducerMiddleware(
     public async Task InvokeAsync(ProducerContext context, ProducerDelegate next)
     {
         var settings = options.Value;
-        if (context.Value.Length <= settings.ThresholdBytes)
+        if (context.Value is null || context.Value.Length <= settings.ThresholdBytes)
         {
             await next(context).ConfigureAwait(false);
             return;

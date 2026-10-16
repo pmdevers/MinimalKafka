@@ -42,10 +42,10 @@ internal sealed class DeadLetterMiddleware(string deadLetterTopic, ILogger<DeadL
 
             await context.Producer.ProduceAsync(
                 deadLetterTopic,
-                context.Key ?? [],
-                context.Value ?? [],
+                context.Key,
+                context.Value,
                 headers,
-                context.CancellationToken).ConfigureAwait(false);
+                cancellationToken: context.CancellationToken).ConfigureAwait(false);
         }
     }
 

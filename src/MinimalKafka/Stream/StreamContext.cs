@@ -30,14 +30,13 @@ public sealed class StreamContext(KafkaContext context)
     /// <summary>Produces a Kafka message using the configured producer.</summary>
     public Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
         string topic,
-        TKey key,
-        TValue value,
+        TKey? key,
+        TValue? value,
         Headers? headers = null,
         string? format = null,
         CancellationToken cancellationToken = default)
     {
-        var effectiveCancellationToken = cancellationToken == default ? CancellationToken : cancellationToken;
-        return Producer.ProduceAsync(topic, key, value, headers, effectiveCancellationToken, format);
+        return Producer.ProduceAsync(topic, key, value, headers, format, cancellationToken);
     }
 
     /// <summary>Gets the stream store for the specified logical topic.</summary>

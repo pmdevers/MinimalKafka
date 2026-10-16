@@ -30,7 +30,11 @@ internal static class GetTopicMessages
 
         var normalizedCount = count <= 0 ? 50 : Math.Min(count, 500);
         var registeredTopics = registry.GetTopics();
-        if (!registeredTopics.Contains(topic, StringComparer.Ordinal))
+        var deadLetterTopics = registry.GetDeadLetterTopics().Values;
+        var isKnownTopic = registeredTopics.Contains(topic, StringComparer.Ordinal)
+            || deadLetterTopics.Contains(topic, StringComparer.Ordinal);
+
+        if (!isKnownTopic)
         {
             throw new InvalidOperationException($"Topic '{topic}' is not registered.");
         }

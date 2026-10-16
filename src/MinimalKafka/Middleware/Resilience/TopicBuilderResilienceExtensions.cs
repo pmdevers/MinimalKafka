@@ -26,7 +26,9 @@ public static class TopicBuilderResilienceExtensions
         /// </summary>
         public TopicBuilder WithDeadLetter(string? deadLetterTopic = null)
         {
-            return builder.Use<DeadLetterMiddleware>(deadLetterTopic ?? builder.Topic + "-dlq");
+            var destination = deadLetterTopic ?? builder.Topic + "-dlq";
+            builder.Registration.DeadLetterTopic = destination;
+            return builder.Use<DeadLetterMiddleware>(destination);
         }
     }
 }
