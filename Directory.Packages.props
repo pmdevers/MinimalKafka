@@ -22,7 +22,7 @@
     <PackageVersion Include="Confluent.SchemaRegistry" Version="2.15.0" />
     <PackageVersion Include="Confluent.SchemaRegistry.Serdes.Avro" Version="2.15.0" />
     <PackageVersion Include="Confluent.SchemaRegistry.Serdes.Protobuf" Version="2.15.0" />
-    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.2" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.11" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
