@@ -15,7 +15,7 @@ public interface IConsumerRuntimeControl
     void Stop();
 }
 
-internal sealed class ConsumerRuntimeControl(IOptions<KafkaConsumerOptions> options) : IConsumerRuntimeControl
+internal sealed class ConsumerRuntimeControl(IOptions<KafkaOptions> options) : IConsumerRuntimeControl
 {
     private int _isRunning = options.Value.StartAtStartup ? 1 : 0;
 

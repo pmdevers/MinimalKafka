@@ -98,22 +98,16 @@ public class CorrelationIdPropagationTests
         services.AddSingleton<IProducerMiddleware>(capture);
         var provider = services.BuildServiceProvider();
 
-        var options = Options.Create(new KafkaConsumerOptions
-        {
-            Common = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["bootstrap.servers"] = "localhost:9092"
-            }
-        });
-
         IKafkaSerializerRegistry serializerRegistry = new MessageSerializerRegistry(
             [new JsonMessageSerializer(Options.Create(new SerializationOptions()))],
             Options.Create(new SerializationOptions()));
         ITopicNamingConvention topicNaming = new DelegatingTopicNameConvention(static topic => topic);
 
+        var producerFactory = new TestKafkaProducerFactory();
+
         var accessor = new KafkaCorrelationContextAccessor();
         var producer = new KafkaMessageProducer(
-            options,
+            producerFactory,
             provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<KafkaMessageProducer>.Instance,
             serializerRegistry,
@@ -121,6 +115,19 @@ public class CorrelationIdPropagationTests
             accessor);
 
         return (producer, capture, accessor);
+    }
+
+    private sealed class TestKafkaProducerFactory : IKafkaProducerFactory
+    {
+        public IProducer<byte[], byte[]> Create()
+        {
+            var config = new ProducerConfig
+            {
+                BootstrapServers = "localhost:9092"
+            };
+
+            return new ProducerBuilder<byte[], byte[]>(config).Build();
+        }
     }
 
     private sealed class CapturingProducerMiddleware : IProducerMiddleware

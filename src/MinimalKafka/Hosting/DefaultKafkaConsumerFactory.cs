@@ -5,10 +5,10 @@ using Microsoft.Extensions.Options;
 namespace MinimalKafka.Hosting;
 
 internal sealed class DefaultKafkaConsumerFactory(
-    IOptions<KafkaConsumerOptions> options,
+    IOptions<KafkaOptions> options,
     ILogger<DefaultKafkaConsumerFactory> logger) : IKafkaConsumerFactory
 {
-    private readonly IOptions<KafkaConsumerOptions> _options = options;
+    private readonly IOptions<KafkaOptions> _options = options;
     private readonly ILogger<DefaultKafkaConsumerFactory> _logger = logger;
 
     public IKafkaConsumer Create()

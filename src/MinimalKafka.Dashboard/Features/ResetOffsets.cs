@@ -16,7 +16,7 @@ internal static class ResetOffsets
 
     internal static async Task<IResult> HandleAsync(
         [FromServices] IOptions<MinimalKafkaDashboardOptions> dashboardOptions,
-        [FromServices] IOptions<KafkaConsumerOptions> options,
+        [FromServices] IOptions<KafkaOptions> options,
         [FromBody] Request request,
         CancellationToken cancellationToken)
     {

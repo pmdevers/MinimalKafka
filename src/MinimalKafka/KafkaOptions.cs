@@ -6,7 +6,7 @@ namespace MinimalKafka;
 /// Raw librdkafka configuration (https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md),
 /// so every Kafka setting is supported by its property name, e.g. "security.protocol".
 /// </summary>
-public sealed class KafkaConsumerOptions
+public sealed class KafkaOptions
 {
     /// <summary>
     /// Indicates whether the Kafka consumer should start automatically when the application starts.
@@ -27,7 +27,10 @@ public sealed class KafkaConsumerOptions
     public Dictionary<string, string> Producer { get; set; } = new ProducerConfig()
         .ToDictionary();
 
-    internal KafkaConsumerHandlers Handlers { get; } = new();
+    /// <summary>
+    /// Contains handlers for various Kafka client events, such as statistics, errors, logs, and partition assignment/loss/revocation.
+    /// </summary>
+    public KafkaConsumerHandlers Handlers { get; } = new();
 
     /// <summary>
     /// Creates a <see cref="ConsumerConfig"/> instance by merging the <see cref="Common"/> and <see cref="Consumer"/> settings.
@@ -64,19 +67,49 @@ public sealed class KafkaConsumerOptions
     }
 }
 
-internal sealed class KafkaConsumerHandlers
+/// <summary>
+/// Represents optional callback handlers for Kafka consumer client events, including statistics, errors, logs,
+/// partition assignment changes, and OAuth bearer token refresh.
+/// </summary>
+/// <remarks>Assign delegates to receive event notifications during consumer operation. Any handler left <see
+/// langword="null"/> is not invoked.</remarks>
+public sealed class KafkaConsumerHandlers
 {
-    public Action<IConsumer<byte[], byte[]>, string>? StatisticsHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the callback invoked to handle statistics output for a client.
+    /// </summary>
+    /// <remarks>Set to <see langword="null"/> to disable statistics handling.</remarks>
+    public Action<IClient, string>? StatisticsHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, Error>? ErrorHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the callback invoked when an error is reported for a client.
+    /// </summary>
+    /// <remarks>Set to <see langword="null"/> to disable custom error handling.</remarks>
+    public Action<IClient, Error>? ErrorHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, LogMessage>? LogHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the delegate that handles client log messages.
+    /// </summary>
+    public Action<IClient, LogMessage>? LogHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, List<TopicPartition>>? PartitionsAssignedHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the handler invoked when topic partitions are assigned to the client.
+    /// </summary>
+    /// <remarks>Use this callback to run custom logic during partition assignment.</remarks>
+    public Action<IClient, List<TopicPartition>>? PartitionsAssignedHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>>? PartitionsLostHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the delegate invoked when assigned partitions are lost.
+    /// </summary>
+    public Action<IClient, List<TopicPartitionOffset>>? PartitionsLostHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>>? PartitionsRevokedHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the delegate invoked when assigned partitions are revoked.
+    /// </summary>
+    public Action<IClient, List<TopicPartitionOffset>>? PartitionsRevokedHandler { get; set; }
 
-    public Action<IConsumer<byte[], byte[]>, string>? OAuthBearerTokenRefreshHandler { get; set; }
+    /// <summary>
+    /// Gets or sets the delegate invoked when an OAuth bearer token needs to be refreshed.
+    /// </summary>
+    public Action<IClient, string>? OAuthBearerTokenRefreshHandler { get; set; }
 }
