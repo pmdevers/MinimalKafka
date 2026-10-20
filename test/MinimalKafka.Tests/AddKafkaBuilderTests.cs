@@ -35,7 +35,7 @@ public class MinimalKafkaExtensionsTests
         });
         // Assert
         var serviceProvider = services.BuildServiceProvider();
-        var kafkaBuilder = serviceProvider.GetRequiredService<IOptions<KafkaConsumerOptions>>();
+        var kafkaBuilder = serviceProvider.GetRequiredService<IOptions<KafkaOptions>>();
         Assert.Equal("TestClient", kafkaBuilder.Value.CreateProducerConfig().ClientId);
         Assert.Equal("TestGroup", kafkaBuilder.Value.CreateConsumerConfig().GroupId);
     }

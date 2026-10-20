@@ -14,7 +14,7 @@ internal static class GetOffsets
 
     internal static async Task<IResult> HandleAsync(
         [FromServices] IOptions<MinimalKafkaDashboardOptions> dashboardOptions,
-        [FromServices] IOptions<KafkaConsumerOptions> options,
+        [FromServices] IOptions<KafkaOptions> options,
         [FromServices] ITopicRegistry registry,
         CancellationToken cancellationToken)
     {

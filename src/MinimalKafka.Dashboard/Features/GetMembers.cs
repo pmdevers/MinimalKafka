@@ -13,7 +13,7 @@ internal static class GetMembers
     internal const string Route = "/api/consumer-group/members";
 
     internal static async Task<IResult> HandleAsync(
-        [FromServices] IOptions<KafkaConsumerOptions> options,
+        [FromServices] IOptions<KafkaOptions> options,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

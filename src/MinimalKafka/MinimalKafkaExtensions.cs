@@ -23,7 +23,7 @@ public static class MinimalKafkaExtensions
         /// <summary>Registers the Kafka consumer and producer and lets <paramref name="configure"/> customize them.</summary>
         public IServiceCollection AddMinimalKafka(Action<IMinimalKafkaBuilder>? configure = null)
         {
-            services.AddOptions<KafkaConsumerOptions>();
+            services.AddOptions<KafkaOptions>();
             services.AddOptions<SerializationOptions>();
             services.AddOptions<TopicNamingOptions>();
 
@@ -35,6 +35,7 @@ public static class MinimalKafkaExtensions
             services.TryAddSingleton<IConsumerRuntimeControl>(x => x.GetRequiredService<ConsumerRuntimeControl>());
             services.TryAddSingleton<IKafkaStoreFactory, InMemoryKafkaStoreFactory>();
             services.TryAddSingleton<IKafkaCorrelationContextAccessor, KafkaCorrelationContextAccessor>();
+            services.TryAddSingleton<IKafkaProducerFactory, KafkaProducerFactory>();
             services.TryAddSingleton<IKafkaProducer, KafkaMessageProducer>();
             services.TryAddSingleton<IKafkaConsumerFactory, DefaultKafkaConsumerFactory>();
             services.AddHostedService<KafkaConsumerBackgroundService>();
@@ -50,18 +51,18 @@ public static class MinimalKafkaExtensions
     extension(IMinimalKafkaBuilder builder)
     {
         /// <summary>Configures the raw librdkafka settings.</summary>
-        public IMinimalKafkaBuilder WithConfiguration(Action<KafkaConsumerOptions> configure)
+        public IMinimalKafkaBuilder WithConfiguration(Action<KafkaOptions> configure)
         {
             builder.Services.Configure(configure);
             return builder;
         }
 
 
-        /// <summary>Configures <see cref="KafkaConsumerOptions"/> from an <see cref="IConfiguration"/> source.</summary>
+        /// <summary>Configures <see cref="KafkaOptions"/> from an <see cref="IConfiguration"/> source.</summary>
         /// <param name="configuration">The configuration section or root containing Kafka settings.</param>
         public IMinimalKafkaBuilder WithConfiguration(IConfiguration configuration)
         {
-            builder.Services.Configure<KafkaConsumerOptions>(configuration);
+            builder.Services.Configure<KafkaOptions>(configuration);
             return builder;
         }
 
@@ -70,7 +71,7 @@ public static class MinimalKafkaExtensions
         /// <returns>The current builder.</returns>
         public IMinimalKafkaBuilder WithAutoOffsetReset(AutoOffsetReset value)
         {
-            builder.Services.Configure<KafkaConsumerOptions>(x =>
+            builder.Services.Configure<KafkaOptions>(x =>
             {
                 var config = new ConsumerConfig(x.Consumer)
                 {
@@ -86,7 +87,7 @@ public static class MinimalKafkaExtensions
         /// <returns>The current builder.</returns>
         public IMinimalKafkaBuilder WithClientId(string value)
         {
-            builder.Services.Configure<KafkaConsumerOptions>(x =>
+            builder.Services.Configure<KafkaOptions>(x =>
             {
                 var config = new ClientConfig(x.Common)
                 {
@@ -102,7 +103,7 @@ public static class MinimalKafkaExtensions
         /// <returns>The current builder.</returns>
         public IMinimalKafkaBuilder WithGroupId(string value)
         {
-            builder.Services.Configure<KafkaConsumerOptions>(x =>
+            builder.Services.Configure<KafkaOptions>(x =>
             {
                 var config = new ConsumerConfig(x.Consumer)
                 {
@@ -130,50 +131,50 @@ public static class MinimalKafkaExtensions
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(configure);
 
-            builder.Services.Configure<KafkaConsumerOptions>(options => configure(options.Handlers));
+            builder.Services.Configure<KafkaOptions>(options => configure(options.Handlers));
             return builder;
         }
 
         /// <summary>Sets the Kafka statistics handler for the consumer.</summary>
         /// <param name="statisticsHandler">The delegate invoked when Kafka emits consumer statistics.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithStatisticsHandler(Action<IConsumer<byte[], byte[]>, string> statisticsHandler) =>
+        public IMinimalKafkaBuilder WithStatisticsHandler(Action<IClient, string> statisticsHandler) =>
             ConfigureHandlers(builder, handlers => handlers.StatisticsHandler = statisticsHandler);
 
         /// <summary>Sets the Kafka error handler for the consumer.</summary>
         /// <param name="errorHandler">The delegate invoked when the consumer reports an error.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithErrorHandler(Action<IConsumer<byte[], byte[]>, Error> errorHandler) =>
+        public IMinimalKafkaBuilder WithErrorHandler(Action<IClient, Error> errorHandler) =>
             ConfigureHandlers(builder, handlers => handlers.ErrorHandler = errorHandler);
 
         /// <summary>Sets the Kafka log handler for the consumer.</summary>
         /// <param name="logHandler">The delegate invoked when the consumer emits a log message.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithLogHandler(Action<IConsumer<byte[], byte[]>, LogMessage> logHandler) =>
+        public IMinimalKafkaBuilder WithLogHandler(Action<IClient, LogMessage> logHandler) =>
             ConfigureHandlers(builder, handlers => handlers.LogHandler = logHandler);
 
         /// <summary>Sets the partition assigned handler for the consumer.</summary>
         /// <param name="partitionsAssignedHandler">The delegate invoked when partitions are assigned to the consumer.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithPartitionsAssignedHandler(Action<IConsumer<byte[], byte[]>, List<TopicPartition>> partitionsAssignedHandler) =>
+        public IMinimalKafkaBuilder WithPartitionsAssignedHandler(Action<IClient, List<TopicPartition>> partitionsAssignedHandler) =>
             ConfigureHandlers(builder, handlers => handlers.PartitionsAssignedHandler = partitionsAssignedHandler);
 
         /// <summary>Sets the partition lost handler for the consumer.</summary>
         /// <param name="partitionsLostHandler">The delegate invoked when assigned partitions are lost.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithPartitionsLostHandler(Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>> partitionsLostHandler) =>
+        public IMinimalKafkaBuilder WithPartitionsLostHandler(Action<IClient, List<TopicPartitionOffset>> partitionsLostHandler) =>
             ConfigureHandlers(builder, handlers => handlers.PartitionsLostHandler = partitionsLostHandler);
 
         /// <summary>Sets the partition revoked handler for the consumer.</summary>
         /// <param name="partitionsRevokedHandler">The delegate invoked when assigned partitions are revoked.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithPartitionsRevokedHandler(Action<IConsumer<byte[], byte[]>, List<TopicPartitionOffset>> partitionsRevokedHandler) =>
+        public IMinimalKafkaBuilder WithPartitionsRevokedHandler(Action<IClient, List<TopicPartitionOffset>> partitionsRevokedHandler) =>
             ConfigureHandlers(builder, handlers => handlers.PartitionsRevokedHandler = partitionsRevokedHandler);
 
         /// <summary>Sets the OAuth bearer token refresh handler for the consumer.</summary>
         /// <param name="oAuthBearerTokenRefreshHandler">The delegate invoked when the consumer requires an OAuth bearer token refresh.</param>
         /// <returns>The current builder.</returns>
-        public IMinimalKafkaBuilder WithOAuthBearerTokenRefreshHandler(Action<IConsumer<byte[], byte[]>, string> oAuthBearerTokenRefreshHandler) =>
+        public IMinimalKafkaBuilder WithOAuthBearerTokenRefreshHandler(Action<IClient, string> oAuthBearerTokenRefreshHandler) =>
             ConfigureHandlers(builder, handlers => handlers.OAuthBearerTokenRefreshHandler = oAuthBearerTokenRefreshHandler);
 
         /// <summary>Adds a global consumer middleware. Middleware runs in the order it is added.</summary>

@@ -1,14 +1,13 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MinimalKafka.Serialization;
 using System.Text;
 
 namespace MinimalKafka.Producing;
 
 internal sealed class KafkaMessageProducer(
-    IOptions<KafkaConsumerOptions> options,
+    IKafkaProducerFactory producerFactory,
     IServiceScopeFactory scopeFactory,
     ILogger<KafkaMessageProducer> logger,
     IKafkaSerializerRegistry serializers,
@@ -16,10 +15,7 @@ internal sealed class KafkaMessageProducer(
     IKafkaCorrelationContextAccessor correlationContextAccessor
     ) : IKafkaProducer, IDisposable
 {
-    private readonly IProducer<byte[], byte[]> _producer = new ProducerBuilder<byte[], byte[]>(options.Value.CreateProducerConfig())
-            .SetKeySerializer(Serializers.ByteArray)
-            .SetValueSerializer(Serializers.ByteArray)
-            .Build();
+    private readonly IProducer<byte[], byte[]> _producer = producerFactory.Create();
 
     public async Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
         string topic,
