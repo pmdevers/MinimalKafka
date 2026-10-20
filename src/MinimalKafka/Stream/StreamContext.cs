@@ -37,7 +37,7 @@ public sealed class StreamContext(KafkaContext context)
         CancellationToken cancellationToken = default)
     {
         var effectiveCancellationToken = cancellationToken == default ? CancellationToken : cancellationToken;
-        return Producer.ProduceAsync(topic, key, value, headers, effectiveCancellationToken, format);
+        return Producer.ProduceAsync(topic, key, value, headers, format, effectiveCancellationToken);
     }
 
     /// <summary>Gets the stream store for the specified logical topic.</summary>

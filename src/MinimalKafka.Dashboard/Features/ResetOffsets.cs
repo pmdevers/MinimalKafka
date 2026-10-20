@@ -1,8 +1,7 @@
-﻿using Confluent.Kafka;
-using Confluent.Kafka.Admin;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using MinimalKafka.Dashboard.Domain;
 
 namespace MinimalKafka.Dashboard.Features;
 
@@ -15,14 +14,13 @@ internal static class ResetOffsets
 
 
     internal static async Task<IResult> HandleAsync(
-        [FromServices] IOptions<MinimalKafkaDashboardOptions> dashboardOptions,
         [FromServices] IOptions<KafkaOptions> options,
+        [FromServices] IKafkaDashboard dashboard,
         [FromBody] Request request,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(request);
-        var requestTimeout = dashboardOptions.Value.RequestTimeout;
 
         if (request.Offsets.Count == 0)
         {
@@ -50,51 +48,15 @@ internal static class ResetOffsets
 
         var config = options.Value.CreateConsumerConfig();
         var groupId = config.GroupId ?? throw new InvalidOperationException("Kafka consumer group id is required for the dashboard.");
-        var adminConfig = options.Value.CreateAdminConfig();
 
-        using var admin = new AdminClientBuilder(adminConfig).Build();
-        var describeResult = await admin.DescribeConsumerGroupsAsync([groupId], new DescribeConsumerGroupsOptions
-        {
-            RequestTimeout = requestTimeout
-        }).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var updatedCount = await dashboard.ResetConsumerGroupOffsetsAsync(
+            groupId,
+            request.Offsets
+                .Select(offset => new Domain.Models.ConsumerOffsetReset(offset.Topic, offset.Partition, offset.Offset))
+                .ToArray(),
+            cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
 
-        var group = describeResult.ConsumerGroupDescriptions.Single();
-        if (group.Error.IsError)
-        {
-            throw new InvalidOperationException($"Unable to describe consumer group '{groupId}': {group.Error.Reason}");
-        }
-
-        if (group.Members.Count > 0)
-        {
-            throw new InvalidOperationException($"Consumer group '{groupId}' has active members. Stop all consumers before resetting offsets.");
-        }
-
-        var topicPartitionOffsets = request.Offsets
-            .Select(offset => new TopicPartitionOffset(
-                new TopicPartition(offset.Topic, new Partition(offset.Partition)),
-                new Offset(offset.Offset)))
-            .ToList();
-
-        var alterResult = await admin.AlterConsumerGroupOffsetsAsync(
-            [new ConsumerGroupTopicPartitionOffsets(groupId, topicPartitionOffsets)],
-            new AlterConsumerGroupOffsetsOptions
-            {
-                RequestTimeout = requestTimeout
-            }).WaitAsync(cancellationToken).ConfigureAwait(false);
-
-        var groupResult = alterResult.Single();
-        var errors = groupResult.Partitions
-            .Where(offset => offset.Error.IsError)
-            .Select(offset => $"{offset.Topic}[{offset.Partition.Value}]: {offset.Error.Reason}")
-            .ToArray();
-
-        if (errors.Length > 0)
-        {
-            throw new InvalidOperationException(
-                $"Unable to reset offsets for consumer group '{groupId}'. Partition errors: {string.Join(", ", errors)}");
-        }
-
-        return Results.Ok(new Response(groupId, topicPartitionOffsets.Count));
+        return Results.Ok(new Response(groupId, updatedCount));
     }
 
     internal sealed record Response(string GroupId, int UpdatedCount);

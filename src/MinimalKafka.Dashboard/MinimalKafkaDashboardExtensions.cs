@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using MinimalKafka.Dashboard.Domain;
 using MinimalKafka.Dashboard.Features;
 using MinimalKafka.Dashboard.Features.UI;
+using MinimalKafka.Dashboard.Infrastructure;
 
 namespace MinimalKafka.Dashboard;
 
@@ -34,6 +37,8 @@ public static class MinimalKafkaDashboardExtensions
 
             services.AddOptions<MinimalKafkaDashboardOptions>()
                 .Validate(options => options.RoutePrefix.StartsWith('/'), "RoutePrefix must start with '/'.");
+
+            services.TryAddScoped<IKafkaDashboard, KafkaDashboard>();
 
             return services;
         }
