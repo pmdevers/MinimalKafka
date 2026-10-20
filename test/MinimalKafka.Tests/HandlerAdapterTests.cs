@@ -189,8 +189,8 @@ public class HandlerAdapterTests
             TKey key,
             TValue value,
             Headers? headers = null,
-            CancellationToken cancellationToken = default,
-            string? format = null)
+            string? format = null,
+            CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

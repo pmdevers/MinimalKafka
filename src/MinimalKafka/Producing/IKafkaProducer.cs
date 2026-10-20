@@ -12,15 +12,15 @@ public interface IKafkaProducer
     /// <param name="value">The message value to serialize and produce.</param>
     /// <param name="key">The optional message key.</param>
     /// <param name="headers">The optional Kafka headers.</param>
-    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <param name="format">The optional message format. When null, the default format is used.</param>
+    /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>The Kafka delivery result for the produced message.</returns>
     Task<DeliveryResult<byte[], byte[]>> ProduceAsync<TKey, TValue>(
         string topic,
         TKey key,
         TValue value,
         Headers? headers = null,
-        CancellationToken cancellationToken = default,
-        string? format = null);
+        string? format = null,
+        CancellationToken cancellationToken = default);
 }
 

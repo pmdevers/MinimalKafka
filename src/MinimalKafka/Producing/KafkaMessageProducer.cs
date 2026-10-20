@@ -22,8 +22,8 @@ internal sealed class KafkaMessageProducer(
         TKey key,
         TValue value,
         Headers? headers = null,
-        CancellationToken cancellationToken = default,
-        string? format = null)
+        string? format = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
         ArgumentNullException.ThrowIfNull(key);

@@ -292,8 +292,8 @@ public class StreamProcessingTests
             TKey key,
             TValue value,
             Headers? headers = null,
-            CancellationToken cancellationToken = default,
-            string? format = null)
+            string? format = null,
+            CancellationToken cancellationToken = default)
         {
             Messages.Add(new ProducedMessage(topic, key, value, format));
             return Task.FromResult(new DeliveryResult<byte[], byte[]>
