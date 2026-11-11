@@ -155,6 +155,7 @@
         const panelOffsets = document.getElementById("panel-offsets");
         const panelMessages = document.getElementById("panel-messages");
         let currentMembers = [];
+        let currentOffsets = [];
         let messagesAutoRefreshId = null;
 
         function getApiUrl(path) {
@@ -169,39 +170,85 @@
             status.textContent = "Loading...";
             error.textContent = "";
 
+            const [membersResult, offsetsResult, consumerStatusResult] = await Promise.all([
+                loadMembersSection(),
+                loadOffsetsSection(),
+                loadConsumerStatusSection()
+            ]);
+
+            const errors = [membersResult.error, offsetsResult.error, consumerStatusResult.error].filter(Boolean);
+
+            setOffsetResetEnabled(currentMembers.length === 0 && currentOffsets.length > 0);
+            status.textContent = `Group: ${membersResult.groupId || offsetsResult.groupId || "n/a"}`;
+            error.textContent = errors.join(" ");
+        }
+
+        async function loadMembersSection() {
             try {
-                const [membersResponse, offsetsResponse, consumerStatusResponse] = await Promise.all([
-                    fetch(getApiUrl("api/consumer-group/members")),
-                    fetch(getApiUrl("api/consumer-group/offsets")),
-                    fetch(getApiUrl("api/consumer/status"))
-                ]);
-
-                if (!membersResponse.ok || !offsetsResponse.ok || !consumerStatusResponse.ok) {
-                    throw new Error("Dashboard API request failed.");
-                }
-
-                const membersData = await membersResponse.json();
-                const offsetsData = await offsetsResponse.json();
-                const consumerStatusData = await consumerStatusResponse.json();
-
-                currentMembers = membersData.members || [];
-                const currentOffsets = offsetsData.offsets || [];
-
+                const data = await fetchJson("api/consumer-group/members", "Members API");
+                currentMembers = data.members || [];
                 renderMembers(currentMembers);
-                renderOffsets(currentOffsets);
-                populateTopicSelector(currentOffsets);
-                await loadTopicMessages();
-
-                setConsumerState(Boolean(consumerStatusData.isRunning));
-                setOffsetResetEnabled(currentMembers.length === 0);
-                status.textContent = `Group: ${membersData.groupId || offsetsData.groupId || "n/a"}`;
+                return { groupId: data.groupId || null, error: "" };
             } catch (e) {
-                status.textContent = "";
-                consumerStatus.textContent = "";
-                messagesBody.innerHTML = "";
-                setOffsetResetEnabled(false);
-                error.textContent = e.message || "Unexpected error";
+                currentMembers = [];
+                renderMembers([]);
+                return { groupId: null, error: `Members section failed: ${getErrorMessage(e)}` };
             }
+        }
+
+        async function loadOffsetsSection() {
+            try {
+                const data = await fetchJson("api/consumer-group/offsets", "Offsets API");
+                currentOffsets = data.offsets || [];
+
+                try {
+                    renderOffsets(currentOffsets);
+                    populateTopicSelector(currentOffsets);
+                    await loadTopicMessages();
+                    return { groupId: data.groupId || null, error: "" };
+                } catch (e) {
+                    messagesBody.innerHTML = "";
+                    return { groupId: data.groupId || null, error: `Offsets/messages render failed: ${getErrorMessage(e)}` };
+                }
+            } catch (e) {
+                currentOffsets = [];
+                renderOffsets([]);
+                populateTopicSelector([]);
+                messagesBody.innerHTML = "";
+                return { groupId: null, error: `Offsets section failed: ${getErrorMessage(e)}` };
+            }
+        }
+
+        async function loadConsumerStatusSection() {
+            try {
+                const data = await fetchJson("api/consumer/status", "Consumer status API");
+                setConsumerState(Boolean(data.isRunning));
+                return { error: "" };
+            } catch (e) {
+                consumerStatus.textContent = "";
+                return { error: `Consumer status section failed: ${getErrorMessage(e)}` };
+            }
+        }
+
+        async function fetchJson(path, name) {
+            const response = await fetch(getApiUrl(path));
+            if (!response.ok) {
+                throw new Error(`${name} failed (${response.status})`);
+            }
+
+            return response.json();
+        }
+
+        function getErrorMessage(errorValue) {
+            if (errorValue instanceof Error) {
+                return errorValue.message || "Unexpected error";
+            }
+
+            if (typeof errorValue === "string" && errorValue.length > 0) {
+                return errorValue;
+            }
+
+            return "Unexpected error";
         }
 
         function renderMembers(items) {
