@@ -54,6 +54,12 @@ If you have an idea for a new feature or an enhancement, please check the [exist
 
 8. **Submit a Pull Request**: Go to the original repository and open a pull request. Describe your changes and why they are beneficial.
 
+## Continuous Integration
+
+The build and publish workflow uses Ubuntu 24.04. CI builds without generating
+NuGet packages, then tests the existing Release binaries. Tag builds pack those
+binaries once, including SBOM manifests, before publishing.
+
 ## Coding Standards
 
 - **Code Style**: Follow the project's existing coding style. If you're unsure, look at the existing code for examples.
