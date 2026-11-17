@@ -68,11 +68,14 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
                 $"Unable to get offsets for consumer group '{groupId}'. Partition errors: {string.Join(", ", partitionErrors)}");
         }
 
+        var watermarks = await GetWatermarksAsync(
+            groupOffsets.Partitions.Select(offset => offset.TopicPartition),
+            cancellationToken).ConfigureAwait(false);
+
         return groupOffsets.Partitions
             .Select(offset =>
             {
-                var watermark = _consumer.QueryWatermarkOffsets(offset.TopicPartition, _requestTimeout);
-                var high = watermark.High.Value;
+                var high = watermarks.TryGetValue(offset.TopicPartition, out var watermark) ? watermark.High : 0;
                 var committedOffset = offset.Offset >= Offset.Beginning ? offset.Offset.Value : 0;
                 var lag = high >= committedOffset ? high - committedOffset : 0;
 
@@ -150,7 +153,7 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
         return topicPartitionOffsets.Count;
     }
 
-    public Task<TopicMessage[]> GetTopicMessagesAsync(string topic, int count, CancellationToken cancellationToken)
+    public async Task<TopicMessage[]> GetTopicMessagesAsync(string topic, int count, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -159,18 +162,27 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
 
         if (topicMetadata is null || topicMetadata.Partitions.Count == 0)
         {
-            return Task.FromResult(Array.Empty<TopicMessage>());
+            return Array.Empty<TopicMessage>();
         }
+
+        var topicPartitions = topicMetadata.Partitions
+            .Select(partitionMetadata => new Confluent.Kafka.TopicPartition(topic, new Partition(partitionMetadata.PartitionId)))
+            .ToArray();
+
+        var watermarks = await GetWatermarksAsync(topicPartitions, cancellationToken).ConfigureAwait(false);
 
         var endOffsets = new Dictionary<Confluent.Kafka.TopicPartition, long>();
         var assignments = new List<TopicPartitionOffset>();
 
-        foreach (var partitionMetadata in topicMetadata.Partitions)
+        foreach (var topicPartition in topicPartitions)
         {
-            var topicPartition = new Confluent.Kafka.TopicPartition(topic, new Partition(partitionMetadata.PartitionId));
-            var watermark = _consumer.QueryWatermarkOffsets(topicPartition, _requestTimeout);
-            var low = watermark.Low.Value;
-            var high = watermark.High.Value;
+            if (!watermarks.TryGetValue(topicPartition, out var watermark))
+            {
+                continue;
+            }
+
+            var low = watermark.Low;
+            var high = watermark.High;
 
             if (high <= low)
             {
@@ -184,7 +196,7 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
 
         if (assignments.Count == 0)
         {
-            return Task.FromResult(Array.Empty<TopicMessage>());
+            return Array.Empty<TopicMessage>();
         }
 
         _consumer.Assign(assignments);
@@ -226,7 +238,7 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
             }
         }
 
-        var latest = captured
+        return captured
             .OrderByDescending(message => message.Timestamp)
             .ThenByDescending(message => message.Offset)
             .Take(count)
@@ -234,7 +246,70 @@ internal sealed class KafkaDashboard(IOptions<KafkaOptions> options) : IKafkaDas
             .ThenBy(message => message.Partition)
             .ThenBy(message => message.Offset)
             .ToArray();
-
-        return Task.FromResult(latest);
     }
+
+    private async Task<Dictionary<Confluent.Kafka.TopicPartition, PartitionWatermark>> GetWatermarksAsync(
+        IEnumerable<Confluent.Kafka.TopicPartition> topicPartitions,
+        CancellationToken cancellationToken)
+    {
+        var requestedPartitions = topicPartitions.Distinct().ToArray();
+        if (requestedPartitions.Length == 0)
+        {
+            return [];
+        }
+
+        var earliestOffsets = await _adminClient.ListOffsetsAsync(
+            requestedPartitions.Select(topicPartition => new TopicPartitionOffsetSpec
+            {
+                TopicPartition = topicPartition,
+                OffsetSpec = OffsetSpec.Earliest()
+            }),
+            new ListOffsetsOptions
+            {
+                RequestTimeout = _requestTimeout,
+                IsolationLevel = IsolationLevel.ReadUncommitted
+            }).WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        var latestOffsets = await _adminClient.ListOffsetsAsync(
+            requestedPartitions.Select(topicPartition => new TopicPartitionOffsetSpec
+            {
+                TopicPartition = topicPartition,
+                OffsetSpec = OffsetSpec.Latest()
+            }),
+            new ListOffsetsOptions
+            {
+                RequestTimeout = _requestTimeout,
+                IsolationLevel = IsolationLevel.ReadUncommitted
+            }).WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        var earliestByPartition = earliestOffsets.ResultInfos.ToDictionary(
+            result => result.TopicPartitionOffsetError.TopicPartition,
+            result => result.TopicPartitionOffsetError);
+
+        var latestByPartition = latestOffsets.ResultInfos.ToDictionary(
+            result => result.TopicPartitionOffsetError.TopicPartition,
+            result => result.TopicPartitionOffsetError);
+
+        var errors = earliestByPartition.Values
+            .Where(result => result.Error.IsError)
+            .Select(result => $"{result.Topic}[{result.Partition.Value}]: {result.Error.Reason}")
+            .Concat(latestByPartition.Values
+                .Where(result => result.Error.IsError)
+                .Select(result => $"{result.Topic}[{result.Partition.Value}]: {result.Error.Reason}"))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (errors.Length > 0)
+        {
+            throw new InvalidOperationException($"Unable to query topic offsets. Partition errors: {string.Join(", ", errors)}");
+        }
+
+        return requestedPartitions.ToDictionary(
+            topicPartition => topicPartition,
+            topicPartition => new PartitionWatermark(
+                earliestByPartition[topicPartition].Offset.Value,
+                latestByPartition[topicPartition].Offset.Value));
+    }
+
+    private readonly record struct PartitionWatermark(long Low, long High);
 }
