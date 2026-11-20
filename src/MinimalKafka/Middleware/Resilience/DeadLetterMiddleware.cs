@@ -27,18 +27,14 @@ internal sealed class DeadLetterMiddleware(string deadLetterTopic, ILogger<DeadL
             logger.LogError(
                 exception,
                 "Message at {Topic}[{Partition}]@{Offset} failed; sending to {DeadLetterTopic}.",
-                context.Topic, context.ConsumeResult.Partition.Value, context.ConsumeResult.Offset.Value, deadLetterTopic);
+                context.Topic, context.Partition, context.Offset, deadLetterTopic);
 
-            var headers = new Headers();
-            foreach (var header in context.Headers)
-            {
-                headers.Add(header.Key, header.GetValueBytes());
-            }
-            headers.Add(OriginalTopicHeader, Encoding.UTF8.GetBytes(context.Topic));
-            headers.Add(OriginalPartitionHeader, Encoding.UTF8.GetBytes(context.ConsumeResult.Partition.Value.ToString()));
-            headers.Add(OriginalOffsetHeader, Encoding.UTF8.GetBytes(context.ConsumeResult.Offset.Value.ToString()));
-            headers.Add(ExceptionTypeHeader, Encoding.UTF8.GetBytes(exception.GetType().FullName ?? exception.GetType().Name));
-            headers.Add(ExceptionMessageHeader, Encoding.UTF8.GetBytes(Truncate(exception.Message, 1024)));
+            var headers = new KafkaHeaders(context.Headers);
+            headers.Set(OriginalTopicHeader, context.Topic);
+            headers.Set(OriginalPartitionHeader, context.Partition.ToString());
+            headers.Set(OriginalOffsetHeader, context.Offset.ToString());
+            headers.Set(ExceptionTypeHeader, exception.GetType().FullName ?? exception.GetType().Name);
+            headers.Set(ExceptionMessageHeader, Truncate(exception.Message, 1024));
 
             await context.Producer.ProduceAsync(
                 deadLetterTopic,

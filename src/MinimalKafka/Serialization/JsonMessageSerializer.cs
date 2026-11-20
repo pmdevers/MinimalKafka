@@ -1,4 +1,3 @@
-using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -8,9 +7,9 @@ internal sealed class JsonMessageSerializer(IOptions<SerializationOptions> optio
 {
     public string Format => MessageFormats.Json;
 
-    public Task<byte[]> SerializeAsync(object value, string topic, Headers headers, CancellationToken cancellationToken) =>
+    public Task<byte[]> SerializeAsync(object value, string topic, KafkaHeaders headers, CancellationToken cancellationToken) =>
         Task.FromResult(JsonSerializer.SerializeToUtf8Bytes(value, value.GetType(), options.Value.Json));
 
-    public Task<object?> DeserializeAsync(byte[] data, Type type, string topic, Headers headers, CancellationToken cancellationToken) =>
+    public Task<object?> DeserializeAsync(byte[] data, Type type, string topic, KafkaHeaders headers, CancellationToken cancellationToken) =>
         Task.FromResult(JsonSerializer.Deserialize(data, type, options.Value.Json));
 }

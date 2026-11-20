@@ -184,9 +184,9 @@ internal static class HandlerAdapter
 
     private static object? ConvertHeader(KafkaContext context, FromHeaderAttribute headerAttribute, Type type, ParameterInfo parameter)
     {
-        var header = context.Headers.LastOrDefault(item => item.Key == headerAttribute.Name);
-        var headerValue = header?.GetValueBytes();
-        var text = headerValue is null ? null : Encoding.UTF8.GetString(headerValue);
+        var headerName = headerAttribute.Name ?? parameter.Name
+            ?? throw new InvalidOperationException("Header-bound parameter must have a name.");
+        var text = context.Headers.Get(headerName);
         return ConvertText(text, type, parameter);
     }
 

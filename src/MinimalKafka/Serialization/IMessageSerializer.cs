@@ -1,5 +1,3 @@
-using Confluent.Kafka;
-
 namespace MinimalKafka.Serialization;
 
 /// <summary>Converts message values between .NET objects and Kafka payload bytes for one format.</summary>
@@ -14,7 +12,7 @@ public interface IKafkaSerializer
     /// <param name="headers">The Kafka headers for the message.</param>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>The serialized payload bytes.</returns>
-    Task<byte[]> SerializeAsync(object value, string topic, Headers headers, CancellationToken cancellationToken);
+    Task<byte[]> SerializeAsync(object value, string topic, KafkaHeaders headers, CancellationToken cancellationToken);
 
     /// <summary>Deserializes Kafka payload bytes into a .NET value.</summary>
     /// <param name="data">The Kafka payload bytes.</param>
@@ -23,7 +21,7 @@ public interface IKafkaSerializer
     /// <param name="headers">The Kafka headers for the message.</param>
     /// <param name="cancellationToken">The token used to cancel the operation.</param>
     /// <returns>The deserialized value.</returns>
-    Task<object?> DeserializeAsync(byte[] data, Type type, string topic, Headers headers, CancellationToken cancellationToken);
+    Task<object?> DeserializeAsync(byte[] data, Type type, string topic, KafkaHeaders headers, CancellationToken cancellationToken);
 }
 
 /// <summary>Resolves message serializers by format name.</summary>

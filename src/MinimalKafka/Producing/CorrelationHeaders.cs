@@ -1,24 +1,24 @@
-using Confluent.Kafka;
-using System.Text;
-
 namespace MinimalKafka.Producing;
 
 internal static class CorrelationHeaders
 {
     public const string CorrelationIdHeaderName = "x-correlation-id";
 
-    public static string? ReadCorrelationId(Headers headers)
+    public static string? ReadCorrelationId(KafkaHeaders headers)
     {
-        var bytes = headers.LastOrDefault(static item => item.Key == CorrelationIdHeaderName)?.GetValueBytes();
-        return bytes is null ? null : Encoding.UTF8.GetString(bytes);
+        ArgumentNullException.ThrowIfNull(headers);
+        return headers.Get(CorrelationIdHeaderName);
     }
 
-    public static bool ContainsCorrelationId(Headers headers) =>
-        headers.Any(static item => item.Key == CorrelationIdHeaderName);
-
-    public static void SetCorrelationId(Headers headers, string correlationId)
+    public static bool ContainsCorrelationId(KafkaHeaders headers)
     {
-        headers.Remove(CorrelationIdHeaderName);
-        headers.Add(CorrelationIdHeaderName, Encoding.UTF8.GetBytes(correlationId));
+        ArgumentNullException.ThrowIfNull(headers);
+        return headers.Contains(CorrelationIdHeaderName);
+    }
+
+    public static void SetCorrelationId(KafkaHeaders headers, string correlationId)
+    {
+        ArgumentNullException.ThrowIfNull(headers);
+        headers.Set(CorrelationIdHeaderName, correlationId);
     }
 }

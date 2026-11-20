@@ -16,7 +16,7 @@ public sealed class ProducerContext(
     string topic,
     byte[] key,
     byte[] value,
-    Headers headers,
+    KafkaHeaders headers,
     CancellationToken cancellationToken)
 {
     /// <summary>The topic to produce to.</summary>
@@ -37,7 +37,7 @@ public sealed class ProducerContext(
     private byte[] _value = value ?? throw new ArgumentNullException(nameof(value));
 
     /// <summary>The Kafka headers for the message.</summary>
-    public Headers Headers { get; } = headers ?? throw new ArgumentNullException(nameof(headers));
+    public KafkaHeaders Headers { get; } = headers ?? throw new ArgumentNullException(nameof(headers));
 
     /// <summary>The token used to cancel the operation.</summary>
     public CancellationToken CancellationToken { get; } = cancellationToken;

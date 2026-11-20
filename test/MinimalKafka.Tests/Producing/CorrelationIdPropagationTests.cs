@@ -32,7 +32,7 @@ public class CorrelationIdPropagationTests
         var (producer, capture, _) = CreateProducer();
         using (producer)
         {
-            await producer.ProduceAsync("orders", Array.Empty<byte>(), Array.Empty<byte>(), headers: []);
+            await producer.ProduceAsync("orders", Array.Empty<byte>(), Array.Empty<byte>(), headers: new KafkaHeaders());
         }
 
         var correlationId = CorrelationHeaders.ReadCorrelationId(capture.Headers!);
@@ -44,10 +44,8 @@ public class CorrelationIdPropagationTests
     public async Task ProduceAsync_ShouldPreserveExplicitCorrelationId_WhenProvided()
     {
         var (producer, capture, _) = CreateProducer();
-        var headers = new Headers
-        {
-            new(CorrelationHeaders.CorrelationIdHeaderName, Encoding.UTF8.GetBytes("explicit-correlation"))
-        };
+        var headers = new KafkaHeaders();
+        headers.Set(CorrelationHeaders.CorrelationIdHeaderName, "explicit-correlation");
 
         using (producer)
         {
@@ -66,7 +64,7 @@ public class CorrelationIdPropagationTests
         {
             using (producer)
             {
-                await producer.ProduceAsync("orders", Array.Empty<byte>(), Array.Empty<byte>(), headers: []);
+                await producer.ProduceAsync("orders", Array.Empty<byte>(), Array.Empty<byte>(), headers: new KafkaHeaders());
             }
         }
 
@@ -132,7 +130,7 @@ public class CorrelationIdPropagationTests
 
     private sealed class CapturingProducerMiddleware : IProducerMiddleware
     {
-        public Headers? Headers { get; private set; }
+        public KafkaHeaders? Headers { get; private set; }
 
         public Task InvokeAsync(ProducerContext context, ProducerDelegate next)
         {

@@ -16,7 +16,7 @@ public sealed class StreamContext(KafkaContext context)
     public string TopicName => KafkaContext.Topic;
 
     /// <summary>The current message headers.</summary>
-    public Headers Headers => KafkaContext.Headers;
+    public KafkaHeaders Headers => KafkaContext.Headers;
 
     /// <summary>The scoped service provider for the current message.</summary>
     public IServiceProvider RequestServices => KafkaContext.RequestServices;
@@ -32,7 +32,7 @@ public sealed class StreamContext(KafkaContext context)
         string topic,
         TKey key,
         TValue value,
-        Headers? headers = null,
+        KafkaHeaders? headers = null,
         string? format = null,
         CancellationToken cancellationToken = default)
     {

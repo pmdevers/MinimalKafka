@@ -19,9 +19,6 @@ public sealed class KafkaContext(
     IServiceProvider requestServices,
     CancellationToken cancellationToken)
 {
-    /// <summary>The consumed Kafka result.</summary>
-    public ConsumeResult<byte[], byte[]> ConsumeResult { get; } = consumeResult;
-
     /// <summary>The topic the message was consumed from.</summary>
     public string Topic { get; } = consumeResult.Topic;
 
@@ -31,8 +28,16 @@ public sealed class KafkaContext(
     /// <summary>The message value.</summary>
     public byte[]? Value { get; set; } = consumeResult.Message.Value;
 
+    private readonly KafkaHeaders _headers = KafkaHeaders.FromConfluent(consumeResult.Message.Headers);
+
     /// <summary>The Kafka headers for the message.</summary>
-    public Headers Headers => ConsumeResult.Message.Headers;
+    public KafkaHeaders Headers => _headers;
+
+    /// <summary>The source partition for the consumed message.</summary>
+    public int Partition { get; } = consumeResult.Partition.Value;
+
+    /// <summary>The source offset for the consumed message.</summary>
+    public long Offset { get; } = consumeResult.Offset.Value;
 
     /// <summary>The CorrelationId header value from the consumed message, when present.</summary>
     public string? CorrelationId => CorrelationHeaders.ReadCorrelationId(Headers);
