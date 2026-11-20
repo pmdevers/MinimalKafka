@@ -251,7 +251,7 @@ public class StreamProcessingTests
         TKey key,
         TValue value)
     {
-        var headers = new Headers();
+        var headers = new KafkaHeaders();
         var keyBytes = await SerializeAsync(provider, topic, key, headers);
         var valueBytes = await SerializeAsync(provider, topic, value, headers);
 
@@ -263,7 +263,7 @@ public class StreamProcessingTests
                 {
                     Key = keyBytes,
                     Value = valueBytes,
-                    Headers = headers
+                    Headers = headers.AsConfluentHeaders()
                 }
             },
             provider.GetRequiredService<IKafkaProducer>(),
@@ -271,7 +271,7 @@ public class StreamProcessingTests
             CancellationToken.None);
     }
 
-    private static Task<byte[]> SerializeAsync<T>(IServiceProvider provider, string topic, T value, Headers headers)
+    private static Task<byte[]> SerializeAsync<T>(IServiceProvider provider, string topic, T value, KafkaHeaders headers)
     {
         return value switch
         {
@@ -291,7 +291,7 @@ public class StreamProcessingTests
             string topic,
             TKey key,
             TValue value,
-            Headers? headers = null,
+            KafkaHeaders? headers = null,
             string? format = null,
             CancellationToken cancellationToken = default)
         {
@@ -301,7 +301,7 @@ public class StreamProcessingTests
                 Topic = topic,
                 Message = new Message<byte[], byte[]>
                 {
-                    Headers = headers ?? []
+                    Headers = (headers ?? new KafkaHeaders()).AsConfluentHeaders()
                 }
             });
         }

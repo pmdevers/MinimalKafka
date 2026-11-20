@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
 
 namespace MinimalKafka.Middleware.ClaimCheck;
 
@@ -23,15 +22,12 @@ public sealed class ClaimCheckConsumerMiddleware(
     public async Task InvokeAsync(KafkaContext context, ConsumerDelegate next)
     {
         var settings = options.Value;
-        var header = context.Headers.LastOrDefault(item => item.Key == settings.HeaderName);
-        var headerValue = header?.GetValueBytes();
-        if (headerValue is null)
+        var claimId = context.Headers.Get(settings.HeaderName);
+        if (claimId is null)
         {
             await next(context).ConfigureAwait(false);
             return;
         }
-
-        var claimId = Encoding.UTF8.GetString(headerValue);
         var payload = await store.RetrieveAsync(claimId, context.CancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException(
                 $"Claim '{claimId}' for topic '{context.Topic}' was not found in the claim check store.");

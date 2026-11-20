@@ -188,7 +188,7 @@ public class HandlerAdapterTests
             string topic,
             TKey key,
             TValue value,
-            Headers? headers = null,
+            KafkaHeaders? headers = null,
             string? format = null,
             CancellationToken cancellationToken = default)
         {

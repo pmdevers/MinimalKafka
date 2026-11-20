@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Middleware;
 using MinimalKafka.Producing;
@@ -80,6 +81,34 @@ public class TopicBuilderTests
     }
 
     [Fact]
+    public async Task MapTopic_WithWebApplication_ShouldComposeAndRunConsumerPipeline()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton<MiddlewareProbe>();
+        builder.Services.AddMinimalKafka(config => config.UseConsumerMiddleware<ProbeMiddleware>());
+
+        await using var app = builder.Build();
+
+        var handlerCalled = false;
+        app.MapTopic("orders", (Func<KafkaContext, Task>)(_ =>
+        {
+            handlerCalled = true;
+            return Task.CompletedTask;
+        }));
+
+        var registry = app.Services.GetRequiredService<TopicRegistry>();
+        var registration = registry.Topics["orders"];
+
+        await using var scope = app.Services.CreateAsyncScope();
+        var pipeline = ConsumerPipelineComposer.Compose(registration, scope.ServiceProvider);
+
+        await pipeline(CreateContext(scope.ServiceProvider));
+
+        Assert.True(handlerCalled);
+        Assert.True(scope.ServiceProvider.GetRequiredService<MiddlewareProbe>().WasRun);
+    }
+
+    [Fact]
     public async Task Add_WhenConsumerAlreadyMapped_ShouldExecuteBothSimultaneously()
     {
         var registry = new TopicRegistry();
@@ -118,7 +147,7 @@ public class TopicBuilderTests
         Assert.True(bothCalledSimultaneously);
     }
 
-    private static KafkaContext CreateContext()
+    private static KafkaContext CreateContext(IServiceProvider? serviceProvider = null)
     {
         return new KafkaContext(
             new ConsumeResult<byte[], byte[]>
@@ -132,8 +161,22 @@ public class TopicBuilderTests
                 }
             },
             Substitute.For<IKafkaProducer>(),
-            new ServiceCollection().BuildServiceProvider(),
+            serviceProvider ?? new ServiceCollection().BuildServiceProvider(),
             CancellationToken.None);
+    }
+
+    private sealed class MiddlewareProbe
+    {
+        public bool WasRun { get; set; }
+    }
+
+    private sealed class ProbeMiddleware(MiddlewareProbe probe) : IConsumerMiddleware
+    {
+        public async Task InvokeAsync(KafkaContext context, ConsumerDelegate next)
+        {
+            probe.WasRun = true;
+            await next(context);
+        }
     }
 
     private sealed class MiddlewareState

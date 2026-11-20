@@ -1,4 +1,3 @@
-using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using MinimalKafka.Serialization;
 using System.Text;
@@ -11,7 +10,7 @@ internal static class StreamSerialization
         IServiceProvider services,
         byte[]? data,
         string topic,
-        Headers headers,
+        KafkaHeaders headers,
         string? format,
         CancellationToken cancellationToken)
     {
@@ -30,7 +29,7 @@ internal static class StreamSerialization
         byte[] data,
         Type type,
         string topic,
-        Headers headers,
+        KafkaHeaders headers,
         string? format,
         CancellationToken cancellationToken)
     {
@@ -52,7 +51,7 @@ internal static class StreamSerialization
         IServiceProvider services,
         string topic,
         T value,
-        Headers headers,
+        KafkaHeaders headers,
         string? format,
         CancellationToken cancellationToken)
     {

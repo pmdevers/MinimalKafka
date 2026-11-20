@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MinimalKafka.Middleware;
 using MinimalKafka.Producing;
 using MinimalKafka.Runtime;
 
@@ -88,17 +87,7 @@ internal sealed class KafkaConsumerBackgroundService(
                     Format = registration.Format
                 };
 
-                var middleware = scope.ServiceProvider.GetServices<IConsumerMiddleware>()
-                    .Concat(registration.Middleware.Select(create => create(scope.ServiceProvider)))
-                    .ToArray();
-
-                ConsumerDelegate pipeline = registration.Handler;
-                for (var index = middleware.Length - 1; index >= 0; index--)
-                {
-                    var current = middleware[index];
-                    var next = pipeline;
-                    pipeline = kafkaContext => current.InvokeAsync(kafkaContext, next);
-                }
+                var pipeline = ConsumerPipelineComposer.Compose(registration, scope.ServiceProvider);
 
                 using var correlationScope = _correlationContextAccessor.BeginScope(context.CorrelationId);
                 await pipeline(context).ConfigureAwait(false);

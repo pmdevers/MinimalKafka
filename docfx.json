@@ -13,7 +13,7 @@
     ],
     "resource": [
       {
-        "files": [ "assets/**" ]
+        "files": [ "assets/**", "docs/llms.txt" ]
       }
     ],
     "output": "_site",

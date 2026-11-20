@@ -16,11 +16,11 @@ internal abstract class SchemaRegistryMessageSerializer : IKafkaSerializer
 
     protected abstract IKafkaSerializer CreateAdapter(Type type);
 
-    public Task<byte[]> SerializeAsync(object value, string topic, Headers headers, CancellationToken cancellationToken) =>
-        AdapterFor(value.GetType()).SerializeAsync(value, new SerializationContext(MessageComponentType.Value, topic, headers));
+    public Task<byte[]> SerializeAsync(object value, string topic, KafkaHeaders headers, CancellationToken cancellationToken) =>
+        AdapterFor(value.GetType()).SerializeAsync(value, new SerializationContext(MessageComponentType.Value, topic, headers.AsConfluentHeaders()));
 
-    public Task<object?> DeserializeAsync(byte[] data, Type type, string topic, Headers headers, CancellationToken cancellationToken) =>
-        AdapterFor(type).DeserializeAsync(data, new SerializationContext(MessageComponentType.Value, topic, headers));
+    public Task<object?> DeserializeAsync(byte[] data, Type type, string topic, KafkaHeaders headers, CancellationToken cancellationToken) =>
+        AdapterFor(type).DeserializeAsync(data, new SerializationContext(MessageComponentType.Value, topic, headers.AsConfluentHeaders()));
 
     protected IKafkaSerializer Build(string methodName, Type type)
     {

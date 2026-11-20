@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MinimalKafka.Producing;
-using System.Text;
 
 namespace MinimalKafka.Middleware.ClaimCheck;
 
@@ -34,8 +33,7 @@ public sealed class ClaimCheckProducerMiddleware(
         var claimId = await store.StoreAsync(context.Value, context.CancellationToken).ConfigureAwait(false);
         logger.LogDebug("Stored {Size} byte payload for {Topic} as claim {ClaimId}.", size, context.Topic, claimId);
 
-        context.Headers.Remove(settings.HeaderName);
-        context.Headers.Add(settings.HeaderName, Encoding.UTF8.GetBytes(claimId));
+        context.Headers.Set(settings.HeaderName, claimId);
         context.Value = [];
 
         try

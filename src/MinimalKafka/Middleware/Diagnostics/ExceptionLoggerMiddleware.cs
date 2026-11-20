@@ -19,10 +19,10 @@ internal class ExceptionLoggerMiddleware(ILogger<ExceptionLoggerMiddleware> logg
                 "Error processing message: '{Message}' in topic '{Topic}[{Partition}]' with offset '{Offset}'",
                 message,
                 context.Topic,
-                context.ConsumeResult.Partition,
-                context.ConsumeResult.Offset);
+                context.Partition,
+                context.Offset);
 
-            throw new InvalidOperationException($"Error processing message: '{message}' in topic '{context.Topic}[{context.ConsumeResult.Partition}]' with offset '{context.ConsumeResult.Offset}'", ex);
+            throw new InvalidOperationException($"Error processing message: '{message}' in topic '{context.Topic}[{context.Partition}]' with offset '{context.Offset}'", ex);
         }
     }
 }
