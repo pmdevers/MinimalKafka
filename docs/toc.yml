@@ -1,5 +1,7 @@
 - name: Getting Started
   href: getting-started.md
+- name: AI Agent Guide
+  href: llms.txt
 - name: Stream Branching
   href: stream-branching.md
 - name: Claims-Check with KafkaFile
